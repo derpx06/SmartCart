@@ -1,7 +1,9 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
@@ -27,6 +29,7 @@ import {
 import { Fonts } from '@/constants/theme';
 
 export function LuxuryHomeScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const [loading, setLoading] = useState(true);
@@ -75,12 +78,17 @@ export function LuxuryHomeScreen() {
           <View style={styles.headerTopRow}>
             <View style={styles.brandWrap}>
               <View style={styles.logoDot} />
-              <Text style={styles.brand}>AURELIA HOME</Text>
+              <Text style={styles.brand}>williams sonoma</Text>
             </View>
             <View style={styles.iconRow}>
               <Feather name="heart" size={19} color={palette.text} />
               <Feather name="shopping-bag" size={19} color={palette.text} />
-              <Feather name="user" size={19} color={palette.text} />
+              <Pressable
+                onPress={() => router.push('/(auth)/sign-in')}
+                hitSlop={10}
+                style={styles.profileTrigger}>
+                <Feather name="user" size={19} color={palette.text} />
+              </Pressable>
             </View>
           </View>
 
@@ -223,6 +231,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  profileTrigger: {
+    borderRadius: 999,
+    padding: 2,
   },
   searchWrap: {
     borderRadius: radius.pill,
