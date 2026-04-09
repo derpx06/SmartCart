@@ -13,15 +13,16 @@ type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart';
 
 type TabMeta = {
   label: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon: keyof typeof Ionicons.glyphMap;
+  inactiveIcon: keyof typeof Ionicons.glyphMap;
 };
 
 const TAB_META: Record<TabRouteName, TabMeta> = {
-  index: { label: 'HOME', icon: 'home-outline' },
-  recipe: { label: 'RECIPE', icon: 'restaurant-outline' },
-  registry: { label: 'REGISTRY', icon: 'gift-outline' },
-  orders: { label: 'ORDERS', icon: 'cube-outline' },
-  cart: { label: 'CART', icon: 'cart-outline' },
+  index: { label: 'HOME', activeIcon: 'home', inactiveIcon: 'home-outline' },
+  recipe: { label: 'RECIPE', activeIcon: 'restaurant', inactiveIcon: 'restaurant-outline' },
+  registry: { label: 'REGISTRY', activeIcon: 'gift', inactiveIcon: 'gift-outline' },
+  orders: { label: 'ORDERS', activeIcon: 'cube', inactiveIcon: 'cube-outline' },
+  cart: { label: 'CART', activeIcon: 'cart', inactiveIcon: 'cart-outline' },
 };
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -88,15 +89,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             outputRange: [1, 1.05],
           });
           const iconScale = Animated.multiply(activeScale, pressAnim);
-          const iconOpacity = activeAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [0, 1],
-          });
-          const iconLift = activeAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [3, 0],
-          });
-
           const onPress = () => {
             const event = navigation.emit({
               type: 'tabPress',
@@ -149,16 +141,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               onPressIn={onPressIn}
               onPressOut={onPressOut}
               style={styles.tabButton}>
-              <Animated.View
-                style={[
-                  styles.iconPill,
-                  isFocused && styles.iconPillActive,
-                  { opacity: iconOpacity, transform: [{ translateY: iconLift }] },
-                ]}
-              />
               <Animated.View style={{ transform: [{ scale: iconScale }] }}>
                 <Ionicons
-                  name={meta.icon}
+                  name={isFocused ? meta.activeIcon : meta.inactiveIcon}
                   size={24}
                   color={isFocused ? text : mutedText}
                 />

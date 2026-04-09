@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
     borderBottomWidth: 0,
-    shadowColor: '#1E1914',
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 14 },
     shadowRadius: 18,
     elevation: 10,
