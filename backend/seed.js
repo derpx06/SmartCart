@@ -14,9 +14,9 @@ mongoose.connect(MONGO_URI).then(async () => {
 
   try {
     // Load Data
-    const skusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'mock-api/responses/skus.json'), 'utf-8'));
-    const feedData = JSON.parse(fs.readFileSync(path.join(__dirname, 'mock-api/responses/feed.json'), 'utf-8'));
-    const profileData = JSON.parse(fs.readFileSync(path.join(__dirname, 'mock-api/responses/profile.json'), 'utf-8'));
+    const skusData = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses/skus.json'), 'utf-8'));
+    const feedData = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses/feed.json'), 'utf-8'));
+    const profileData = JSON.parse(fs.readFileSync(path.join(__dirname, 'responses/profile.json'), 'utf-8'));
 
     // Initialize User Data based on mock-api profile
     const userData = {

@@ -16,8 +16,8 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// Support proxying images from old mock-api
-app.use('/images', express.static(path.join(__dirname, 'mock-api/images')));
+// Support proxying images from local images directory
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'super-secret-key';
 
@@ -33,13 +33,13 @@ app.get('/health', (req, res) => {
 
 app.post('/login', async (req, res) => {
   const { email, password } = req.body || {};
-  
+
   try {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-    
+
     // Mapped straight from mock logic, without bcrypt for simplicity
     if (user.password !== password) {
       return res.status(401).json({ error: 'Invalid credentials' });
@@ -63,9 +63,9 @@ const authenticateToken = (req, res, next) => {
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (token == null) {
-      // Allow unauthenticated fallback to mock user for easy transition
-      req.user = { userId: "user_001" };
-      return next();
+    // Allow unauthenticated fallback to mock user for easy transition
+    req.user = { userId: "user_001" };
+    return next();
   }
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -94,7 +94,7 @@ app.get('/feed', async (req, res) => {
   try {
     const feed = await Feed.findOne({}, '-_id -__v').lean();
     if (!feed) {
-        return res.json({ items: [] });
+      return res.json({ items: [] });
     }
     res.json({ items: feed.items });
   } catch (err) {
