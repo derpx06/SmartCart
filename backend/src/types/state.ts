@@ -44,4 +44,5 @@ export interface SemanticState {
     stage: 'exploring' | 'deciding' | 'ready';
     needs: string[];
     risk: 'low' | 'medium' | 'high';
+    vector?: number[];
 }

@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
@@ -11,6 +11,7 @@ import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
 import { api } from '@/lib/api';
 import { useSmartCartStore } from '@/store/smart-cart-store';
+import { useProductRecommendations } from '@/hooks/use-product-recommendations';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -46,6 +47,18 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [saving, setSaving] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+
+  const { ranked, loading: recsLoading } = useProductRecommendations(product.id);
+  const addToCart = useSmartCartStore((s) => s.addToCart);
+
+  const handleAddRelated = async (productId: string) => {
+    try {
+      await addToCart(productId, 1);
+      Alert.alert('Selection updated', 'A thoughtfully paired item has been added.');
+    } catch (err: any) {
+      Alert.alert('Update failed', err.message || 'Please try again.');
+    }
+  };
 
   const selectedColor = product.colors.find((color) => color.id === selectedColorId);
   const selectedColorName = selectedColor?.name ?? product.colors[0]?.name ?? '';
@@ -394,31 +407,57 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
           <View style={styles.sectionWrap}>
             <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>You may also like</ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
-              {product.related.map((related) => (
-                <Pressable
-                  key={related.id}
-                  style={[
-                    styles.relatedCard,
-                    {
-                      backgroundColor: palette.elevated,
-                      borderColor: palette.line,
-                    },
-                  ]}
-                  onPress={() => {
-                    if (related.slug) {
-                      router.push(`/product/${related.slug}`);
-                    }
-                  }}
-                >
-                  <Image source={{ uri: related.image }} style={styles.relatedImage} contentFit="cover" />
-                  <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
-                    {related.name}
-                  </ThemedText>
-                  <ThemedText style={[styles.relatedPrice, { color: palette.mutedText }]}>{related.price}</ThemedText>
-                </Pressable>
-              ))}
-            </ScrollView>
+            {recsLoading ? (
+              <View style={{ height: 180, justifyContent: 'center' }}>
+                <ActivityIndicator color={palette.gold} />
+              </View>
+            ) : ranked.length > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
+                {ranked.map((related) => (
+                  <View key={related.productId} style={styles.relatedCardContainer}>
+                    <Pressable
+                      style={[
+                        styles.relatedCard,
+                        {
+                          backgroundColor: palette.elevated,
+                          borderColor: palette.line,
+                        },
+                      ]}
+                      onPress={() => {
+                        // Assuming valid products have a predictable slug or ID pattern
+                        // For now, we'll try to find if the ID works for navigation
+                        router.push(`/product/${related.productId}`);
+                      }}
+                    >
+                      <View style={[styles.relatedImagePlaceholder, { backgroundColor: palette.beige }]}>
+                        <Ionicons name="sparkles-outline" size={24} color={palette.gold} />
+                        {related.reasons.length > 0 && (
+                          <View style={styles.miniBadge}>
+                            <ThemedText style={styles.miniBadgeText}>{related.reasons[0]}</ThemedText>
+                          </View>
+                        )}
+                      </View>
+                      <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
+                        {related.name}
+                      </ThemedText>
+                      <ThemedText style={[styles.relatedPrice, { color: palette.gold }]}>
+                        ${related.price.toFixed(2)}
+                      </ThemedText>
+                    </Pressable>
+                    <Pressable
+                      onPress={() => handleAddRelated(related.productId)}
+                      style={[styles.miniAddBtn, { backgroundColor: palette.text }]}
+                    >
+                      <Ionicons name="add" size={16} color={palette.elevated} />
+                    </Pressable>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : (
+              <ThemedText style={[styles.description, { color: palette.mutedText, textAlign: 'center' }]}>
+                No recommendations found for this item yet.
+              </ThemedText>
+            )}
           </View>
         </ScrollView>
 
@@ -920,31 +959,65 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   relatedRail: {
-    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+  relatedCardContainer: {
+    width: 160,
+    position: 'relative',
   },
   relatedCard: {
-    width: 178,
-    borderRadius: radius.md,
+    width: 160,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    padding: spacing.sm,
+    padding: 10,
+    gap: 8,
   },
-  relatedImage: {
+  relatedImagePlaceholder: {
     width: '100%',
-    aspectRatio: 1,
+    height: 120,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  miniBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    backgroundColor: '#00000080',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: radius.sm,
-    marginBottom: spacing.xs,
+  },
+  miniBadgeText: {
+    color: '#FFF',
+    fontSize: 8,
+    fontFamily: Fonts.sans,
+    fontWeight: '700',
+    textTransform: 'uppercase',
   },
   relatedName: {
+    fontFamily: Fonts.serif,
+    fontSize: 14,
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+  relatedPrice: {
     fontFamily: Fonts.sans,
     fontSize: 12,
     fontWeight: '700',
-    marginBottom: 6,
-    minHeight: 34,
   },
-  relatedPrice: {
-    fontFamily: Fonts.serif,
-    fontSize: 14,
-    fontWeight: '700',
+  miniAddBtn: {
+    position: 'absolute',
+    bottom: 8,
+    right: 8,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
   },
   bottomBar: {
     position: 'absolute',

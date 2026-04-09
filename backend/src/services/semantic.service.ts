@@ -68,6 +68,7 @@ export function getSemanticState(state: SmartCartState): SemanticState {
         stage,
         needs,
         risk,
+        vector: cartEmbedding,
     };
 }
 
@@ -81,5 +82,6 @@ function fallbackState(): SemanticState {
         stage: 'exploring',
         needs: [],
         risk: 'low',
+        vector: [],
     };
 }

@@ -1,8 +1,16 @@
 import { SmartCartState, SemanticState } from '../types/state';
 import { WEIGHTS } from '../config/rankingWeights';
 
+function dotProduct(a: number[], b: number[]): number {
+    if (a.length !== b.length) return 0;
+    return a.reduce((sum, val, i) => sum + val * (b[i] || 0), 0);
+}
+
 export interface RankedItem {
     productId: string;
+    name: string;
+    category: string;
+    price: number;
     score: number;
     reasons: string[];
 }
@@ -47,19 +55,33 @@ function diversityPenalty(item: any, selectedItems: { category: string }[]): num
     return sameCategory.length > 1 ? -0.2 : 0;
 }
 
+function biasScore(item: any): number {
+    // Global popularity bias or promotional boost placeholder
+    return item.isPromoted ? 1.0 : 0.5;
+}
+
 function computeScore(item: any, context: RankingContext): number {
-    const intent = intentMatchScore(item, context.semantic);
+    let intent = intentMatchScore(item, context.semantic);
+
+    // 🔥 Added: Semantic Vector Match (The "ML" approach)
+    if (item.embedding?.length > 0 && context.semantic.vector?.length > 0) {
+        const similarity = dotProduct(item.embedding, context.semantic.vector) || 0;
+        intent = (intent + similarity) / 2; // Average category match and vector match
+    }
+
     const rel = relationshipScore(item._id?.toString() || item.productId, context.related);
     const session = sessionScore(context.state);
     const inventory = inventoryScore(item._id?.toString() || item.productId, context.state.inventory);
     const diversity = diversityPenalty(item, context.selected || []);
+    const bias = biasScore(item);
 
     return (
         WEIGHTS.intent * intent +
         WEIGHTS.relationship * rel +
         WEIGHTS.session * session +
         WEIGHTS.inventory * inventory +
-        WEIGHTS.diversity * diversity
+        WEIGHTS.diversity * diversity +
+        (WEIGHTS as any).bias * bias
     );
 }
 
@@ -95,10 +117,15 @@ export function rankItems(candidates: any[], context: RankingContext): RankedIte
 
     for (const item of candidates) {
         const score = computeScore(item, context);
+        console.log(`Candidate: ${item.name}, Category: ${item.category}, Score: ${score.toFixed(3)}`);
+
         if (score < 0.2) continue;
 
         results.push({
             productId: item._id?.toString() || item.productId,
+            name: item.name,
+            category: item.category,
+            price: typeof item.price === 'number' ? item.price : (item.price?.selling || 0),
             score: parseFloat(score.toFixed(3)),
             reasons: buildReasons(item, context),
         });

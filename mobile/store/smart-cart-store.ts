@@ -11,6 +11,7 @@ type SmartCartStore = {
   fetchCart: () => Promise<void>;
   refresh: () => Promise<void>;
   updateCartQuantity: (productId: string, quantity: number) => Promise<void>;
+  addToCart: (productId: string, quantity: number) => Promise<void>;
   checkout: () => Promise<void>;
 };
 
@@ -47,6 +48,10 @@ export const useSmartCartStore = create<SmartCartStore>((set, get) => ({
   },
   updateCartQuantity: async (productId, quantity) => {
     await api.updateCart(productId, quantity);
+    await get().fetchCart();
+  },
+  addToCart: async (productId, quantity) => {
+    await api.addToCart(productId, quantity);
     await get().fetchCart();
   },
   checkout: async () => {

@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart';
+type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart' | 'chat';
 
 type TabMeta = {
   label: string;
@@ -23,6 +23,7 @@ const TAB_META: Record<TabRouteName, TabMeta> = {
   registry: { label: 'REGISTRY', activeIcon: 'gift', inactiveIcon: 'gift-outline' },
   orders: { label: 'ORDERS', activeIcon: 'cube', inactiveIcon: 'cube-outline' },
   cart: { label: 'CART', activeIcon: 'cart', inactiveIcon: 'cart-outline' },
+  chat: { label: 'AI', activeIcon: 'sparkles', inactiveIcon: 'sparkles-outline' },
 };
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {

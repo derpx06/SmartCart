@@ -2,6 +2,7 @@ import { Config } from '@/constants/Config';
 import type { TabDemoContent } from '@/data/tabDemoContent';
 import type { ProductDetail } from '@/data/product/productDetails';
 import type { CategoryItem, CollectionItem, HeroSlide, ProductItem } from '@/data/luxuryHomeData';
+import type { RankedItem } from '@/types/smart-cart';
 
 let authToken: string | null = null;
 
@@ -109,5 +110,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ productId }),
     });
+  },
+  getProductRecommendations(productId: string) {
+    return request<RankedItem[]>(`/products/${productId}/recommendations`);
   },
 };

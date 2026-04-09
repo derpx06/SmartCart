@@ -9,6 +9,7 @@ import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSmartCartState } from '@/hooks/use-smart-cart-state';
 import { useSmartCartStore } from '@/store/smart-cart-store';
+import { RecommendationSection } from '@/components/RecommendationSection';
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
@@ -26,6 +27,7 @@ function initials(name: string) {
 export default function CartScreen() {
   const { state, loading, error, refresh } = useSmartCartState();
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
+  const addToCart = useSmartCartStore((store) => store.addToCart);
   const checkout = useSmartCartStore((store) => store.checkout);
   const luxuryPalette = useLuxuryPalette();
   const background = useThemeColor({}, 'background');
@@ -101,6 +103,27 @@ export default function CartScreen() {
             </ThemedText>
           </View>
         ) : null}
+
+        {state?.semantic && (
+          <View style={[styles.semanticAlert, { backgroundColor: luxuryPalette.gold + '15', borderColor: luxuryPalette.gold }]}>
+            <View style={styles.semanticHeader}>
+              <Ionicons name="sparkles" size={16} color={luxuryPalette.gold} />
+              <ThemedText style={[styles.semanticKicker, { color: luxuryPalette.gold }]}>
+                {state.semantic.primary_intent} intelligence
+              </ThemedText>
+            </View>
+            <ThemedText style={[styles.semanticSummary, { color: text }]}>
+              {state.semantic.summary}
+            </ThemedText>
+            <View style={styles.needsRow}>
+              {state.semantic.needs.slice(0, 3).map((need, idx) => (
+                <View key={idx} style={[styles.needTag, { backgroundColor: luxuryPalette.beige }]}>
+                  <ThemedText style={[styles.needText, { color: text }]}>+{need}</ThemedText>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
@@ -179,6 +202,13 @@ export default function CartScreen() {
               );
             })}
           </View>
+        )}
+
+        {state?.ranked && state.ranked.length > 0 && (
+          <RecommendationSection
+            ranked={state.ranked}
+            onAdd={(pid) => addToCart(pid, 1)}
+          />
         )}
 
         <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
@@ -541,5 +571,45 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.7,
     textTransform: 'uppercase',
+  },
+  semanticAlert: {
+    padding: spacing.md,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    gap: 8,
+    marginBottom: spacing.sm,
+  },
+  semanticHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  semanticKicker: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    fontWeight: '700',
+  },
+  semanticSummary: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  needsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  needTag: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+  },
+  needText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '600',
   },
 });

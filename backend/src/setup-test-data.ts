@@ -32,6 +32,34 @@ async function setupTestData() {
         embedding: [0.95, 0.1, 0.0, 0.0, 0.1], // Also close to cooking
     });
 
+    // Additional catalog items (Candidates for Ranking)
+    await Product.create({
+        name: 'Silicone Spatula',
+        slug: 'silicone-spatula',
+        category: 'Cookware',
+        price: { selling: 15.0, original: 15.0 },
+        stock: { status: 'IN_STOCK', quantity: 50 },
+        embedding: [0.9, 0.0, 0.1, 0.0, 0.2], // High cooking match
+    });
+
+    await Product.create({
+        name: 'Extra Virgin Olive Oil',
+        slug: 'olive-oil',
+        category: 'Cookware',
+        price: { selling: 25.0, original: 30.0 },
+        stock: { status: 'IN_STOCK', quantity: 20 },
+        embedding: [0.85, 0.05, 0.0, 0.0, 0.1], // High cooking match
+    });
+
+    await Product.create({
+        name: 'Memory Foam Pillow',
+        slug: 'pillow',
+        category: 'Bedding',
+        price: { selling: 80.0, original: 80.0 },
+        stock: { status: 'IN_STOCK', quantity: 10 },
+        embedding: [0.0, 0.0, 0.1, 0.0, 0.9], // NO cooking match
+    });
+
     await Cart.create({
         userId,
         items: [

@@ -6,6 +6,7 @@ import {
   getProductById,
   getProducts,
   getSkus,
+  getProductRecommendations,
 } from '../controllers/catalog.controller';
 import {
   getHome,
@@ -68,6 +69,7 @@ router.get('/registries', getRegistryModules);
 router.get('/products', getProducts);
 router.get('/products/slug/:slug', getProductBySlug);
 router.get('/products/:id', getProductById);
+router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
 
 router.get('/cart', authenticateToken, getCart);
 router.post('/cart/add', authenticateToken, addToCart);
