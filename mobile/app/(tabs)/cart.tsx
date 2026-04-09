@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
-
 import { useSmartCartState } from '@/hooks/use-smart-cart-state';
+import { useSmartCartStore } from '@/store/smart-cart-store';
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
@@ -23,16 +24,36 @@ function initials(name: string) {
 }
 
 export default function CartScreen() {
-  const { state, loading, error } = useSmartCartState();
+  const { state, loading, error, refresh } = useSmartCartState();
+  const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
+  const checkout = useSmartCartStore((store) => store.checkout);
+  const luxuryPalette = useLuxuryPalette();
   const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
   const text = useThemeColor({}, 'text');
   const muted = useThemeColor({}, 'mutedText');
-  const border = useThemeColor({}, 'border');
-  const softSurface = useThemeColor({ light: '#f7f3ee', dark: '#111111' }, 'card');
-  const softSurfaceAlt = useThemeColor({ light: '#efe7dc', dark: '#1a1a1a' }, 'card');
   const danger = useThemeColor({ light: '#c52b2b', dark: '#ff8b8b' }, 'text');
-  const success = useThemeColor({ light: '#1d7d44', dark: '#7de39f' }, 'text');
+  const accent = luxuryPalette.gold;
+  const softSurface = luxuryPalette.surface;
+  const softSurfaceAlt = luxuryPalette.beige;
+
+  const handleQuantityChange = async (productId: string, quantity: number) => {
+    try {
+      await updateCartQuantity(productId, quantity);
+    } catch (err: any) {
+      Alert.alert('Cart update failed', err.message || 'Please try again.');
+    }
+  };
+
+  const handleCheckout = async () => {
+    try {
+      await checkout();
+      await refresh();
+      Alert.alert('Order placed', 'Your order has been submitted successfully.');
+    } catch (err: any) {
+      Alert.alert('Checkout failed', err.message || 'Please try again.');
+    }
+  };
 
   if (loading) {
     return (
@@ -46,91 +67,119 @@ export default function CartScreen() {
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
-  const itemLabel = items.length === 1 ? 'item' : 'items';
+  const itemLabel = items.length === 1 ? 'piece' : 'pieces';
   const outOfStockCount = items.filter((item) => state?.inventory[item.productId] === 'OUT_OF_STOCK').length;
   const deliveryProgress = Math.min(subtotal / 500, 1);
   const deliveryMessage =
     subtotal >= 500
-      ? 'You unlocked complimentary premium delivery.'
-      : `Add ${money(500 - subtotal)} to unlock complimentary premium delivery.`;
+      ? 'Complimentary premium delivery included.'
+      : `Add ${money(500 - subtotal)} for complimentary premium delivery.`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-        showsVerticalScrollIndicator={false}
-        bounces
-      >
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces>
+        <View pointerEvents="none" style={styles.atmosphereLayer}>
+          <View style={[styles.orbOne, { backgroundColor: luxuryPalette.orbOne }]} />
+          <View style={[styles.orbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
+        </View>
+
         <View style={styles.topRow}>
           <View style={styles.topCopy}>
-            <ThemedText style={[styles.pageTitle, { color: text }]}>Cart</ThemedText>
-            <ThemedText style={[styles.topSub, { color: muted }]}>Ready for checkout</ThemedText>
+            <ThemedText style={[styles.kicker, { color: accent }]}>Private checkout</ThemedText>
+            <ThemedText style={[styles.pageTitle, { color: text }]}>Your selection</ThemedText>
+            <ThemedText style={[styles.topSub, { color: muted }]}>
+              Reserved for dispatch once you approve payment.
+            </ThemedText>
           </View>
-          <View style={[styles.iconBadge, { borderColor: border, backgroundColor: softSurface }]}>
+          <View
+            style={[
+              styles.iconBadge,
+              { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+            ]}>
             <Ionicons name="bag-outline" size={18} color={text} />
           </View>
         </View>
 
         {error ? (
-          <View style={[styles.errorPill, { borderColor: danger }]}>
+          <View style={[styles.errorPill, { borderColor: danger, backgroundColor: card }]}>
             <Ionicons name="alert-circle-outline" size={14} color={danger} />
-            <ThemedText style={[styles.errorText, { color: danger }]}>Could not refresh cart. Showing latest cached state.</ThemedText>
+            <ThemedText style={[styles.errorText, { color: danger }]}>
+              Could not refresh cart. Showing the latest saved selection.
+            </ThemedText>
           </View>
         ) : null}
 
-        <View style={[styles.heroHeader, { backgroundColor: softSurface, borderColor: border }]}>
-          <ThemedText style={[styles.kicker, { color: muted }]}>
-            {items.length} {itemLabel} - {money(subtotal)}
-          </ThemedText>
-          <ThemedText style={[styles.mainHeading, { color: text }]}>Your curated selection</ThemedText>
-          <View style={[styles.progressTrack, { backgroundColor: softSurfaceAlt }]}>
+        <View style={[styles.heroHeader, { backgroundColor: softSurface, borderColor: luxuryPalette.line }]}>
+          <View style={styles.headerFrame}>
+            <ThemedText style={[styles.collectionLabel, { color: muted }]}>Cart overview</ThemedText>
+            <ThemedText style={[styles.mainHeading, { color: text }]}>
+              {items.length} {itemLabel} selected
+            </ThemedText>
+            <ThemedText style={[styles.progressNote, { color: muted }]}>{deliveryMessage}</ThemedText>
+          </View>
+
+          <View style={styles.metricRow}>
+            <View
+              style={[
+                styles.metricCard,
+                { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+              ]}>
+              <ThemedText style={[styles.metricLabel, { color: muted }]}>Merchandise</ThemedText>
+              <ThemedText style={[styles.metricValue, { color: text }]}>{money(subtotal)}</ThemedText>
+            </View>
+            <View
+              style={[
+                styles.metricCard,
+                { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+              ]}>
+              <ThemedText style={[styles.metricLabel, { color: muted }]}>Service</ThemedText>
+              <ThemedText style={[styles.metricValue, { color: text }]}>White glove</ThemedText>
+            </View>
+          </View>
+
+          <View style={[styles.progressTrack, { backgroundColor: luxuryPalette.champagne }]}>
             <View
               style={[
                 styles.progressFill,
                 {
-                  backgroundColor: text,
+                  backgroundColor: accent,
                   width: `${Math.max(deliveryProgress * 100, 6)}%`,
                 },
               ]}
             />
           </View>
-          <ThemedText style={[styles.progressNote, { color: muted }]}>{deliveryMessage}</ThemedText>
-          <View style={styles.pillRow}>
-            <View style={[styles.perkPill, { borderColor: border, backgroundColor: card }]}>
-              <Ionicons name="sparkles-outline" size={14} color={text} />
-              <ThemedText style={[styles.perkText, { color: text }]}>
-                Complimentary white-glove handling
-              </ThemedText>
-            </View>
-            <View style={[styles.perkPill, { borderColor: border, backgroundColor: card }]}>
-              <Ionicons name="shield-checkmark-outline" size={14} color={text} />
-              <ThemedText style={[styles.perkText, { color: text }]}>Secure checkout</ThemedText>
-            </View>
+
+          <View style={[styles.serviceNote, { borderTopColor: luxuryPalette.line }]}>
+            <ThemedText style={[styles.serviceNoteText, { color: muted }]}>
+              Signature packaging, insured delivery, and concierge support are included with this order.
+            </ThemedText>
           </View>
+
           {state?.session.behavior === 'slow' && (
-            <View style={[styles.perkPill, { borderColor: border, backgroundColor: '#fffbe6' }]}>
-              <Ionicons name="bulb-outline" size={14} color="#856404" />
-              <ThemedText style={[styles.perkText, { color: '#856404' }]}>
-                Take your time. We've saved your progress.
+            <View style={[styles.noteRow, { borderTopColor: luxuryPalette.line }]}>
+              <Ionicons name="time-outline" size={14} color={accent} />
+              <ThemedText style={[styles.noteText, { color: muted }]}>
+                Take your time. We&apos;ve saved your progress.
               </ThemedText>
             </View>
           )}
+
           {outOfStockCount > 0 && (
-            <View style={[styles.perkPill, { borderColor: danger, backgroundColor: card }]}>
+            <View style={[styles.noteRow, { borderTopColor: luxuryPalette.line }]}>
               <Ionicons name="alert-circle-outline" size={14} color={danger} />
-              <ThemedText style={[styles.perkText, { color: danger }]}>
-                {outOfStockCount} {outOfStockCount === 1 ? 'item is' : 'items are'} currently out of stock.
+              <ThemedText style={[styles.noteText, { color: danger }]}>
+                {outOfStockCount} {outOfStockCount === 1 ? 'piece is' : 'pieces are'} currently unavailable.
               </ThemedText>
             </View>
           )}
         </View>
 
         {!items.length ? (
-          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: border }]}>
+          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
             <Ionicons name="bag-handle-outline" size={30} color={muted} />
             <ThemedText style={[styles.emptyTitle, { color: text }]}>Your cart is empty</ThemedText>
             <ThemedText style={[styles.emptyText, { color: muted }]}>
-              Add products to see personalized savings and checkout recommendations.
+              Add pieces to begin a more considered checkout experience.
             </ThemedText>
           </View>
         ) : (
@@ -138,43 +187,61 @@ export default function CartScreen() {
             {items.map((item) => {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
               return (
-                <View key={item.productId} style={[styles.itemCard, { backgroundColor: card, borderColor: border }]}>
+                <View
+                  key={item.productId}
+                  style={[
+                    styles.itemCard,
+                    { backgroundColor: card, borderColor: luxuryPalette.line },
+                  ]}>
                   <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
-                    <ThemedText style={[styles.itemMonogram, { color: text }]}>{initials(item.name)}</ThemedText>
+                    <ThemedText style={[styles.itemMonogram, { color: text }]}>
+                      {initials(item.name)}
+                    </ThemedText>
                   </View>
+
                   <View style={styles.itemBody}>
+                    <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
+                      {item.category}
+                    </ThemedText>
+
                     <View style={styles.itemTopLine}>
                       <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
                         {item.name}
                       </ThemedText>
-                      <ThemedText style={[styles.itemPrice, { color: text }]}>{money(item.price)}</ThemedText>
+                      <ThemedText style={[styles.itemPrice, { color: text }]}>
+                        {money(item.price)}
+                      </ThemedText>
                     </View>
-                    <View style={styles.itemMetaRow}>
-                      <View style={[styles.categoryChip, { backgroundColor: softSurface, borderColor: border }]}>
-                        <ThemedText numberOfLines={1} style={[styles.categoryText, { color: muted }]}>
-                          {item.category}
-                        </ThemedText>
-                      </View>
-                    </View>
+
                     <View style={styles.itemBottom}>
-                      <View style={[styles.qtyPill, { borderColor: border, backgroundColor: softSurface }]}>
-                        <Pressable style={styles.qtyBtn}>
+                      <View
+                        style={[
+                          styles.qtyPill,
+                          { borderColor: luxuryPalette.line, backgroundColor: softSurface },
+                        ]}>
+                        <Pressable
+                          style={styles.qtyBtn}
+                          onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
                           <Ionicons name="remove" size={14} color={text} />
                         </Pressable>
                         <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
-                        <Pressable style={styles.qtyBtn}>
+                        <Pressable
+                          style={styles.qtyBtn}
+                          onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
                           <Ionicons name="add" size={14} color={text} />
                         </Pressable>
                       </View>
+
                       <View style={styles.metaWrap}>
                         <View style={styles.metaRow}>
                           <Ionicons
-                            name={isOutOfStock ? 'alert-circle-outline' : 'checkmark-circle-outline'}
-                            size={13}
-                            color={isOutOfStock ? danger : success}
+                            name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
+                            size={isOutOfStock ? 13 : 9}
+                            color={isOutOfStock ? danger : accent}
                           />
-                          <ThemedText style={[styles.stockText, { color: isOutOfStock ? danger : success }]}>
-                            {isOutOfStock ? 'Out of stock' : 'In stock'}
+                          <ThemedText
+                            style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
+                            {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
                           </ThemedText>
                         </View>
                       </View>
@@ -186,46 +253,61 @@ export default function CartScreen() {
           </View>
         )}
 
-        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: border }]}>
-          <ThemedText style={[styles.summaryTitle, { color: text }]}>Order Summary</ThemedText>
+        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+          <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
+          <ThemedText style={[styles.summaryTitle, { color: text }]}>Payment overview</ThemedText>
+
           <View style={styles.row}>
             <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
             <ThemedText style={[styles.rowValue, { color: text }]}>{money(subtotal)}</ThemedText>
           </View>
           <View style={styles.row}>
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Shipping</ThemedText>
-            <ThemedText style={[styles.rowValue, { color: text }]}>Free</ThemedText>
+            <ThemedText style={[styles.rowLabel, { color: muted }]}>Delivery</ThemedText>
+            <ThemedText style={[styles.rowValue, { color: text }]}>Included</ThemedText>
           </View>
           <View style={styles.row}>
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Promo (HERITAGE10)</ThemedText>
-            <ThemedText style={[styles.savingsValue, { color: success }]}>-{money(discount)}</ThemedText>
+            <ThemedText style={[styles.rowLabel, { color: muted }]}>Private client adjustment</ThemedText>
+            <ThemedText style={[styles.savingsValue, { color: accent }]}>-{money(discount)}</ThemedText>
           </View>
-          <View style={[styles.savingsRow, { backgroundColor: softSurface, borderColor: border }]}>
-            <Ionicons name="pricetag-outline" size={14} color={success} />
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Savings this order</ThemedText>
-            <ThemedText style={[styles.savingsValue, { color: success }]}>{money(discount)}</ThemedText>
+
+          <View
+            style={[
+              styles.savingsRow,
+              { backgroundColor: softSurface, borderColor: luxuryPalette.line },
+            ]}>
+            <Ionicons name="diamond-outline" size={14} color={accent} />
+            <ThemedText style={[styles.rowLabel, { color: muted }]}>Preferred pricing applied</ThemedText>
+            <ThemedText style={[styles.savingsValue, { color: accent }]}>{money(discount)}</ThemedText>
           </View>
+
           {(state?.session.confidence ?? 1) < 0.5 && (
-            <ThemedText style={[styles.errorText, { color: danger }]}>
-              AI note: you recently removed items. Review to avoid missing essentials.
+            <ThemedText style={[styles.errorText, { color: muted }]}>
+              Review your selection before payment to ensure nothing essential has been removed.
             </ThemedText>
           )}
-          <View style={[styles.totalRow, { borderColor: border }]}>
+
+          <View style={[styles.totalRow, { borderColor: luxuryPalette.line }]}>
             <ThemedText style={[styles.totalLabel, { color: text }]}>Total</ThemedText>
             <ThemedText style={[styles.totalValue, { color: text }]}>{money(total)}</ThemedText>
           </View>
-          <ThemedText style={[styles.taxNote, { color: muted }]}>Estimated taxes calculated at checkout.</ThemedText>
+          <ThemedText style={[styles.taxNote, { color: muted }]}>
+            Taxes and final delivery timing are confirmed at payment.
+          </ThemedText>
         </View>
       </ScrollView>
 
-      <View style={[styles.checkoutWrap, { borderColor: border, backgroundColor: card }]}>
+      <View
+        style={[
+          styles.checkoutWrap,
+          { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+        ]}>
         <View style={styles.checkoutMeta}>
-          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Pay now</ThemedText>
+          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Secure payment</ThemedText>
           <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
         </View>
-        <Pressable style={[styles.checkoutButton, { backgroundColor: text }]}>
+        <Pressable onPress={handleCheckout} style={[styles.checkoutButton, { backgroundColor: text }, luxuryShadow]}>
           <ThemedText lightColor={background} darkColor={background} style={styles.checkoutText}>
-            Checkout
+            Proceed to payment
           </ThemedText>
           <Ionicons name="arrow-forward" size={18} color={background} />
         </Pressable>
@@ -239,33 +321,66 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingHorizontal: 18,
-    paddingTop: 16,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
     paddingBottom: 176,
-    gap: 16,
+    gap: spacing.md,
+  },
+  atmosphereLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 240,
+  },
+  orbOne: {
+    position: 'absolute',
+    top: 6,
+    right: -60,
+    width: 180,
+    height: 180,
+    borderRadius: 180,
+    opacity: 0.42,
+  },
+  orbTwo: {
+    position: 'absolute',
+    top: 96,
+    left: -72,
+    width: 188,
+    height: 188,
+    borderRadius: 188,
+    opacity: 0.24,
   },
   topRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
   topCopy: {
-    gap: 2,
+    gap: 4,
+    maxWidth: 280,
+  },
+  kicker: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.4,
   },
   pageTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 30,
+    fontSize: 36,
     fontWeight: '600',
-    lineHeight: 34,
+    lineHeight: 40,
   },
   topSub: {
     fontFamily: Fonts.sans,
     fontSize: 13,
+    lineHeight: 20,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
     borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
@@ -275,94 +390,143 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
-    borderRadius: 12,
+    borderRadius: radius.md,
     paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingVertical: 10,
   },
   errorText: {
     fontFamily: Fonts.sans,
     fontSize: 12,
+    lineHeight: 18,
   },
   heroHeader: {
-    gap: 8,
-    borderRadius: 18,
+    gap: spacing.md,
+    borderRadius: radius.xl,
     borderWidth: 1,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
   },
-  kicker: {
+  headerFrame: {
+    gap: spacing.xs,
+  },
+  collectionLabel: {
     fontFamily: Fonts.sans,
     fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 0.9,
+    letterSpacing: 1.4,
   },
   mainHeading: {
     fontFamily: Fonts.serif,
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 34,
+    lineHeight: 38,
     letterSpacing: 0.2,
   },
+  metricRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  metricCard: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.md,
+    gap: spacing.xxs,
+  },
+  metricLabel: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  metricValue: {
+    fontFamily: Fonts.serif,
+    fontSize: 20,
+    lineHeight: 24,
+  },
   progressTrack: {
-    height: 7,
-    borderRadius: 999,
+    height: 4,
+    borderRadius: radius.pill,
     overflow: 'hidden',
-    marginTop: 2,
   },
   progressFill: {
     height: '100%',
-    borderRadius: 999,
+    borderRadius: radius.pill,
   },
   progressNote: {
     fontFamily: Fonts.sans,
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: 13,
+    lineHeight: 20,
   },
-  pillRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
+  serviceNote: {
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
   },
-  perkPill: {
-    marginTop: 2,
-    alignSelf: 'flex-start',
+  serviceNoteText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  noteRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
   },
-  perkText: {
+  noteText: {
+    flex: 1,
     fontFamily: Fonts.sans,
     fontSize: 12,
-    fontWeight: '500',
+    lineHeight: 18,
+  },
+  emptyCard: {
+    borderWidth: 1,
+    borderRadius: radius.xl,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  emptyTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 24,
+  },
+  emptyText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+    textAlign: 'center',
   },
   itemsWrap: {
-    gap: 12,
+    gap: spacing.md,
   },
   itemCard: {
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 12,
+    borderRadius: radius.xl,
+    padding: spacing.md,
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   itemImage: {
-    width: 84,
-    height: 94,
-    borderRadius: 12,
+    width: 92,
+    height: 112,
+    borderRadius: radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   itemMonogram: {
     fontFamily: Fonts.serif,
-    fontSize: 23,
+    fontSize: 24,
     letterSpacing: 0.8,
   },
   itemBody: {
     flex: 1,
-    gap: 8,
+    gap: spacing.xs,
+  },
+  itemCategoryMeta: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    letterSpacing: 1.1,
+    textTransform: 'uppercase',
   },
   itemTopLine: {
     flexDirection: 'row',
@@ -372,47 +536,31 @@ const styles = StyleSheet.create({
   itemName: {
     flex: 1,
     fontFamily: Fonts.serif,
-    fontSize: 15,
-    lineHeight: 20,
+    fontSize: 18,
+    lineHeight: 24,
   },
   itemPrice: {
     fontFamily: Fonts.sans,
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  itemMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  categoryChip: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    maxWidth: '82%',
-  },
-  categoryText: {
-    fontFamily: Fonts.sans,
-    fontSize: 11,
+    fontSize: 16,
+    fontWeight: '600',
   },
   itemBottom: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
+    gap: spacing.sm,
   },
   qtyPill: {
     borderWidth: 1,
-    borderRadius: 999,
+    borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
   },
   qtyBtn: {
-    width: 24,
-    height: 24,
+    width: 28,
+    height: 28,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -420,7 +568,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontWeight: '700',
     fontSize: 12,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
   },
   metaWrap: {
     alignItems: 'flex-end',
@@ -428,24 +576,22 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
   },
   stockText: {
     fontSize: 11,
     fontFamily: Fonts.sans,
-    fontWeight: '600',
+    letterSpacing: 0.4,
   },
   summaryCard: {
     borderWidth: 1,
-    borderRadius: 20,
-    padding: 16,
-    gap: 10,
-    marginTop: 4,
+    borderRadius: radius.xl,
+    padding: spacing.lg,
+    gap: spacing.sm,
   },
   summaryTitle: {
     fontFamily: Fonts.serif,
     fontSize: 24,
-    marginBottom: 4,
   },
   row: {
     flexDirection: 'row',
@@ -455,6 +601,7 @@ const styles = StyleSheet.create({
   rowLabel: {
     fontFamily: Fonts.sans,
     fontSize: 14,
+    lineHeight: 20,
   },
   rowValue: {
     fontFamily: Fonts.sans,
@@ -462,11 +609,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   savingsRow: {
-    marginTop: 2,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    borderRadius: radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -478,7 +624,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   totalRow: {
-    marginTop: 2,
+    marginTop: spacing.xs,
     paddingTop: 12,
     borderTopWidth: 1,
     flexDirection: 'row',
@@ -497,70 +643,49 @@ const styles = StyleSheet.create({
   taxNote: {
     fontFamily: Fonts.sans,
     fontSize: 11,
-  },
-  emptyCard: {
-    borderWidth: 1,
-    borderRadius: 18,
-    padding: 24,
-    alignItems: 'center',
-    gap: 8,
-  },
-  emptyTitle: {
-    fontFamily: Fonts.serif,
-    fontSize: 24,
-  },
-  emptyText: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 18,
-    textAlign: 'center',
-    maxWidth: 260,
+    lineHeight: 17,
   },
   checkoutWrap: {
     position: 'absolute',
-    left: 18,
-    right: 18,
-    bottom: 98,
+    left: 16,
+    right: 16,
+    bottom: 14,
     borderWidth: 1,
-    borderRadius: 18,
-    padding: 10,
+    borderRadius: radius.xl,
+    padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   checkoutMeta: {
     flex: 1,
-    paddingLeft: 6,
+    gap: 2,
   },
   checkoutCaption: {
     fontFamily: Fonts.sans,
     fontSize: 11,
+    letterSpacing: 1,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
   },
   checkoutAmount: {
     fontFamily: Fonts.serif,
-    fontSize: 23,
-    lineHeight: 28,
+    fontSize: 24,
+    fontWeight: '700',
   },
   checkoutButton: {
-    height: 50,
-    borderRadius: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
+    borderRadius: radius.lg,
     paddingHorizontal: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.16,
-    shadowRadius: 14,
-    elevation: 8,
+    paddingVertical: 14,
+    gap: 8,
   },
   checkoutText: {
     fontFamily: Fonts.sans,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: '700',
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
   },
 });
-

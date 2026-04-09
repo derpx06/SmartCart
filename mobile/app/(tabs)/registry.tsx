@@ -1,6 +1,15 @@
+import { useEffect } from 'react';
+
 import { TabDemoScreen } from '@/components/screens/TabDemoScreen';
-import { registryDemoContent } from '@/data/tabDemoContent';
+import { useTabContentStore } from '@/store/tab-content-store';
 
 export default function RegistryScreen() {
-  return <TabDemoScreen {...registryDemoContent} />;
+  const content = useTabContentStore((state) => state.registryContent);
+  const loadRegistryContent = useTabContentStore((state) => state.loadRegistryContent);
+
+  useEffect(() => {
+    void loadRegistryContent();
+  }, [loadRegistryContent]);
+
+  return <TabDemoScreen {...content} />;
 }

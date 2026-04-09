@@ -2,13 +2,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
+import { api } from '@/lib/api';
+import { useSmartCartStore } from '@/store/smart-cart-store';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -41,6 +43,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [selectedColorId, setSelectedColorId] = useState(product.selectedColorId);
   const [selectedSize, setSelectedSize] = useState(product.selectedSize);
   const [quantity, setQuantity] = useState(1);
+  const [saving, setSaving] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
 
   const selectedColor = product.colors.find((color) => color.id === selectedColorId);
@@ -56,6 +59,41 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
   const total = quantity * product.price;
 
+  const handleAddToCart = async () => {
+    if (!product.id) {
+      Alert.alert('Unavailable', 'This product is not synced with the backend yet.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await api.addToCart(product.id, quantity);
+      await useSmartCartStore.getState().refresh();
+      router.push('/(tabs)/cart');
+    } catch (err: any) {
+      Alert.alert('Cart update failed', err.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleWishlistToggle = async () => {
+    const next = !isWishlisted;
+    setIsWishlisted(next);
+
+    if (!next || !product.id) {
+      return;
+    }
+
+    try {
+      await api.addToWishlist(product.id);
+      Alert.alert('Saved', 'Added to wishlist.');
+    } catch (err: any) {
+      setIsWishlisted(false);
+      Alert.alert('Wishlist update failed', err.message || 'Please try again.');
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['left', 'right']}>
       <View style={[styles.root, { backgroundColor: palette.background }]}>
@@ -64,7 +102,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
           <View style={[styles.orbTwo, { backgroundColor: palette.orbTwo }]} />
         </View>
 
-        <View style={[styles.headerRow, { top: insets.top + spacing.xs }]}> 
+        <View style={[styles.headerRow, { top: insets.top + spacing.xs }]}>
           <Pressable
             onPress={() => router.back()}
             style={[
@@ -81,7 +119,9 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               <Ionicons name="share-social-outline" size={18} color={palette.text} />
             </Pressable>
             <Pressable
-              onPress={() => setIsWishlisted((prev) => !prev)}
+              onPress={() => {
+                void handleWishlistToggle();
+              }}
               style={[styles.headerButton, { backgroundColor: palette.elevated, borderColor: palette.line }]}
             >
               <Ionicons
@@ -128,7 +168,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                   <ThemedText style={[styles.badgeText, { color: palette.text }]}>{product.badge}</ThemedText>
                 </View>
 
-                <View style={[styles.photoCountPill, { backgroundColor: palette.categoryTint }]}> 
+                <View style={[styles.photoCountPill, { backgroundColor: palette.categoryTint }]}>
                   <ThemedText style={[styles.photoCountText, { color: palette.categoryLabel }]}>
                     {activeImageIndex + 1}/{product.images.length}
                   </ThemedText>
@@ -136,12 +176,8 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               </View>
 
               <View style={styles.heroBottomMeta}>
-                <ThemedText style={[styles.heroMetaTitle, { color: palette.heroTitle }]}>
-                  {product.name}
-                </ThemedText>
-                <ThemedText style={[styles.heroMetaSub, { color: palette.heroSubtitle }]}>
-                  Color: {selectedColorName}
-                </ThemedText>
+                <ThemedText style={[styles.heroMetaTitle, { color: palette.heroTitle }]}>{product.name}</ThemedText>
+                <ThemedText style={[styles.heroMetaSub, { color: palette.heroSubtitle }]}>Color: {selectedColorName}</ThemedText>
               </View>
             </View>
 
@@ -188,9 +224,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                   ))}
                 </View>
                 <ThemedText style={[styles.ratingValue, { color: palette.text }]}>{product.rating.toFixed(1)}</ThemedText>
-                <ThemedText style={[styles.ratingCount, { color: palette.mutedText }]}>
-                  ({product.reviewCount})
-                </ThemedText>
+                <ThemedText style={[styles.ratingCount, { color: palette.mutedText }]}>({product.reviewCount})</ThemedText>
               </View>
 
               <View style={[styles.stockChip, { backgroundColor: palette.subtleGlow }]}>
@@ -202,9 +236,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             <View style={styles.priceRow}>
               <ThemedText style={[styles.price, { color: palette.text }]}>{money(product.price)}</ThemedText>
               {product.originalPrice ? (
-                <ThemedText style={[styles.originalPrice, { color: palette.mutedText }]}>
-                  {money(product.originalPrice)}
-                </ThemedText>
+                <ThemedText style={[styles.originalPrice, { color: palette.mutedText }]}>{money(product.originalPrice)}</ThemedText>
               ) : null}
               {savingPercent ? (
                 <View style={[styles.savePill, { backgroundColor: palette.surface, borderColor: palette.line }]}>
@@ -378,7 +410,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
                 <ThemedText style={[styles.reviewTitle, { color: palette.text }]}>{review.title}</ThemedText>
                 <ThemedText style={[styles.reviewBody, { color: palette.mutedText }]}>{review.body}</ThemedText>
-                <ThemedText style={[styles.reviewAuthor, { color: palette.mutedText }]}> 
+                <ThemedText style={[styles.reviewAuthor, { color: palette.mutedText }]}>
                   {review.author} - {review.date}
                 </ThemedText>
               </View>
@@ -398,6 +430,11 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                       borderColor: palette.line,
                     },
                   ]}
+                  onPress={() => {
+                    if (related.slug) {
+                      router.push(`/product/${related.slug}`);
+                    }
+                  }}
                 >
                   <Image source={{ uri: related.image }} style={styles.relatedImage} contentFit="cover" />
                   <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
@@ -429,7 +466,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
           </View>
 
           <View style={styles.bottomRow}>
-            <View style={[styles.qtyCard, { borderColor: palette.line, backgroundColor: palette.surface }]}> 
+            <View style={[styles.qtyCard, { borderColor: palette.line, backgroundColor: palette.surface }]}>
               <Pressable style={styles.qtyButton} onPress={() => setQuantity((q) => Math.max(1, q - 1))}>
                 <Ionicons name="remove" size={18} color={palette.text} />
               </Pressable>
@@ -439,9 +476,17 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               </Pressable>
             </View>
 
-            <Pressable style={[styles.addButton, { backgroundColor: palette.text }]}> 
+            <Pressable
+              onPress={() => {
+                void handleAddToCart();
+              }}
+              disabled={saving}
+              style={[styles.addButton, { backgroundColor: palette.text, opacity: saving ? 0.75 : 1 }]}
+            >
               <Ionicons name="bag-add-outline" size={16} color={palette.elevated} />
-              <ThemedText style={[styles.addButtonText, { color: palette.elevated }]}>Add to cart</ThemedText>
+              <ThemedText style={[styles.addButtonText, { color: palette.elevated }]}>
+                {saving ? 'Adding...' : 'Add to cart'}
+              </ThemedText>
             </Pressable>
           </View>
         </View>

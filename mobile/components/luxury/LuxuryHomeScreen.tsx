@@ -1,9 +1,10 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   Animated,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -19,29 +20,30 @@ import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
-import {
-  bestsellers,
-  categories,
-  collections,
-  heroSlides,
-  ProductItem,
-  recommendedProducts,
-} from '@/data/luxuryHomeData';
+import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useHomeStore } from '@/store/home-store';
 
 export function LuxuryHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
-  const [loading, setLoading] = useState(true);
+  const loading = useHomeStore((state) => state.loading);
+  const refreshing = useHomeStore((state) => state.refreshing);
+  const homeData = useHomeStore((state) => state.homeData);
+  const loadHome = useHomeStore((state) => state.loadHome);
+  const refreshHome = useHomeStore((state) => state.refreshHome);
   const background = useThemeColor({}, 'background');
   const palette = useLuxuryPalette();
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1400);
-    return () => clearTimeout(timer);
-  }, []);
+    void loadHome();
+  }, [loadHome]);
+
+  const onRefresh = async () => {
+    await refreshHome();
+  };
 
   const headerBorder = scrollY.interpolate({
     inputRange: [0, 90],
@@ -55,8 +57,8 @@ export function LuxuryHomeScreen() {
     extrapolate: 'clamp',
   });
 
-  const openProduct = (_product: ProductItem) => {
-    router.push('/product/signature-enameled-cast-iron-dutch-oven');
+  const openProduct = (product: ProductItem) => {
+    router.push(`/product/${product.slug || 'signature-enameled-cast-iron-dutch-oven'}`);
   };
 
   return (
@@ -147,29 +149,37 @@ export function LuxuryHomeScreen() {
             [{ nativeEvent: { contentOffset: { y: scrollY } } }],
             { useNativeDriver: false },
           )}
-          scrollEventThrottle={16}>
+          scrollEventThrottle={16}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={palette.text}
+              colors={[palette.text]}
+            />
+          }>
           <View pointerEvents="none" style={styles.atmosphereLayer}>
             <View style={[styles.orbOne, { backgroundColor: palette.orbOne }]} />
             <View style={[styles.orbTwo, { backgroundColor: palette.orbTwo }]} />
           </View>
 
           <RevealSection style={styles.heroWrap}>
-            <HeroCarousel slides={heroSlides} loading={loading} />
+            <HeroCarousel slides={homeData.heroSlides} loading={loading} />
           </RevealSection>
 
           <RevealSection style={styles.sectionWrap} delay={70}>
-            <CategoryScroller categories={categories} loading={loading} />
+            <CategoryScroller categories={homeData.categories} loading={loading} />
           </RevealSection>
 
           <RevealSection style={styles.sectionWrap} delay={140}>
-            <EditorialCollections collections={collections} loading={loading} />
+            <EditorialCollections collections={homeData.collections} loading={loading} />
           </RevealSection>
 
           <RevealSection style={styles.sectionWrap} delay={210}>
             <ProductCarousel
               title="Bestsellers"
               caption="Most loved by modern hosts and home chefs."
-              products={bestsellers}
+              products={homeData.bestsellers}
               loading={loading}
               onPressProduct={openProduct}
             />
@@ -183,7 +193,7 @@ export function LuxuryHomeScreen() {
             <ProductCarousel
               title="For Your Kitchen"
               caption="Personalized picks based on your taste and recent browsing."
-              products={recommendedProducts}
+              products={homeData.recommendedProducts}
               loading={loading}
               onPressProduct={openProduct}
             />

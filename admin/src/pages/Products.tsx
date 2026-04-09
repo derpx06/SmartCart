@@ -63,6 +63,10 @@ export default function Products() {
     return { label: `${inventory} in stock`, tone: 'healthy' as const };
   };
 
+  const handleRemove = async (id: string) => {
+    await removeProduct(id);
+  };
+
   return (
     <div className="products-page">
       <div className="products-header">
@@ -220,7 +224,7 @@ export default function Products() {
                       </button>
                       <button
                         className="btn btn-danger products-icon-button"
-                        onClick={() => removeProduct(product.id)}
+                        onClick={() => void handleRemove(product.id)}
                         title={`Delete ${product.name}`}
                       >
                         <Trash2 size={16} />

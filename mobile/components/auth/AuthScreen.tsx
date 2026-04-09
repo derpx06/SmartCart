@@ -16,6 +16,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { useMobileAuthStore } from '@/store/auth-store';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -32,7 +33,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState('');
+  const [localError, setLocalError] = useState('');
+  const authError = useMobileAuthStore((state) => state.authError);
+  const submitting = useMobileAuthStore((state) => state.submitting);
+  const signIn = useMobileAuthStore((state) => state.signIn);
+  const signUp = useMobileAuthStore((state) => state.signUp);
+  const completeSocialAuth = useMobileAuthStore((state) => state.completeSocialAuth);
+  const clearError = useMobileAuthStore((state) => state.clearError);
 
   const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
@@ -47,18 +54,29 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     return '';
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     const message = validate();
     if (message) {
-      setError(message);
+      setLocalError(message);
+      clearError();
       return;
     }
-    setError('');
-    router.replace('/(tabs)');
+
+    setLocalError('');
+    if (isSignIn) {
+      await signIn(email.trim(), password);
+    } else {
+      await signUp(name.trim(), email.trim(), password);
+    }
+
+    if (!useMobileAuthStore.getState().authError) {
+      router.replace('/(tabs)');
+    }
   };
 
   const onSocial = () => {
-    setError('');
+    setLocalError('');
+    completeSocialAuth();
     router.replace('/(tabs)');
   };
 
@@ -130,10 +148,14 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               </View>
             </View>
 
-            {error ? <ThemedText style={[styles.error, { color: text }]}>{error}</ThemedText> : null}
+            {localError || authError ? (
+              <ThemedText style={[styles.error, { color: text }]}>{localError || authError}</ThemedText>
+            ) : null}
 
             <Pressable onPress={onSubmit} style={[styles.signInButton, { backgroundColor: text }]}>
-              <ThemedText style={[styles.signInText, { color: background }]}>{isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}</ThemedText>
+              <ThemedText style={[styles.signInText, { color: background }]}>
+                {submitting ? 'PLEASE WAIT' : isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}
+              </ThemedText>
               <Ionicons name="arrow-forward" size={14} color={background} />
             </Pressable>
 
