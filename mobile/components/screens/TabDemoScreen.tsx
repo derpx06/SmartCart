@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
-import { palette, radius, spacing } from '@/components/luxury/design';
+import { radius, spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 
 type DemoItem = {
