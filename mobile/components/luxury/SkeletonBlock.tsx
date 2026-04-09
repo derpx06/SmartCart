@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleProp, ViewStyle } from 'react-native';
 
-import { useLuxuryPalette } from '@/components/luxury/design';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type SkeletonBlockProps = {
   width?: number | `${number}%`;
@@ -17,7 +17,7 @@ export function SkeletonBlock({
   style,
 }: SkeletonBlockProps) {
   const opacity = useRef(new Animated.Value(0.45)).current;
-  const luxuryPalette = useLuxuryPalette();
+  const border = useThemeColor({}, 'border');
 
   useEffect(() => {
     const animation = Animated.loop(
@@ -47,7 +47,7 @@ export function SkeletonBlock({
           width,
           height,
           borderRadius,
-          backgroundColor: luxuryPalette.skeleton,
+          backgroundColor: border,
           opacity,
         },
         style,

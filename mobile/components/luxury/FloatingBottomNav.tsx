@@ -4,8 +4,9 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 const items = [
   { key: 'home', icon: 'home-outline', label: 'Home' },
@@ -21,7 +22,9 @@ type FloatingBottomNavProps = {
 
 export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
-  const luxuryPalette = useLuxuryPalette();
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom + 8, 18) }]} pointerEvents="box-none">
@@ -29,9 +32,10 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
         style={[
           styles.nav,
           {
-            backgroundColor: luxuryPalette.navBg,
-            borderColor: luxuryPalette.navBorder,
+            backgroundColor: card,
+            borderColor: border,
           },
+          luxuryShadow,
         ]}>
         {items.map((item) => {
           const active = item.key === activeKey;
@@ -42,18 +46,18 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
                 style={[
                   styles.item,
                   active && styles.itemActive,
-                  active && { backgroundColor: luxuryPalette.navActiveBg },
+                  active && { backgroundColor: border },
                 ]}>
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={active ? luxuryPalette.navTextActive : luxuryPalette.navText}
+                  color={active ? card : mutedText}
                 />
                 <Text
                   style={[
                     styles.label,
                     active && styles.labelActive,
-                    { color: active ? luxuryPalette.navTextActive : luxuryPalette.navText },
+                    { color: active ? card : mutedText },
                   ]}>
                   {item.label}
                 </Text>
@@ -79,10 +83,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    backgroundColor: '#FFFDF9',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#ECE1D2',
-    ...luxuryShadow,
+    borderColor: 'transparent',
   },
   itemWrap: {
     flex: 1,
@@ -95,7 +98,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   itemActive: {
-    backgroundColor: '#F4EBDC',
+    backgroundColor: 'transparent',
   },
   label: {
     fontFamily: Fonts.sans,
@@ -103,6 +106,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   labelActive: {
-    color: '#201C17',
   },
 });

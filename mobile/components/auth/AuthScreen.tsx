@@ -15,8 +15,9 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SocialAuthButton } from '@/components/auth/SocialAuthButton';
-import { authPalette, authRadius } from '@/components/auth/auth-theme';
+import { authRadius } from '@/components/auth/auth-theme';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -35,6 +36,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+
+  const background = useThemeColor({}, 'background');
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   const titleSize = useMemo(() => (isCompact ? 29 : 33), [isCompact]);
   const titleLineHeight = useMemo(() => (isCompact ? 34 : 38), [isCompact]);
@@ -80,13 +87,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
-        style={styles.root}
+        style={[styles.root, { backgroundColor: background }]}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
-        <View style={styles.orbOne} />
-        <View style={styles.orbTwo} />
+        <View style={[styles.orbOne, { backgroundColor: text }]} />
+        <View style={[styles.orbTwo, { backgroundColor: text }]} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
@@ -100,15 +107,15 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             },
           ]}>
           <View style={styles.logoRow}>
-            <View style={styles.logoDot} />
-            <Text style={styles.brand}>AURELIA HOME</Text>
+            <View style={[styles.logoDot, { backgroundColor: text, borderColor: background }]} />
+            <Text style={[styles.brand, { color: text }]}>AURELIA HOME</Text>
           </View>
 
-          <View style={[styles.card, { padding: cardPadding }]}>
-            <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLineHeight }]}>
+          <View style={[styles.card, { padding: cardPadding, backgroundColor: card, borderColor: border }]}>
+            <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLineHeight, color: text }]}>
               {isSignIn ? 'Welcome Back' : 'Create Account'}
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: mutedText }]}>
               {isSignIn
                 ? 'Sign in to continue your curated kitchen and home journey.'
                 : 'Join to save favorites, track orders, and unlock personalized edits.'}
@@ -116,13 +123,13 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 
             {!isSignIn ? (
               <View style={styles.fieldWrap}>
-                <Text style={styles.fieldLabel}>Name</Text>
+                <Text style={[styles.fieldLabel, { color: text }]}>Name</Text>
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  style={styles.input}
+                  style={[styles.input, { backgroundColor: card, borderColor: border, color: text }]}
                   placeholder="Enter your full name"
-                  placeholderTextColor="#938A7D"
+                  placeholderTextColor={mutedText}
                   autoCapitalize="words"
                   returnKeyType="next"
                 />
@@ -130,82 +137,84 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             ) : null}
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>Email</Text>
+              <Text style={[styles.fieldLabel, { color: text }]}>Email</Text>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                style={styles.input}
+                style={[styles.input, { backgroundColor: card, borderColor: border, color: text }]}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
                 placeholder="Enter your email"
-                placeholderTextColor="#938A7D"
+                placeholderTextColor={mutedText}
                 returnKeyType="next"
                 textContentType="emailAddress"
               />
             </View>
 
             <View style={styles.fieldWrap}>
-              <Text style={styles.fieldLabel}>Password</Text>
-              <View style={styles.passwordWrap}>
+              <Text style={[styles.fieldLabel, { color: text }]}>Password</Text>
+              <View style={[styles.passwordWrap, { backgroundColor: card, borderColor: border }]}>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  style={styles.passwordInput}
+                  style={[styles.passwordInput, { color: text }]}
                   secureTextEntry={!showPassword}
                   placeholder="Enter your password"
-                  placeholderTextColor="#938A7D"
+                  placeholderTextColor={mutedText}
                   returnKeyType="done"
                   textContentType="password"
                 />
                 <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#7E776C" />
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={mutedText} />
                 </Pressable>
               </View>
             </View>
 
             {isSignIn ? (
               <Pressable>
-                <Text style={styles.forgotPassword}>Forgot password?</Text>
+                <Text style={[styles.forgotPassword, { color: mutedText }]}>Forgot password?</Text>
               </Pressable>
             ) : null}
 
-            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+            {error ? <Text style={[styles.errorText, { color: text }]}>{error}</Text> : null}
 
             <Pressable
               onPress={handlePrimaryAction}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}>
-              <Text style={styles.primaryButtonText}>{isSignIn ? 'Sign In' : 'Create Account'}</Text>
+              style={({ pressed }) => [
+                styles.primaryButton,
+                { backgroundColor: text, borderColor: border },
+                pressed && styles.primaryButtonPressed,
+              ]}>
+              <Text style={[styles.primaryButtonText, { color: background }]}>
+                {isSignIn ? 'Sign In' : 'Create Account'}
+              </Text>
             </Pressable>
 
             <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
+              <View style={[styles.dividerLine, { backgroundColor: border }]} />
+              <Text style={[styles.dividerText, { color: mutedText }]}>or continue with</Text>
+              <View style={[styles.dividerLine, { backgroundColor: border }]} />
             </View>
 
             <SocialAuthButton provider="google" onPress={handleSocialAuth} />
-            <SocialAuthButton
-              provider="apple"
-              disabled={Platform.OS !== 'ios'}
-              onPress={handleSocialAuth}
-            />
+            <SocialAuthButton provider="apple" disabled={Platform.OS !== 'ios'} onPress={handleSocialAuth} />
 
             <View style={styles.switchRow}>
-              <Text style={styles.switchText}>
+              <Text style={[styles.switchText, { color: mutedText }]}>
                 {isSignIn ? "Don't have an account?" : 'Already have an account?'}
               </Text>
               <Link href={isSignIn ? '/(auth)/sign-up' : '/(auth)/sign-in'} asChild>
                 <Pressable>
-                  <Text style={styles.switchAction}>{isSignIn ? 'Sign Up' : 'Sign In'}</Text>
+                  <Text style={[styles.switchAction, { color: text }]}>{isSignIn ? 'Sign Up' : 'Sign In'}</Text>
                 </Pressable>
               </Link>
             </View>
           </View>
 
           <Pressable onPress={handleBackHome} style={styles.backHome}>
-            <Ionicons name="chevron-back" size={16} color={authPalette.muted} />
-            <Text style={styles.backHomeText}>Back to Home</Text>
+            <Ionicons name="chevron-back" size={16} color={mutedText} />
+            <Text style={[styles.backHomeText, { color: mutedText }]}>Back to Home</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -216,30 +225,27 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: authPalette.background,
   },
   root: {
     flex: 1,
-    backgroundColor: authPalette.background,
   },
   orbOne: {
     position: 'absolute',
     width: 260,
     height: 260,
     borderRadius: 260,
-    backgroundColor: '#F2E7D7',
     top: -120,
     right: -80,
-    opacity: 0.55,
+    opacity: 0.06,
   },
   orbTwo: {
     position: 'absolute',
     width: 200,
     height: 200,
     borderRadius: 200,
-    backgroundColor: '#F6EEE2',
     bottom: 30,
     left: -110,
+    opacity: 0.05,
   },
   scrollContent: {
     flexGrow: 1,
@@ -257,42 +263,34 @@ const styles = StyleSheet.create({
     width: 15,
     height: 15,
     borderRadius: 15,
-    backgroundColor: authPalette.gold,
     borderWidth: 3,
-    borderColor: '#EADCC7',
   },
   brand: {
     fontFamily: Fonts.serif,
     fontSize: 16,
     letterSpacing: 1,
-    color: authPalette.text,
   },
   card: {
     width: '100%',
     maxWidth: 460,
     alignSelf: 'center',
-    backgroundColor: authPalette.card,
     borderWidth: 1,
-    borderColor: authPalette.border,
     borderRadius: authRadius.card,
   },
   title: {
     fontFamily: Fonts.serif,
-    color: authPalette.text,
     marginBottom: 10,
   },
   subtitle: {
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 21,
-    color: authPalette.muted,
     marginBottom: 20,
   },
   fieldWrap: {
     marginBottom: 14,
   },
   fieldLabel: {
-    color: authPalette.text,
     fontFamily: Fonts.sans,
     fontSize: 13,
     marginBottom: 6,
@@ -301,40 +299,32 @@ const styles = StyleSheet.create({
   input: {
     height: 50,
     borderRadius: authRadius.field,
-    backgroundColor: authPalette.field,
     borderWidth: 1,
-    borderColor: '#E5DAC9',
     paddingHorizontal: 14,
-    color: authPalette.text,
     fontFamily: Fonts.sans,
     fontSize: 14,
   },
   passwordWrap: {
     height: 50,
     borderRadius: authRadius.field,
-    backgroundColor: authPalette.field,
     borderWidth: 1,
-    borderColor: '#E5DAC9',
     paddingHorizontal: 14,
     flexDirection: 'row',
     alignItems: 'center',
   },
   passwordInput: {
     flex: 1,
-    color: authPalette.text,
     fontFamily: Fonts.sans,
     fontSize: 14,
   },
   forgotPassword: {
     alignSelf: 'flex-end',
-    color: '#6E665A',
     fontFamily: Fonts.sans,
     fontWeight: '600',
     fontSize: 12,
     marginBottom: 12,
   },
   errorText: {
-    color: '#9C4B3B',
     fontFamily: Fonts.sans,
     fontSize: 12,
     marginBottom: 10,
@@ -342,7 +332,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     height: 52,
     borderRadius: authRadius.button,
-    backgroundColor: authPalette.primary,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
@@ -351,7 +341,6 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   primaryButtonText: {
-    color: authPalette.primaryText,
     fontFamily: Fonts.sans,
     fontWeight: '700',
     fontSize: 15,
@@ -367,12 +356,10 @@ const styles = StyleSheet.create({
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E7DDCF',
   },
   dividerText: {
     fontFamily: Fonts.sans,
     fontSize: 12,
-    color: authPalette.muted,
   },
   switchRow: {
     marginTop: 18,
@@ -382,12 +369,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   switchText: {
-    color: authPalette.muted,
     fontSize: 13,
     fontFamily: Fonts.sans,
   },
   switchAction: {
-    color: authPalette.text,
     fontSize: 13,
     fontFamily: Fonts.sans,
     fontWeight: '700',
@@ -402,7 +387,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
   },
   backHomeText: {
-    color: authPalette.muted,
     fontFamily: Fonts.sans,
     fontSize: 13,
   },

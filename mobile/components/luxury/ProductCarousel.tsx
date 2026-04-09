@@ -4,11 +4,12 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type ProductCarouselProps = {
   title: string;
@@ -23,7 +24,11 @@ export function ProductCarousel({
   products,
   loading = false,
 }: ProductCarouselProps) {
-  const luxuryPalette = useLuxuryPalette();
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
+  const background = useThemeColor({}, 'background');
 
   return (
     <View>
@@ -32,7 +37,7 @@ export function ProductCarousel({
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.skeletonRow}>
           {[1, 2].map((item) => (
-            <View key={item} style={[styles.skeletonCard, { backgroundColor: luxuryPalette.elevated }]}>
+            <View key={item} style={[styles.skeletonCard, { backgroundColor: card, borderColor: border }]}>
               <SkeletonBlock height={145} borderRadius={radius.md} />
               <SkeletonBlock height={16} width="80%" style={styles.skeletonLine} />
               <SkeletonBlock height={16} width="42%" style={styles.skeletonLine} />
@@ -50,9 +55,10 @@ export function ProductCarousel({
                 style={[
                   styles.card,
                   {
-                    backgroundColor: luxuryPalette.elevated,
-                    borderColor: luxuryPalette.line,
+                    backgroundColor: card,
+                    borderColor: border,
                   },
+                  luxuryShadow,
                 ]}>
                 <View style={styles.imageWrap}>
                   <Image
@@ -61,18 +67,18 @@ export function ProductCarousel({
                     contentFit="cover"
                     transition={450}
                   />
-                  <View style={[styles.wishlistChip, { backgroundColor: luxuryPalette.wishlistChip }]}>
-                    <Ionicons name="heart-outline" size={16} color={luxuryPalette.text} />
+                  <View style={[styles.wishlistChip, { backgroundColor: background, borderColor: border }]}>
+                    <Ionicons name="heart-outline" size={16} color={text} />
                   </View>
                 </View>
                 <View style={styles.content}>
-                  <Text style={[styles.name, { color: luxuryPalette.text }]} numberOfLines={2}>
+                  <Text style={[styles.name, { color: text }]} numberOfLines={2}>
                     {product.name}
                   </Text>
-                  <Text style={[styles.price, { color: luxuryPalette.text }]}>{product.price}</Text>
+                  <Text style={[styles.price, { color: text }]}>{product.price}</Text>
                   <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={13} color={luxuryPalette.gold} />
-                    <Text style={[styles.rating, { color: luxuryPalette.mutedText }]}>
+                    <Ionicons name="star" size={13} color={text} />
+                    <Text style={[styles.rating, { color: mutedText }]}>
                       {product.rating.toFixed(1)}
                     </Text>
                   </View>
@@ -95,7 +101,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'transparent',
   },
   skeletonLine: {
     marginTop: spacing.xs,
@@ -109,11 +117,10 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: radius.lg,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: '#F0E5D8',
-    ...luxuryShadow,
+    borderColor: 'transparent',
   },
   imageWrap: {
     height: 145,
@@ -132,7 +139,9 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 30,
-    backgroundColor: '#FFF8EE',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
   },

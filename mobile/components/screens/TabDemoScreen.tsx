@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
   headerCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
     padding: spacing.lg,
     gap: spacing.xs,
   },
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     marginBottom: spacing.xxs,
   },
   title: {
@@ -88,7 +88,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 21,
-    color: '#000',
   },
   section: {
     gap: spacing.sm,
@@ -96,7 +95,6 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: Fonts.sans,
     fontSize: 13,
-    color: '#000',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     fontWeight: '700',
@@ -104,8 +102,8 @@ const styles = StyleSheet.create({
   itemCard: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#000',
-    backgroundColor: '#fff',
+    borderColor: 'transparent',
+    backgroundColor: 'transparent',
     padding: spacing.md,
     gap: spacing.xxs,
   },
@@ -118,6 +116,5 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 20,
-    color: '#000',
   },
 });

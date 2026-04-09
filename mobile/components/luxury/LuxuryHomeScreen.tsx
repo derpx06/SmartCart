@@ -18,7 +18,7 @@ import { HeroCarousel } from '@/components/luxury/HeroCarousel';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import {
   bestsellers,
   categories,
@@ -27,18 +27,18 @@ import {
   recommendedProducts,
 } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 export function LuxuryHomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const [loading, setLoading] = useState(true);
-  const luxuryPalette = useLuxuryPalette();
-  const background = luxuryPalette.background;
-  const border = luxuryPalette.line;
-  const card = luxuryPalette.elevated;
-  const text = luxuryPalette.text;
-  const mutedText = luxuryPalette.mutedText;
+  const background = useThemeColor({}, 'background');
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1400);
@@ -47,7 +47,7 @@ export function LuxuryHomeScreen() {
 
   const headerBackground = scrollY.interpolate({
     inputRange: [0, 90],
-    outputRange: ['rgba(0,0,0,0)', background],
+    outputRange: ['transparent', background],
     extrapolate: 'clamp',
   });
 
@@ -66,8 +66,8 @@ export function LuxuryHomeScreen() {
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
       <View style={[styles.root, { backgroundColor: background }]}>
-        <View style={[styles.bgOrbOne, { backgroundColor: luxuryPalette.orbOne }]} />
-        <View style={[styles.bgOrbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
+        <View style={[styles.bgOrbOne, { backgroundColor: text }]} />
+        <View style={[styles.bgOrbTwo, { backgroundColor: text }]} />
 
         <Animated.View
           style={[
@@ -77,6 +77,7 @@ export function LuxuryHomeScreen() {
               backgroundColor: headerBackground,
               borderBottomColor: border,
               borderBottomWidth: headerBorder,
+              shadowColor: text,
               shadowOpacity: headerShadow,
             },
           ]}>
@@ -85,7 +86,7 @@ export function LuxuryHomeScreen() {
               <View
                 style={[
                   styles.logoDot,
-                  { backgroundColor: luxuryPalette.gold, borderColor: luxuryPalette.champagne },
+                  { backgroundColor: text, borderColor: background },
                 ]}
               />
               <Text style={[styles.brand, { color: text }]}>AURELIA HOME</Text>
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
     width: 260,
     height: 260,
     borderRadius: 260,
-    opacity: 0.46,
+    opacity: 0.05,
   },
   bgOrbTwo: {
     position: 'absolute',
@@ -192,7 +193,7 @@ const styles = StyleSheet.create({
     width: 250,
     height: 250,
     borderRadius: 250,
-    opacity: 0.37,
+    opacity: 0.04,
   },
   stickyHeader: {
     position: 'absolute',
@@ -203,7 +204,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.sm,
     borderBottomWidth: 0,
-    shadowColor: '#000',
+    shadowColor: 'transparent',
     shadowOffset: { width: 0, height: 14 },
     shadowRadius: 18,
     elevation: 10,
@@ -223,9 +224,9 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 16,
-    backgroundColor: '#B7925B',
+    backgroundColor: 'transparent',
     borderWidth: 4,
-    borderColor: '#EADCC6',
+    borderColor: 'transparent',
   },
   brand: {
     fontFamily: Fonts.serif,
