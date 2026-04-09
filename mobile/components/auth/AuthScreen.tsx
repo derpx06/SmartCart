@@ -1,21 +1,19 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Link, useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { SocialAuthButton } from '@/components/auth/SocialAuthButton';
-import { authRadius } from '@/components/auth/auth-theme';
+import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
@@ -28,13 +26,12 @@ type AuthScreenProps = {
 export function AuthScreen({ mode }: AuthScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
   const isSignIn = mode === 'sign-in';
-  const isCompact = width < 360;
-  const [showPassword, setShowPassword] = useState(false);
+
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const background = useThemeColor({}, 'background');
@@ -43,45 +40,24 @@ export function AuthScreen({ mode }: AuthScreenProps) {
   const text = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
 
-  const titleSize = useMemo(() => (isCompact ? 29 : 33), [isCompact]);
-  const titleLineHeight = useMemo(() => (isCompact ? 34 : 38), [isCompact]);
-  const horizontalPadding = isCompact ? 14 : 22;
-  const cardPadding = isCompact ? 16 : 20;
-
   const validate = () => {
-    if (!isSignIn && !name.trim()) {
-      return 'Please enter your name.';
-    }
-
-    if (!email.trim()) {
-      return 'Please enter your email.';
-    }
-
-    if (!password.trim()) {
-      return 'Please enter your password.';
-    }
-
+    if (!isSignIn && !name.trim()) return 'Please enter your name.';
+    if (!email.trim()) return 'Please enter your email.';
+    if (!password.trim()) return 'Please enter your password.';
     return '';
   };
 
-  const handlePrimaryAction = () => {
+  const onSubmit = () => {
     const message = validate();
-
     if (message) {
       setError(message);
       return;
     }
-
     setError('');
     router.replace('/(tabs)');
   };
 
-  const handleSocialAuth = () => {
-    setError('');
-    router.replace('/(tabs)');
-  };
-
-  const handleBackHome = () => {
+  const onSocial = () => {
     setError('');
     router.replace('/(tabs)');
   };
@@ -90,132 +66,126 @@ export function AuthScreen({ mode }: AuthScreenProps) {
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
       <KeyboardAvoidingView
         style={[styles.root, { backgroundColor: background }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
-        <View style={[styles.orbOne, { backgroundColor: text }]} />
-        <View style={[styles.orbTwo, { backgroundColor: text }]} />
-
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
-          contentContainerStyle={[
-            styles.scrollContent,
-            {
-              paddingHorizontal: horizontalPadding,
-              paddingBottom: Math.max(insets.bottom + 16, 24),
-            },
-          ]}>
-          <View style={styles.logoRow}>
-            <View style={[styles.logoDot, { backgroundColor: text, borderColor: background }]} />
-            <Text style={[styles.brand, { color: text }]}>AURELIA HOME</Text>
-          </View>
-
-          <View style={[styles.card, { padding: cardPadding, backgroundColor: card, borderColor: border }]}>
-            <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLineHeight, color: text }]}>
-              {isSignIn ? 'Welcome Back' : 'Create Account'}
-            </Text>
-            <Text style={[styles.subtitle, { color: mutedText }]}>
-              {isSignIn
-                ? 'Sign in to continue your curated kitchen and home journey.'
-                : 'Join to save favorites, track orders, and unlock personalized edits.'}
-            </Text>
+          contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 18, 24) }}>
+          <View style={styles.content}>
+            <View style={styles.headerBlock}>
+              <ThemedText style={styles.title}>{isSignIn ? 'Welcome Back' : 'Create Account'}</ThemedText>
+              <ThemedText style={[styles.subtitle, { color: mutedText }]}>
+                {isSignIn
+                  ? 'Enter your credentials to access your curated collection.'
+                  : 'Enter your details to create your curated account.'}
+              </ThemedText>
+            </View>
 
             {!isSignIn ? (
               <View style={styles.fieldWrap}>
-                <Text style={[styles.fieldLabel, { color: text }]}>Name</Text>
+                <ThemedText style={[styles.label, { color: mutedText }]}>NAME</ThemedText>
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  style={[styles.input, { backgroundColor: card, borderColor: border, color: text }]}
-                  placeholder="Enter your full name"
+                  style={[styles.input, { borderBottomColor: border, color: text }]}
+                  placeholder="your full name"
                   placeholderTextColor={mutedText}
                   autoCapitalize="words"
-                  returnKeyType="next"
                 />
               </View>
             ) : null}
 
             <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: text }]}>Email</Text>
+              <ThemedText style={[styles.label, { color: mutedText }]}>EMAIL ADDRESS</ThemedText>
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                style={[styles.input, { backgroundColor: card, borderColor: border, color: text }]}
+                style={[styles.input, { borderBottomColor: border, color: text }]}
+                placeholder="chef@atelier.com"
+                placeholderTextColor={mutedText}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
-                placeholder="Enter your email"
-                placeholderTextColor={mutedText}
-                returnKeyType="next"
-                textContentType="emailAddress"
               />
             </View>
 
             <View style={styles.fieldWrap}>
-              <Text style={[styles.fieldLabel, { color: text }]}>Password</Text>
-              <View style={[styles.passwordWrap, { backgroundColor: card, borderColor: border }]}>
+              <View style={styles.labelRow}>
+                <ThemedText style={[styles.label, { color: mutedText }]}>PASSWORD</ThemedText>
+                {isSignIn ? <ThemedText style={[styles.forgot, { color: mutedText }]}>FORGOT PASSWORD?</ThemedText> : null}
+              </View>
+              <View style={[styles.passwordWrap, { borderBottomColor: border }]}>
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
-                  style={[styles.passwordInput, { color: text }]}
-                  secureTextEntry={!showPassword}
-                  placeholder="Enter your password"
+                  style={[styles.input, styles.passwordInput, { borderBottomWidth: 0, color: text }]}
+                  placeholder="••••••••"
                   placeholderTextColor={mutedText}
-                  returnKeyType="done"
-                  textContentType="password"
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
                 />
-                <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
-                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color={mutedText} />
+                <Pressable onPress={() => setShowPassword((v) => !v)} hitSlop={8}>
+                  <Feather name={showPassword ? 'eye-off' : 'eye'} size={17} color={mutedText} />
                 </Pressable>
               </View>
             </View>
 
-            {isSignIn ? (
-              <Pressable>
-                <Text style={[styles.forgotPassword, { color: mutedText }]}>Forgot password?</Text>
-              </Pressable>
-            ) : null}
+            {error ? <ThemedText style={[styles.error, { color: text }]}>{error}</ThemedText> : null}
 
-            {error ? <Text style={[styles.errorText, { color: text }]}>{error}</Text> : null}
-
-            <Pressable
-              onPress={handlePrimaryAction}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                { backgroundColor: text, borderColor: border },
-                pressed && styles.primaryButtonPressed,
-              ]}>
-              <Text style={[styles.primaryButtonText, { color: background }]}>
-                {isSignIn ? 'Sign In' : 'Create Account'}
-              </Text>
+            <Pressable onPress={onSubmit} style={[styles.signInButton, { backgroundColor: text }]}>
+              <ThemedText style={[styles.signInText, { color: background }]}>{isSignIn ? 'SIGN IN' : 'CREATE ACCOUNT'}</ThemedText>
+              <Ionicons name="arrow-forward" size={14} color={background} />
             </Pressable>
 
             <View style={styles.dividerRow}>
-              <View style={[styles.dividerLine, { backgroundColor: border }]} />
-              <Text style={[styles.dividerText, { color: mutedText }]}>or continue with</Text>
-              <View style={[styles.dividerLine, { backgroundColor: border }]} />
+              <View style={[styles.divider, { backgroundColor: border }]} />
+              <ThemedText style={[styles.dividerText, { color: mutedText }]}>OR CONTINUE WITH</ThemedText>
+              <View style={[styles.divider, { backgroundColor: border }]} />
             </View>
 
-            <SocialAuthButton provider="google" onPress={handleSocialAuth} />
-            <SocialAuthButton provider="apple" disabled={Platform.OS !== 'ios'} onPress={handleSocialAuth} />
+            <View style={styles.socialRow}>
+              <Pressable onPress={onSocial} style={[styles.socialButton, { backgroundColor: card, borderColor: border }]}>
+                <Image
+                  source={{ uri: 'https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg' }}
+                  style={styles.googleLogo}
+                  contentFit="contain"
+                />
+                <ThemedText style={styles.socialText}>GOOGLE</ThemedText>
+              </Pressable>
+              <Pressable onPress={onSocial} style={[styles.socialButton, { backgroundColor: card, borderColor: border }]}>
+                <Ionicons name="logo-apple" size={18} color={text} />
+                <ThemedText style={styles.socialText}>APPLE</ThemedText>
+              </Pressable>
+            </View>
 
-            <View style={styles.switchRow}>
-              <Text style={[styles.switchText, { color: mutedText }]}>
-                {isSignIn ? "Don't have an account?" : 'Already have an account?'}
-              </Text>
+            <View style={styles.inviteRow}>
+              <ThemedText style={[styles.small, { color: mutedText }]}>
+                {isSignIn ? 'New to the Atelier?' : 'Already with us?'}
+              </ThemedText>
               <Link href={isSignIn ? '/(auth)/sign-up' : '/(auth)/sign-in'} asChild>
                 <Pressable>
-                  <Text style={[styles.switchAction, { color: text }]}>{isSignIn ? 'Sign Up' : 'Sign In'}</Text>
+                  <ThemedText style={styles.inviteAction}>{isSignIn ? 'Request Invitation' : 'Sign In'}</ThemedText>
                 </Pressable>
               </Link>
             </View>
+
+            <Pressable onPress={() => router.replace('/(tabs)')} style={styles.backRow}>
+              <Ionicons name="arrow-back" size={12} color={mutedText} />
+              <ThemedText style={[styles.backText, { color: mutedText }]}>BACK TO HOME</ThemedText>
+            </Pressable>
           </View>
 
-          <Pressable onPress={handleBackHome} style={styles.backHome}>
-            <Ionicons name="chevron-back" size={16} color={mutedText} />
-            <Text style={[styles.backHomeText, { color: mutedText }]}>Back to Home</Text>
-          </Pressable>
+          <View style={[styles.footer, { backgroundColor: card, borderTopColor: border }]}> 
+            <ThemedText style={styles.footerBrand}>THE CULINARY ATELIER</ThemedText>
+            <View style={styles.footerLinks}>
+              <ThemedText style={[styles.footerLink, { color: mutedText }]}>PRIVACY</ThemedText>
+              <ThemedText style={[styles.footerLink, { color: mutedText }]}>TERMS</ThemedText>
+              <ThemedText style={[styles.footerLink, { color: mutedText }]}>SUPPORT</ThemedText>
+            </View>
+            <ThemedText style={[styles.footerCopy, { color: mutedText }]}>
+              © 2024 THE CULINARY ATELIER. CRAFTED FOR THE MODERN KITCHEN.
+            </ThemedText>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -223,171 +193,178 @@ export function AuthScreen({ mode }: AuthScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
+  safeArea: { flex: 1 },
+  root: { flex: 1 },
+  content: {
+    paddingHorizontal: 24,
+    paddingTop: 24,
   },
-  root: {
-    flex: 1,
-  },
-  orbOne: {
-    position: 'absolute',
-    width: 260,
-    height: 260,
-    borderRadius: 260,
-    top: -120,
-    right: -80,
-    opacity: 0.06,
-  },
-  orbTwo: {
-    position: 'absolute',
-    width: 200,
-    height: 200,
-    borderRadius: 200,
-    bottom: 30,
-    left: -110,
-    opacity: 0.05,
-  },
-  scrollContent: {
-    flexGrow: 1,
-    paddingTop: 16,
-  },
-  logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 6,
-    marginBottom: 24,
-    gap: 8,
-  },
-  logoDot: {
-    width: 15,
-    height: 15,
-    borderRadius: 15,
-    borderWidth: 3,
-  },
-  brand: {
-    fontFamily: Fonts.serif,
-    fontSize: 16,
-    letterSpacing: 1,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 460,
-    alignSelf: 'center',
-    borderWidth: 1,
-    borderRadius: authRadius.card,
-  },
+  headerBlock: { marginBottom: 26 },
   title: {
     fontFamily: Fonts.serif,
-    marginBottom: 10,
+    fontSize: 40,
+    lineHeight: 44,
+    marginBottom: 12,
+    fontWeight: '700',
   },
   subtitle: {
     fontFamily: Fonts.sans,
-    fontSize: 14,
-    lineHeight: 21,
-    marginBottom: 20,
+    fontSize: 15,
+    lineHeight: 24,
   },
-  fieldWrap: {
-    marginBottom: 14,
-  },
-  fieldLabel: {
+  fieldWrap: { marginBottom: 20 },
+  labelRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  label: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
-    marginBottom: 6,
-    fontWeight: '600',
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    fontWeight: '700',
+  },
+  forgot: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    fontWeight: '700',
   },
   input: {
-    height: 50,
-    borderRadius: authRadius.field,
-    borderWidth: 1,
-    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 0,
     fontFamily: Fonts.sans,
-    fontSize: 14,
+    fontSize: 20,
+    lineHeight: 25,
+    fontWeight: '300',
   },
   passwordWrap: {
-    height: 50,
-    borderRadius: authRadius.field,
-    borderWidth: 1,
-    paddingHorizontal: 14,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
   },
-  passwordInput: {
-    flex: 1,
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    fontFamily: Fonts.sans,
-    fontWeight: '600',
-    fontSize: 12,
-    marginBottom: 12,
-  },
-  errorText: {
+  passwordInput: { flex: 1 },
+  error: {
     fontFamily: Fonts.sans,
     fontSize: 12,
     marginBottom: 10,
   },
-  primaryButton: {
-    height: 52,
-    borderRadius: authRadius.button,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-  },
-  primaryButtonPressed: {
-    opacity: 0.88,
-  },
-  primaryButtonText: {
-    fontFamily: Fonts.sans,
-    fontWeight: '700',
-    fontSize: 15,
-    letterSpacing: 0.2,
-  },
-  dividerRow: {
+  signInButton: {
+    height: 58,
+    borderRadius: 6,
+    marginTop: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 2,
-    gap: 10,
+    justifyContent: 'center',
+    gap: 8,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-  },
-  dividerText: {
+  signInText: {
     fontFamily: Fonts.sans,
     fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 2,
+    textTransform: 'uppercase',
   },
-  switchRow: {
-    marginTop: 18,
+  dividerRow: {
+    marginTop: 28,
+    marginBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  divider: { flex: 1, height: 1 },
+  dividerText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
+    fontWeight: '600',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  socialButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: 6,
+    borderWidth: 1,
+    flexDirection: 'row',
     justifyContent: 'center',
-    gap: 6,
+    alignItems: 'center',
+    gap: 8,
   },
-  switchText: {
-    fontSize: 13,
+  socialText: {
     fontFamily: Fonts.sans,
-  },
-  switchAction: {
-    fontSize: 13,
-    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
     fontWeight: '700',
   },
-  backHome: {
-    marginTop: 18,
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+  googleLogo: {
+    width: 18,
+    height: 18,
   },
-  backHomeText: {
+  inviteRow: {
+    marginTop: 30,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+    alignItems: 'center',
+  },
+  small: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
+    fontSize: 11,
+  },
+  inviteAction: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  backRow: {
+    marginTop: 16,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 30,
+  },
+  backText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  footer: {
+    borderTopWidth: 1,
+    paddingHorizontal: 24,
+    paddingTop: 22,
+    paddingBottom: 20,
+    alignItems: 'center',
+    gap: 10,
+  },
+  footerBrand: {
+    fontFamily: Fonts.serif,
+    fontSize: 24,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  footerLinks: {
+    flexDirection: 'row',
+    gap: 22,
+  },
+  footerLink: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  footerCopy: {
+    fontFamily: Fonts.sans,
+    fontSize: 9,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });
