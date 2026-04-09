@@ -101,7 +101,7 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
               styles.dot,
               {
                 width: activeIndex === index ? 24 : 8,
-                backgroundColor: activeIndex === index ? palette.gold : '#DBCEBD',
+                backgroundColor: activeIndex === index ? palette.gold : '#000',
               },
             ]}
           />
@@ -141,14 +141,14 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    color: '#FFFBF5',
+    color: '#fff',
     fontFamily: Fonts.serif,
     fontSize: 35,
     lineHeight: 42,
     letterSpacing: 0.4,
   },
   subtitle: {
-    color: '#F3EDE4',
+    color: '#fff',
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 22,
@@ -159,13 +159,13 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   ctaButton: {
-    backgroundColor: '#FBF5EA',
+    backgroundColor: '#fff',
     borderRadius: radius.pill,
     paddingHorizontal: spacing.lg,
     paddingVertical: 11,
   },
   ctaText: {
-    color: '#28241F',
+    color: '#000',
     fontFamily: Fonts.sans,
     fontSize: 13,
     fontWeight: '600',

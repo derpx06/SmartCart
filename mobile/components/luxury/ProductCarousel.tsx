@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     backgroundColor: palette.elevated,
     padding: spacing.sm,
     borderWidth: 1,
-    borderColor: '#F0E5D8',
+    borderColor: '#000',
     ...luxuryShadow,
   },
   imageWrap: {
@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 30,
-    backgroundColor: '#FFF8EE',
+    backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   price: {
-    color: '#201D18',
+    color: '#000',
     fontFamily: Fonts.sans,
     fontWeight: '700',
     fontSize: 17,

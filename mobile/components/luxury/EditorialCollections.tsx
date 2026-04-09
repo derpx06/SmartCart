@@ -93,7 +93,7 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(31, 24, 18, 0.34)',
+    backgroundColor: 'rgba(0, 0, 0, 0.34)',
   },
   copyWrap: {
     position: 'absolute',
@@ -103,13 +103,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   leadTitle: {
-    color: '#FCF5EA',
+    color: '#fff',
     fontFamily: Fonts.serif,
     fontSize: 30,
     lineHeight: 34,
   },
   subtitle: {
-    color: '#EDE5D8',
+    color: '#fff',
     fontFamily: Fonts.sans,
     fontSize: 13,
     lineHeight: 20,
@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   },
   secondaryTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(29, 23, 17, 0.35)',
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
   },
   secondaryCopy: {
     position: 'absolute',
@@ -145,13 +145,13 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   secondaryTitle: {
-    color: '#FDF6ED',
+    color: '#fff',
     fontFamily: Fonts.serif,
     fontSize: 20,
     lineHeight: 23,
   },
   secondarySubtitle: {
-    color: '#EDE2D4',
+    color: '#fff',
     fontFamily: Fonts.sans,
     fontSize: 12,
     lineHeight: 17,

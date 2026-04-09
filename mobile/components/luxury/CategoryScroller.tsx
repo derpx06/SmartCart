@@ -69,14 +69,14 @@ const styles = StyleSheet.create({
   },
   tint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(27, 21, 16, 0.26)',
+    backgroundColor: 'rgba(0, 0, 0, 0.26)',
   },
   label: {
     position: 'absolute',
     left: spacing.sm,
     right: spacing.sm,
     bottom: spacing.sm,
-    color: '#FFF8EE',
+    color: '#fff',
     fontFamily: Fonts.sans,
     fontSize: 13,
     fontWeight: '600',

@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
   headerCard: {
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: '#E9DECE',
-    backgroundColor: palette.surface,
+    borderColor: '#000',
+    backgroundColor: '#fff',
     padding: spacing.lg,
     gap: spacing.xs,
   },
@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: 44,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#EFE3D3',
+    backgroundColor: '#fff',
     marginBottom: spacing.xxs,
   },
   title: {
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 21,
-    color: palette.mutedText,
+    color: '#000',
   },
   section: {
     gap: spacing.sm,
@@ -96,7 +96,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontFamily: Fonts.sans,
     fontSize: 13,
-    color: '#7A6D5F',
+    color: '#000',
     letterSpacing: 1.2,
     textTransform: 'uppercase',
     fontWeight: '700',
@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
   itemCard: {
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: '#EBDDCA',
-    backgroundColor: '#FFFDF9',
+    borderColor: '#000',
+    backgroundColor: '#fff',
     padding: spacing.md,
     gap: spacing.xxs,
   },
@@ -118,6 +118,6 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 20,
-    color: palette.mutedText,
+    color: '#000',
   },
 });

@@ -40,13 +40,13 @@ export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
 const styles = StyleSheet.create({
   banner: {
     borderRadius: radius.xl,
-    backgroundColor: '#F4EADC',
+    backgroundColor: '#fff',
     padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#E9DBC7',
+    borderColor: '#000',
     ...luxuryShadow,
   },
   copyWrap: {

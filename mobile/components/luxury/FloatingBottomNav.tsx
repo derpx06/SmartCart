@@ -34,7 +34,7 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={active ? '#201C17' : '#6F685E'}
+                  color={active ? '#fff' : '#000'}
                 />
                 <Text style={[styles.label, active && styles.labelActive]}>{item.label}</Text>
               </View>
@@ -59,9 +59,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.xs,
-    backgroundColor: '#FFFDF9',
+    backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: '#ECE1D2',
+    borderColor: '#000',
     ...luxuryShadow,
   },
   itemWrap: {
@@ -75,15 +75,15 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   itemActive: {
-    backgroundColor: '#F4EBDC',
+    backgroundColor: '#000',
   },
   label: {
-    color: '#6F685E',
+    color: '#000',
     fontFamily: Fonts.sans,
     fontSize: 10,
     fontWeight: '600',
   },
   labelActive: {
-    color: '#201C17',
+    color: '#fff',
   },
 });
