@@ -2,36 +2,36 @@ import { Schema, model } from 'mongoose';
 
 const productSchema = new Schema(
   {
-    name: { 
-      type: String, 
-      required: true, 
-      trim: true 
+    name: {
+      type: String,
+      required: true,
+      trim: true
     },
 
-    slug: { 
-      type: String, 
-      required: true, 
-      unique: true 
+    slug: {
+      type: String,
+      required: true,
+      unique: true
     },
 
-    description: { 
-      type: String 
+    description: {
+      type: String
     },
 
-    brand: { 
-      type: String, 
-      index: true 
+    brand: {
+      type: String,
+      index: true
     },
 
-    category: { 
-      type: String, 
-      required: true, 
-      index: true 
+    category: {
+      type: String,
+      required: true,
+      index: true
     },
 
-    subCategory: { 
-      type: String, 
-      index: true 
+    subCategory: {
+      type: String,
+      index: true
     },
 
     price: {
@@ -53,14 +53,14 @@ const productSchema = new Schema(
     ],
 
     stock: {
-      status: { 
-        type: String, 
-        enum: ['IN_STOCK', 'OUT_OF_STOCK'], 
-        default: 'IN_STOCK' 
+      status: {
+        type: String,
+        enum: ['IN_STOCK', 'OUT_OF_STOCK'],
+        default: 'IN_STOCK'
       },
-      quantity: { 
-        type: Number, 
-        default: 0 
+      quantity: {
+        type: Number,
+        default: 0
       }
     },
 
@@ -73,6 +73,12 @@ const productSchema = new Schema(
       {
         type: String,
         index: true
+      }
+    ],
+
+    embedding: [
+      {
+        type: Number
       }
     ],
 

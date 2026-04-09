@@ -12,6 +12,7 @@ import {
   getCart,
   removeFromCart,
   updateCart,
+  getSmartCartState,
 } from '../controllers/cart.controller';
 import { checkout, getOrders } from '../controllers/order.controller';
 import {
@@ -33,6 +34,7 @@ import { upload } from '../config/cloudinary';
 const router = Router();
 
 router.get('/health', healthCheck);
+router.get('/smartcart/state', authenticateToken, getSmartCartState);
 router.post('/login', login);
 router.get('/profile', authenticateToken, profile);
 router.post('/upload', authenticateToken, upload.single('image'), uploadImage);
