@@ -67,13 +67,6 @@ export default function CartScreen() {
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
-  const itemLabel = items.length === 1 ? 'piece' : 'pieces';
-  const outOfStockCount = items.filter((item) => state?.inventory[item.productId] === 'OUT_OF_STOCK').length;
-  const deliveryProgress = Math.min(subtotal / 500, 1);
-  const deliveryMessage =
-    subtotal >= 500
-      ? 'Complimentary premium delivery included.'
-      : `Add ${money(500 - subtotal)} for complimentary premium delivery.`;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
@@ -108,71 +101,6 @@ export default function CartScreen() {
             </ThemedText>
           </View>
         ) : null}
-
-        <View style={[styles.heroHeader, { backgroundColor: softSurface, borderColor: luxuryPalette.line }]}>
-          <View style={styles.headerFrame}>
-            <ThemedText style={[styles.collectionLabel, { color: muted }]}>Cart overview</ThemedText>
-            <ThemedText style={[styles.mainHeading, { color: text }]}>
-              {items.length} {itemLabel} selected
-            </ThemedText>
-            <ThemedText style={[styles.progressNote, { color: muted }]}>{deliveryMessage}</ThemedText>
-          </View>
-
-          <View style={styles.metricRow}>
-            <View
-              style={[
-                styles.metricCard,
-                { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
-              ]}>
-              <ThemedText style={[styles.metricLabel, { color: muted }]}>Merchandise</ThemedText>
-              <ThemedText style={[styles.metricValue, { color: text }]}>{money(subtotal)}</ThemedText>
-            </View>
-            <View
-              style={[
-                styles.metricCard,
-                { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
-              ]}>
-              <ThemedText style={[styles.metricLabel, { color: muted }]}>Service</ThemedText>
-              <ThemedText style={[styles.metricValue, { color: text }]}>White glove</ThemedText>
-            </View>
-          </View>
-
-          <View style={[styles.progressTrack, { backgroundColor: luxuryPalette.champagne }]}>
-            <View
-              style={[
-                styles.progressFill,
-                {
-                  backgroundColor: accent,
-                  width: `${Math.max(deliveryProgress * 100, 6)}%`,
-                },
-              ]}
-            />
-          </View>
-
-          <View style={[styles.serviceNote, { borderTopColor: luxuryPalette.line }]}>
-            <ThemedText style={[styles.serviceNoteText, { color: muted }]}>
-              Signature packaging, insured delivery, and concierge support are included with this order.
-            </ThemedText>
-          </View>
-
-          {state?.session.behavior === 'slow' && (
-            <View style={[styles.noteRow, { borderTopColor: luxuryPalette.line }]}>
-              <Ionicons name="time-outline" size={14} color={accent} />
-              <ThemedText style={[styles.noteText, { color: muted }]}>
-                Take your time. We&apos;ve saved your progress.
-              </ThemedText>
-            </View>
-          )}
-
-          {outOfStockCount > 0 && (
-            <View style={[styles.noteRow, { borderTopColor: luxuryPalette.line }]}>
-              <Ionicons name="alert-circle-outline" size={14} color={danger} />
-              <ThemedText style={[styles.noteText, { color: danger }]}>
-                {outOfStockCount} {outOfStockCount === 1 ? 'piece is' : 'pieces are'} currently unavailable.
-              </ThemedText>
-            </View>
-          )}
-        </View>
 
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
@@ -399,85 +327,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 18,
   },
-  heroHeader: {
-    gap: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
-  },
-  headerFrame: {
-    gap: spacing.xs,
-  },
   collectionLabel: {
     fontFamily: Fonts.sans,
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
-  },
-  mainHeading: {
-    fontFamily: Fonts.serif,
-    fontSize: 34,
-    lineHeight: 38,
-    letterSpacing: 0.2,
-  },
-  metricRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-  },
-  metricCard: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: spacing.md,
-    gap: spacing.xxs,
-  },
-  metricLabel: {
-    fontFamily: Fonts.sans,
-    fontSize: 11,
-    letterSpacing: 1,
-    textTransform: 'uppercase',
-  },
-  metricValue: {
-    fontFamily: Fonts.serif,
-    fontSize: 20,
-    lineHeight: 24,
-  },
-  progressTrack: {
-    height: 4,
-    borderRadius: radius.pill,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: radius.pill,
-  },
-  progressNote: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  serviceNote: {
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-  },
-  serviceNoteText: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  noteRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-  },
-  noteText: {
-    flex: 1,
-    fontFamily: Fonts.sans,
-    fontSize: 12,
-    lineHeight: 18,
   },
   emptyCard: {
     borderWidth: 1,
