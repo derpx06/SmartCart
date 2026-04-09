@@ -26,13 +26,16 @@ import {
   removeFromBuyLater,
 } from '../controllers/buyLater.controller';
 import { healthCheck } from '../controllers/health.controller';
+import { uploadImage } from '../controllers/upload.controller';
 import { authenticateToken } from '../middleware/authenticateToken';
+import { upload } from '../config/cloudinary';
 
 const router = Router();
 
 router.get('/health', healthCheck);
 router.post('/login', login);
 router.get('/profile', authenticateToken, profile);
+router.post('/upload', authenticateToken, upload.single('image'), uploadImage);
 
 router.get('/feed', getFeed);
 router.get('/skus', getSkus);
