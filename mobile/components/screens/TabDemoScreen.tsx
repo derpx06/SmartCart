@@ -1,8 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ThemedText } from '@/components/themed-text';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import { palette, radius, spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 
@@ -19,23 +21,29 @@ type TabDemoScreenProps = {
 };
 
 export function TabDemoScreen({ tabName, description, items, iconName }: TabDemoScreenProps) {
+  const background = useThemeColor({}, 'background');
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const mutedText = useThemeColor({}, 'mutedText');
+  const text = useThemeColor({}, 'text');
+
   return (
-    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerCard}>
-          <View style={styles.iconWrap}>
-            <Ionicons name={iconName} size={24} color={palette.text} />
+        <View style={[styles.headerCard, { borderColor: border, backgroundColor: card }]}>
+          <View style={[styles.iconWrap, { backgroundColor: border }]}>
+            <Ionicons name={iconName} size={24} color={text} />
           </View>
-          <Text style={styles.title}>{tabName}</Text>
-          <Text style={styles.description}>{description}</Text>
+          <ThemedText style={styles.title}>{tabName}</ThemedText>
+          <ThemedText style={[styles.description, { color: mutedText }]}>{description}</ThemedText>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Demo Modules</Text>
+          <ThemedText style={[styles.sectionTitle, { color: mutedText }]}>Demo Modules</ThemedText>
           {items.map((item) => (
-            <View key={item.title} style={styles.itemCard}>
-              <Text style={styles.itemTitle}>{item.title}</Text>
-              <Text style={styles.itemDetail}>{item.detail}</Text>
+            <View key={item.title} style={[styles.itemCard, { borderColor: border, backgroundColor: card }]}>
+              <ThemedText style={styles.itemTitle}>{item.title}</ThemedText>
+              <ThemedText style={[styles.itemDetail, { color: mutedText }]}>{item.detail}</ThemedText>
             </View>
           ))}
         </View>
@@ -47,7 +55,6 @@ export function TabDemoScreen({ tabName, description, items, iconName }: TabDemo
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.background,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -73,9 +80,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xxs,
   },
   title: {
-    fontFamily: Fonts.serif,
+    fontFamily: Fonts.sans,
     fontSize: 26,
-    color: palette.text,
     letterSpacing: 0.3,
   },
   description: {
@@ -106,7 +112,6 @@ const styles = StyleSheet.create({
   itemTitle: {
     fontFamily: Fonts.sans,
     fontSize: 16,
-    color: palette.text,
     fontWeight: '700',
   },
   itemDetail: {

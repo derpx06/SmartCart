@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart';
 
@@ -26,7 +27,14 @@ const TAB_META: Record<TabRouteName, TabMeta> = {
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomOffset = Math.max(insets.bottom, 8) + 10;
-  const styles = useMemo(() => createFloatingTabBarStyles(bottomOffset), [bottomOffset]);
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
+  const styles = useMemo(
+    () => createFloatingTabBarStyles(bottomOffset, { card, border, text, mutedText }),
+    [bottomOffset, card, border, text, mutedText]
+  );
 
   const animationState = useRef<Record<string, Animated.Value>>({});
   const pressState = useRef<Record<string, Animated.Value>>({});
@@ -97,7 +105,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             });
 
             if (!isFocused && !event.defaultPrevented) {
-              navigation.navigate(route.name as never, route.params as never);
+              navigation.navigate(route.name as never);
             }
           };
 
@@ -152,7 +160,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                 <Ionicons
                   name={meta.icon}
                   size={24}
-                  color={isFocused ? '#1C1C1E' : '#8E8E93'}
+                  color={isFocused ? text : mutedText}
                 />
               </Animated.View>
               <ThemedText style={[styles.label, isFocused && styles.labelActive]}>{meta.label}</ThemedText>

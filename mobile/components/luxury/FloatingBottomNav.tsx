@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 
 const items = [
@@ -21,22 +21,42 @@ type FloatingBottomNavProps = {
 
 export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
+  const luxuryPalette = useLuxuryPalette();
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom + 8, 18) }]} pointerEvents="box-none">
-      <View style={styles.nav}>
+      <View
+        style={[
+          styles.nav,
+          {
+            backgroundColor: luxuryPalette.navBg,
+            borderColor: luxuryPalette.navBorder,
+          },
+        ]}>
         {items.map((item) => {
           const active = item.key === activeKey;
 
           return (
             <AnimatedPressable key={item.key} containerStyle={styles.itemWrap}>
-              <View style={[styles.item, active && styles.itemActive]}>
+              <View
+                style={[
+                  styles.item,
+                  active && styles.itemActive,
+                  active && { backgroundColor: luxuryPalette.navActiveBg },
+                ]}>
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={active ? '#201C17' : '#6F685E'}
+                  color={active ? luxuryPalette.navTextActive : luxuryPalette.navText}
                 />
-                <Text style={[styles.label, active && styles.labelActive]}>{item.label}</Text>
+                <Text
+                  style={[
+                    styles.label,
+                    active && styles.labelActive,
+                    { color: active ? luxuryPalette.navTextActive : luxuryPalette.navText },
+                  ]}>
+                  {item.label}
+                </Text>
               </View>
             </AnimatedPressable>
           );
@@ -78,7 +98,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#F4EBDC',
   },
   label: {
-    color: '#6F685E',
     fontFamily: Fonts.sans,
     fontSize: 10,
     fontWeight: '600',

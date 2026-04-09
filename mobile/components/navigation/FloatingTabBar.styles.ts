@@ -2,7 +2,14 @@ import { StyleSheet } from 'react-native';
 
 import { Fonts } from '@/constants/theme';
 
-export function createFloatingTabBarStyles(bottomOffset: number) {
+type FloatingTabBarColors = {
+  card: string;
+  border: string;
+  text: string;
+  mutedText: string;
+};
+
+export function createFloatingTabBarStyles(bottomOffset: number, colors: FloatingTabBarColors) {
   return StyleSheet.create({
     root: {
       position: 'absolute',
@@ -13,9 +20,9 @@ export function createFloatingTabBarStyles(bottomOffset: number) {
     bar: {
       height: 76,
       borderRadius: 34,
-      backgroundColor: '#F6F1EB',
+      backgroundColor: colors.card,
       borderWidth: 1,
-      borderColor: '#E7DED4',
+      borderColor: colors.border,
       paddingHorizontal: 10,
       paddingVertical: 9,
       flexDirection: 'row',
@@ -48,10 +55,10 @@ export function createFloatingTabBarStyles(bottomOffset: number) {
       backgroundColor: 'transparent',
     },
     iconPillActive: {
-      backgroundColor: '#ECE5DC',
+      backgroundColor: colors.border,
     },
     label: {
-      color: '#8E8E93',
+      color: colors.mutedText,
       fontFamily: Fonts.sans,
       fontSize: 11,
       fontWeight: '600',
@@ -60,7 +67,7 @@ export function createFloatingTabBarStyles(bottomOffset: number) {
       includeFontPadding: false,
     },
     labelActive: {
-      color: '#1C1C1E',
+      color: colors.text,
       fontWeight: '700',
     },
   });

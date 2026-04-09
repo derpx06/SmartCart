@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, PressableProps, StyleSheet, Text, View } from 'react-native';
 
 import { authPalette, authRadius } from '@/components/auth/auth-theme';
 import { Fonts } from '@/constants/theme';
@@ -10,15 +10,23 @@ type Provider = 'google' | 'apple';
 type SocialAuthButtonProps = {
   provider: Provider;
   disabled?: boolean;
+  onPress?: PressableProps['onPress'];
 };
 
-export function SocialAuthButton({ provider, disabled = false }: SocialAuthButtonProps) {
+export function SocialAuthButton({ provider, disabled = false, onPress }: SocialAuthButtonProps) {
   const isGoogle = provider === 'google';
   const iconName = isGoogle ? 'logo-google' : 'logo-apple';
   const label = isGoogle ? 'Continue with Google' : 'Continue with Apple';
 
   return (
-    <Pressable style={[styles.button, disabled && styles.buttonDisabled]}>
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.button,
+        disabled && styles.buttonDisabled,
+        pressed && !disabled && styles.buttonPressed,
+      ]}>
       <View style={[styles.iconWrap, !isGoogle && styles.iconWrapApple]}>
         <Ionicons name={iconName} size={17} color={isGoogle ? '#6D5A3B' : '#1F1D1A'} />
       </View>
@@ -42,6 +50,9 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.66,
+  },
+  buttonPressed: {
+    opacity: 0.88,
   },
   iconWrap: {
     width: 28,

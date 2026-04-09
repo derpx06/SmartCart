@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, palette, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { Fonts } from '@/constants/theme';
 
@@ -12,17 +12,28 @@ type SeasonalBannerProps = {
 };
 
 export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
+  const luxuryPalette = useLuxuryPalette();
+
   if (loading) {
     return <SkeletonBlock height={148} borderRadius={radius.xl} />;
   }
 
   return (
     <AnimatedPressable>
-      <View style={styles.banner}>
+      <View
+        style={[
+          styles.banner,
+          {
+            backgroundColor: luxuryPalette.seasonalBg,
+            borderColor: luxuryPalette.seasonalBorder,
+          },
+        ]}>
         <View style={styles.copyWrap}>
-          <Text style={styles.eyebrow}>Seasonal Atelier</Text>
-          <Text style={styles.title}>Spring Entertaining Curations</Text>
-          <Text style={styles.subtitle}>Quietly elegant pieces for refined hosting.</Text>
+          <Text style={[styles.eyebrow, { color: luxuryPalette.gold }]}>Seasonal Atelier</Text>
+          <Text style={[styles.title, { color: luxuryPalette.text }]}>Spring Entertaining Curations</Text>
+          <Text style={[styles.subtitle, { color: luxuryPalette.mutedText }]}>
+            Quietly elegant pieces for refined hosting.
+          </Text>
         </View>
         <Image
           source={{
@@ -54,7 +65,6 @@ const styles = StyleSheet.create({
     gap: 7,
   },
   eyebrow: {
-    color: palette.gold,
     fontFamily: Fonts.sans,
     fontSize: 11,
     textTransform: 'uppercase',
@@ -62,13 +72,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   title: {
-    color: palette.text,
     fontFamily: Fonts.serif,
     fontSize: 24,
     lineHeight: 28,
   },
   subtitle: {
-    color: palette.mutedText,
     fontFamily: Fonts.sans,
     fontSize: 13,
     lineHeight: 20,

@@ -3,7 +3,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { palette, radius, spacing } from '@/components/luxury/design';
+import { radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CategoryItem } from '@/data/luxuryHomeData';
@@ -15,6 +15,8 @@ type CategoryScrollerProps = {
 };
 
 export function CategoryScroller({ categories, loading = false }: CategoryScrollerProps) {
+  const luxuryPalette = useLuxuryPalette();
+
   return (
     <View>
       <SectionTitle title="Shop By Category" caption="Curated essentials for the heart of your home." />
@@ -32,10 +34,10 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
           contentContainerStyle={styles.scrollContent}>
           {categories.map((category) => (
             <AnimatedPressable key={category.id} containerStyle={styles.cardWrap}>
-              <View style={styles.card}>
+              <View style={[styles.card, { backgroundColor: luxuryPalette.beige }]}>
                 <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={450} />
-                <View style={styles.tint} />
-                <Text style={styles.label}>{category.title}</Text>
+                <View style={[styles.tint, { backgroundColor: luxuryPalette.categoryTint }]} />
+                <Text style={[styles.label, { color: luxuryPalette.categoryLabel }]}>{category.title}</Text>
               </View>
             </AnimatedPressable>
           ))}
@@ -61,7 +63,7 @@ const styles = StyleSheet.create({
     height: 156,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: palette.beige,
+    backgroundColor: '#D8D0C3',
   },
   image: {
     width: '100%',
@@ -69,14 +71,12 @@ const styles = StyleSheet.create({
   },
   tint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(27, 21, 16, 0.26)',
   },
   label: {
     position: 'absolute',
     left: spacing.sm,
     right: spacing.sm,
     bottom: spacing.sm,
-    color: '#FFF8EE',
     fontFamily: Fonts.sans,
     fontSize: 13,
     fontWeight: '600',

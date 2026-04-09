@@ -1,16 +1,18 @@
 import { Feather, Ionicons } from '@expo/vector-icons';
-import { Link } from 'expo-router';
-import React, { useState } from 'react';
+import { Link, useRouter } from 'expo-router';
+import React, { useMemo, useState } from 'react';
 import {
+  KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { SocialAuthButton } from '@/components/auth/SocialAuthButton';
 import { authPalette, authRadius } from '@/components/auth/auth-theme';
@@ -23,29 +25,89 @@ type AuthScreenProps = {
 };
 
 export function AuthScreen({ mode }: AuthScreenProps) {
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { width } = useWindowDimensions();
   const isSignIn = mode === 'sign-in';
+  const isCompact = width < 360;
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const titleSize = useMemo(() => (isCompact ? 29 : 33), [isCompact]);
+  const titleLineHeight = useMemo(() => (isCompact ? 34 : 38), [isCompact]);
+  const horizontalPadding = isCompact ? 14 : 22;
+  const cardPadding = isCompact ? 16 : 20;
+
+  const validate = () => {
+    if (!isSignIn && !name.trim()) {
+      return 'Please enter your name.';
+    }
+
+    if (!email.trim()) {
+      return 'Please enter your email.';
+    }
+
+    if (!password.trim()) {
+      return 'Please enter your password.';
+    }
+
+    return '';
+  };
+
+  const handlePrimaryAction = () => {
+    const message = validate();
+
+    if (message) {
+      setError(message);
+      return;
+    }
+
+    setError('');
+    router.replace('/(tabs)');
+  };
+
+  const handleSocialAuth = () => {
+    setError('');
+    router.replace('/(tabs)');
+  };
+
+  const handleBackHome = () => {
+    setError('');
+    router.replace('/(tabs)');
+  };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.root}>
+    <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <KeyboardAvoidingView
+        style={styles.root}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}>
         <View style={styles.orbOne} />
         <View style={styles.orbTwo} />
 
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingBottom: Math.max(insets.bottom + 16, 24),
+            },
+          ]}>
           <View style={styles.logoRow}>
             <View style={styles.logoDot} />
             <Text style={styles.brand}>AURELIA HOME</Text>
           </View>
 
-          <View style={styles.card}>
-            <Text style={styles.title}>{isSignIn ? 'Welcome Back' : 'Create Account'}</Text>
+          <View style={[styles.card, { padding: cardPadding }]}>
+            <Text style={[styles.title, { fontSize: titleSize, lineHeight: titleLineHeight }]}>
+              {isSignIn ? 'Welcome Back' : 'Create Account'}
+            </Text>
             <Text style={styles.subtitle}>
               {isSignIn
                 ? 'Sign in to continue your curated kitchen and home journey.'
@@ -61,6 +123,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   style={styles.input}
                   placeholder="Enter your full name"
                   placeholderTextColor="#938A7D"
+                  autoCapitalize="words"
+                  returnKeyType="next"
                 />
               </View>
             ) : null}
@@ -73,8 +137,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                 style={styles.input}
                 keyboardType="email-address"
                 autoCapitalize="none"
+                autoCorrect={false}
                 placeholder="Enter your email"
                 placeholderTextColor="#938A7D"
+                returnKeyType="next"
+                textContentType="emailAddress"
               />
             </View>
 
@@ -88,6 +155,8 @@ export function AuthScreen({ mode }: AuthScreenProps) {
                   secureTextEntry={!showPassword}
                   placeholder="Enter your password"
                   placeholderTextColor="#938A7D"
+                  returnKeyType="done"
+                  textContentType="password"
                 />
                 <Pressable onPress={() => setShowPassword((prev) => !prev)} hitSlop={10}>
                   <Feather name={showPassword ? 'eye-off' : 'eye'} size={18} color="#7E776C" />
@@ -101,7 +170,11 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               </Pressable>
             ) : null}
 
-            <Pressable style={styles.primaryButton}>
+            {error ? <Text style={styles.errorText}>{error}</Text> : null}
+
+            <Pressable
+              onPress={handlePrimaryAction}
+              style={({ pressed }) => [styles.primaryButton, pressed && styles.primaryButtonPressed]}>
               <Text style={styles.primaryButtonText}>{isSignIn ? 'Sign In' : 'Create Account'}</Text>
             </Pressable>
 
@@ -111,8 +184,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
               <View style={styles.dividerLine} />
             </View>
 
-            <SocialAuthButton provider="google" />
-            <SocialAuthButton provider="apple" disabled={Platform.OS !== 'ios'} />
+            <SocialAuthButton provider="google" onPress={handleSocialAuth} />
+            <SocialAuthButton
+              provider="apple"
+              disabled={Platform.OS !== 'ios'}
+              onPress={handleSocialAuth}
+            />
 
             <View style={styles.switchRow}>
               <Text style={styles.switchText}>
@@ -126,14 +203,12 @@ export function AuthScreen({ mode }: AuthScreenProps) {
             </View>
           </View>
 
-          <Link href="/" asChild>
-            <Pressable style={styles.backHome}>
-              <Ionicons name="chevron-back" size={16} color={authPalette.muted} />
-              <Text style={styles.backHomeText}>Back to Home</Text>
-            </Pressable>
-          </Link>
+          <Pressable onPress={handleBackHome} style={styles.backHome}>
+            <Ionicons name="chevron-back" size={16} color={authPalette.muted} />
+            <Text style={styles.backHomeText}>Back to Home</Text>
+          </Pressable>
         </ScrollView>
-      </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -168,14 +243,13 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: 22,
-    paddingVertical: 16,
+    paddingTop: 16,
   },
   logoRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 10,
+    marginTop: 6,
     marginBottom: 24,
     gap: 8,
   },
@@ -194,16 +268,16 @@ const styles = StyleSheet.create({
     color: authPalette.text,
   },
   card: {
+    width: '100%',
+    maxWidth: 460,
+    alignSelf: 'center',
     backgroundColor: authPalette.card,
     borderWidth: 1,
     borderColor: authPalette.border,
     borderRadius: authRadius.card,
-    padding: 20,
   },
   title: {
     fontFamily: Fonts.serif,
-    fontSize: 33,
-    lineHeight: 38,
     color: authPalette.text,
     marginBottom: 10,
   },
@@ -259,6 +333,12 @@ const styles = StyleSheet.create({
     fontSize: 12,
     marginBottom: 12,
   },
+  errorText: {
+    color: '#9C4B3B',
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    marginBottom: 10,
+  },
   primaryButton: {
     height: 52,
     borderRadius: authRadius.button,
@@ -266,6 +346,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 2,
+  },
+  primaryButtonPressed: {
+    opacity: 0.88,
   },
   primaryButtonText: {
     color: authPalette.primaryText,
@@ -315,6 +398,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 2,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
   },
   backHomeText: {
     color: authPalette.muted,

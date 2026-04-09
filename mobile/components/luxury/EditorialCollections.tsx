@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, palette, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CollectionItem } from '@/data/luxuryHomeData';
@@ -15,6 +15,8 @@ type EditorialCollectionsProps = {
 };
 
 export function EditorialCollections({ collections, loading = false }: EditorialCollectionsProps) {
+  const luxuryPalette = useLuxuryPalette();
+
   if (loading) {
     return (
       <View>
@@ -38,12 +40,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
 
       {lead ? (
         <AnimatedPressable containerStyle={styles.leadWrap}>
-          <View style={styles.leadCard}>
+          <View style={[styles.leadCard, { backgroundColor: luxuryPalette.beige }]}>
             <Image source={{ uri: lead.image }} style={styles.leadImage} contentFit="cover" transition={700} />
-            <View style={styles.overlay} />
+            <View style={[styles.overlay, { backgroundColor: luxuryPalette.collectionOverlay }]} />
             <View style={styles.copyWrap}>
-              <Text style={styles.leadTitle}>{lead.title}</Text>
-              <Text style={styles.subtitle}>{lead.subtitle}</Text>
+              <Text style={[styles.leadTitle, { color: luxuryPalette.heroTitle }]}>{lead.title}</Text>
+              <Text style={[styles.subtitle, { color: luxuryPalette.heroSubtitle }]}>{lead.subtitle}</Text>
             </View>
           </View>
         </AnimatedPressable>
@@ -52,12 +54,14 @@ export function EditorialCollections({ collections, loading = false }: Editorial
       <View style={styles.secondaryRow}>
         {secondary.slice(0, 2).map((item) => (
           <AnimatedPressable key={item.id} containerStyle={styles.secondaryWrap}>
-            <View style={styles.secondaryCard}>
+            <View style={[styles.secondaryCard, { backgroundColor: luxuryPalette.beige }]}>
               <Image source={{ uri: item.image }} style={styles.secondaryImage} contentFit="cover" transition={550} />
-              <View style={styles.secondaryTint} />
+              <View
+                style={[styles.secondaryTint, { backgroundColor: luxuryPalette.collectionSecondaryOverlay }]}
+              />
               <View style={styles.secondaryCopy}>
-                <Text style={styles.secondaryTitle}>{item.title}</Text>
-                <Text style={styles.secondarySubtitle} numberOfLines={2}>
+                <Text style={[styles.secondaryTitle, { color: luxuryPalette.heroTitle }]}>{item.title}</Text>
+                <Text style={[styles.secondarySubtitle, { color: luxuryPalette.heroSubtitle }]} numberOfLines={2}>
                   {item.subtitle}
                 </Text>
               </View>
@@ -84,7 +88,7 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: radius.xl,
     overflow: 'hidden',
-    backgroundColor: palette.beige,
+    backgroundColor: '#D8D0C3',
     ...luxuryShadow,
   },
   leadImage: {
@@ -93,7 +97,6 @@ const styles = StyleSheet.create({
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(31, 24, 18, 0.34)',
   },
   copyWrap: {
     position: 'absolute',
@@ -103,13 +106,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   leadTitle: {
-    color: '#FCF5EA',
     fontFamily: Fonts.serif,
     fontSize: 30,
     lineHeight: 34,
   },
   subtitle: {
-    color: '#EDE5D8',
     fontFamily: Fonts.sans,
     fontSize: 13,
     lineHeight: 20,
@@ -126,7 +127,7 @@ const styles = StyleSheet.create({
     height: 165,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: palette.beige,
+    backgroundColor: '#D8D0C3',
     ...luxuryShadow,
   },
   secondaryImage: {
@@ -135,7 +136,6 @@ const styles = StyleSheet.create({
   },
   secondaryTint: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(29, 23, 17, 0.35)',
   },
   secondaryCopy: {
     position: 'absolute',
@@ -145,13 +145,11 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   secondaryTitle: {
-    color: '#FDF6ED',
     fontFamily: Fonts.serif,
     fontSize: 20,
     lineHeight: 23,
   },
   secondarySubtitle: {
-    color: '#EDE2D4',
     fontFamily: Fonts.sans,
     fontSize: 12,
     lineHeight: 17,

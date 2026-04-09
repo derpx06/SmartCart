@@ -4,7 +4,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, palette, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
@@ -23,6 +23,8 @@ export function ProductCarousel({
   products,
   loading = false,
 }: ProductCarouselProps) {
+  const luxuryPalette = useLuxuryPalette();
+
   return (
     <View>
       <SectionTitle title={title} caption={caption} />
@@ -30,7 +32,7 @@ export function ProductCarousel({
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.skeletonRow}>
           {[1, 2].map((item) => (
-            <View key={item} style={styles.skeletonCard}>
+            <View key={item} style={[styles.skeletonCard, { backgroundColor: luxuryPalette.elevated }]}>
               <SkeletonBlock height={145} borderRadius={radius.md} />
               <SkeletonBlock height={16} width="80%" style={styles.skeletonLine} />
               <SkeletonBlock height={16} width="42%" style={styles.skeletonLine} />
@@ -44,7 +46,14 @@ export function ProductCarousel({
           contentContainerStyle={styles.scrollContent}>
           {products.map((product) => (
             <AnimatedPressable key={product.id} containerStyle={styles.cardWrap}>
-              <View style={styles.card}>
+              <View
+                style={[
+                  styles.card,
+                  {
+                    backgroundColor: luxuryPalette.elevated,
+                    borderColor: luxuryPalette.line,
+                  },
+                ]}>
                 <View style={styles.imageWrap}>
                   <Image
                     source={{ uri: product.image }}
@@ -52,18 +61,20 @@ export function ProductCarousel({
                     contentFit="cover"
                     transition={450}
                   />
-                  <View style={styles.wishlistChip}>
-                    <Ionicons name="heart-outline" size={16} color={palette.text} />
+                  <View style={[styles.wishlistChip, { backgroundColor: luxuryPalette.wishlistChip }]}>
+                    <Ionicons name="heart-outline" size={16} color={luxuryPalette.text} />
                   </View>
                 </View>
                 <View style={styles.content}>
-                  <Text style={styles.name} numberOfLines={2}>
+                  <Text style={[styles.name, { color: luxuryPalette.text }]} numberOfLines={2}>
                     {product.name}
                   </Text>
-                  <Text style={styles.price}>{product.price}</Text>
+                  <Text style={[styles.price, { color: luxuryPalette.text }]}>{product.price}</Text>
                   <View style={styles.ratingRow}>
-                    <Ionicons name="star" size={13} color={palette.gold} />
-                    <Text style={styles.rating}>{product.rating.toFixed(1)}</Text>
+                    <Ionicons name="star" size={13} color={luxuryPalette.gold} />
+                    <Text style={[styles.rating, { color: luxuryPalette.mutedText }]}>
+                      {product.rating.toFixed(1)}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -84,7 +95,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
     padding: spacing.sm,
     borderRadius: radius.lg,
-    backgroundColor: palette.elevated,
+    backgroundColor: '#FFFFFF',
   },
   skeletonLine: {
     marginTop: spacing.xs,
@@ -98,7 +109,7 @@ const styles = StyleSheet.create({
   },
   card: {
     borderRadius: radius.lg,
-    backgroundColor: palette.elevated,
+    backgroundColor: '#FFFFFF',
     padding: spacing.sm,
     borderWidth: 1,
     borderColor: '#F0E5D8',
@@ -130,14 +141,12 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   name: {
-    color: palette.text,
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 20,
     minHeight: 40,
   },
   price: {
-    color: '#201D18',
     fontFamily: Fonts.sans,
     fontWeight: '700',
     fontSize: 17,
@@ -149,7 +158,6 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   rating: {
-    color: palette.mutedText,
     fontFamily: Fonts.sans,
     fontSize: 13,
     fontWeight: '600',
