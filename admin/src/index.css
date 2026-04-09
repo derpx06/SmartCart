@@ -192,3 +192,263 @@ tr:hover td {
   width: 100%;
   min-height: 100vh;
 }
+
+/* Products Page */
+.products-page {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.products-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.products-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.products-title-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(109, 64, 255, 0.18);
+  color: var(--accent-base);
+  border: 1px solid rgba(109, 64, 255, 0.35);
+  box-shadow: inset 0 0 14px rgba(109, 64, 255, 0.2);
+}
+
+.products-metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+}
+
+.products-metric-card {
+  padding: 18px;
+  border-radius: 16px;
+}
+
+.products-metric-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.products-metric-value {
+  margin-top: 10px;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.products-metric-subtext {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.products-controls {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.products-search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-secondary);
+  padding: 2px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.12);
+}
+
+.products-search-input {
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  padding-left: 0;
+}
+
+.products-search-input:focus {
+  border: none;
+  box-shadow: none;
+}
+
+.products-category-chips {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.products-category-chips .btn {
+  padding: 8px 14px;
+  font-size: 13px;
+}
+
+.products-table-shell {
+  overflow: auto;
+}
+
+.products-table {
+  min-width: 760px;
+}
+
+.products-table td {
+  vertical-align: middle;
+}
+
+.products-table tbody tr td {
+  transition: background 0.2s ease;
+}
+
+.products-item-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.products-item-thumb {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.products-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.products-item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.products-item-description {
+  font-size: 12px;
+  line-height: 1.35;
+  max-width: 390px;
+}
+
+.products-item-id {
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+
+.products-category-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  border: 1px solid var(--border-color);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary);
+}
+
+.products-price-cell {
+  font-weight: 600;
+  color: #f7f8ff;
+}
+
+.products-stock-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.products-stock-healthy {
+  color: var(--success);
+  background: rgba(0, 210, 133, 0.12);
+}
+
+.products-stock-warning {
+  color: #f8be4d;
+  background: rgba(248, 190, 77, 0.12);
+}
+
+.products-stock-critical {
+  color: var(--danger);
+  background: rgba(255, 74, 90, 0.14);
+}
+
+.products-actions-cell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.products-icon-button {
+  padding: 7px;
+  min-width: 34px;
+}
+
+.products-icon-button + .products-icon-button {
+  margin-left: 8px;
+}
+
+.products-empty-state {
+  padding: 42px 16px;
+  text-align: center;
+}
+
+.products-empty-state svg {
+  opacity: 0.55;
+  margin-bottom: 10px;
+}
+
+.products-footnote {
+  text-align: right;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .products-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .products-header .btn {
+    align-self: flex-start;
+  }
+}
+
+@media (max-width: 640px) {
+  .products-page {
+    gap: 20px;
+  }
+
+  .products-title-wrap {
+    align-items: flex-start;
+  }
+
+  .products-title-icon {
+    margin-top: 3px;
+  }
+
+  .products-metric-value {
+    font-size: 24px;
+  }
+}

@@ -5,11 +5,10 @@ import React, { useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
-import { radius, spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -18,108 +17,240 @@ type ProductDetailScreenProps = {
 const starArray = [1, 2, 3, 4, 5];
 
 function money(value: number) {
-  return `$${value.toFixed(2)}`;
+  return `$${value.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function getStarIconName(index: number, rating: number): 'star' | 'star-half' | 'star-outline' {
+  if (index <= Math.floor(rating)) {
+    return 'star';
+  }
+
+  if (index - rating <= 0.5) {
+    return 'star-half';
+  }
+
+  return 'star-outline';
 }
 
 export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-
-  const background = useThemeColor({}, 'background');
-  const card = useThemeColor({}, 'card');
-  const text = useThemeColor({}, 'text');
-  const muted = useThemeColor({}, 'mutedText');
-  const border = useThemeColor({}, 'border');
+  const palette = useLuxuryPalette();
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedColorId, setSelectedColorId] = useState(product.selectedColorId);
   const [selectedSize, setSelectedSize] = useState(product.selectedSize);
   const [quantity, setQuantity] = useState(1);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const selectedColor = product.colors.find((color) => color.id === selectedColorId);
+  const selectedColorName = selectedColor?.name ?? product.colors[0]?.name ?? '';
 
   const savingPercent = useMemo(() => {
     if (!product.originalPrice || product.originalPrice <= product.price) {
       return null;
     }
+
     return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
   }, [product.originalPrice, product.price]);
 
-  const selectedColorName = product.colors.find((c) => c.id === selectedColorId)?.name ?? product.colors[0]?.name;
+  const total = quantity * product.price;
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
-      <View style={[styles.root, { backgroundColor: background }]}> 
-        <View style={[styles.header, { backgroundColor: card, borderBottomColor: border }]}>
-          <Pressable onPress={() => router.back()} style={styles.headerButton}>
-            <Ionicons name="arrow-back" size={22} color={text} />
-          </Pressable>
-          <ThemedText numberOfLines={1} style={styles.brandText}>{product.brand}</ThemedText>
-          <Pressable onPress={() => router.push('/(tabs)/cart')} style={styles.headerButton}>
-            <Ionicons name="bag-outline" size={22} color={text} />
-          </Pressable>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['left', 'right']}>
+      <View style={[styles.root, { backgroundColor: palette.background }]}>
+        <View pointerEvents="none" style={styles.atmosphereLayer}>
+          <View style={[styles.orbOne, { backgroundColor: palette.orbOne }]} />
+          <View style={[styles.orbTwo, { backgroundColor: palette.orbTwo }]} />
         </View>
 
-        <ScrollView contentContainerStyle={{ paddingTop: 62, paddingBottom: 180 }} showsVerticalScrollIndicator={false}>
-          <View style={[styles.heroWrap, { backgroundColor: card }]}>
-            <Image source={{ uri: product.images[activeImageIndex] }} style={styles.heroImage} contentFit="cover" />
+        <View style={[styles.headerRow, { top: insets.top + spacing.xs }]}> 
+          <Pressable
+            onPress={() => router.back()}
+            style={[
+              styles.headerButton,
+              styles.headerButtonLarge,
+              { backgroundColor: palette.elevated, borderColor: palette.line },
+            ]}
+          >
+            <Ionicons name="chevron-back" size={20} color={palette.text} />
+          </Pressable>
 
-            <View style={[styles.badgeWrap, { backgroundColor: text }]}>
-              <ThemedText style={[styles.badgeText, { color: background }]}>{product.badge}</ThemedText>
-            </View>
-
-            <Pressable style={[styles.wishlistButton, { backgroundColor: card, borderColor: border }]}>
-              <Ionicons name="heart" size={20} color={text} />
+          <View style={styles.headerActions}>
+            <Pressable style={[styles.headerButton, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+              <Ionicons name="share-social-outline" size={18} color={palette.text} />
             </Pressable>
+            <Pressable
+              onPress={() => setIsWishlisted((prev) => !prev)}
+              style={[styles.headerButton, { backgroundColor: palette.elevated, borderColor: palette.line }]}
+            >
+              <Ionicons
+                name={isWishlisted ? 'heart' : 'heart-outline'}
+                size={18}
+                color={isWishlisted ? '#D14862' : palette.text}
+              />
+            </Pressable>
+          </View>
+        </View>
 
-            <View style={styles.dotWrap}>
-              {product.images.map((img, idx) => (
-                <Pressable
-                  key={img}
-                  onPress={() => setActiveImageIndex(idx)}
-                  style={[styles.dot, { backgroundColor: idx === activeImageIndex ? text : muted }]}
-                />
-              ))}
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingTop: insets.top + 68,
+            paddingBottom: Math.max(insets.bottom + 144, 176),
+          }}
+        >
+          <View style={styles.heroSection}>
+            <View
+              style={[
+                styles.heroCard,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.line,
+                },
+              ]}
+            >
+              <Image source={{ uri: product.images[activeImageIndex] }} style={styles.heroImage} contentFit="cover" />
+
+              <View style={[styles.heroTopShade, { backgroundColor: palette.heroTopShade }]} />
+              <View style={[styles.heroBottomShade, { backgroundColor: palette.heroBottomShade }]} />
+
+              <View style={styles.heroTopRow}>
+                <View
+                  style={[
+                    styles.badge,
+                    {
+                      backgroundColor: palette.elevated,
+                      borderColor: palette.line,
+                    },
+                  ]}
+                >
+                  <ThemedText style={[styles.badgeText, { color: palette.text }]}>{product.badge}</ThemedText>
+                </View>
+
+                <View style={[styles.photoCountPill, { backgroundColor: palette.categoryTint }]}> 
+                  <ThemedText style={[styles.photoCountText, { color: palette.categoryLabel }]}>
+                    {activeImageIndex + 1}/{product.images.length}
+                  </ThemedText>
+                </View>
+              </View>
+
+              <View style={styles.heroBottomMeta}>
+                <ThemedText style={[styles.heroMetaTitle, { color: palette.heroTitle }]}>
+                  {product.name}
+                </ThemedText>
+                <ThemedText style={[styles.heroMetaSub, { color: palette.heroSubtitle }]}>
+                  Color: {selectedColorName}
+                </ThemedText>
+              </View>
             </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbRail}>
+              {product.images.map((img, idx) => {
+                const active = idx === activeImageIndex;
+
+                return (
+                  <Pressable
+                    key={img}
+                    onPress={() => setActiveImageIndex(idx)}
+                    style={[
+                      styles.thumbButton,
+                      {
+                        borderColor: active ? palette.gold : palette.line,
+                        backgroundColor: active ? palette.champagne : palette.elevated,
+                      },
+                    ]}
+                  >
+                    <Image source={{ uri: img }} style={styles.thumbImage} contentFit="cover" />
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
           </View>
 
-          <View style={styles.sectionPad}>
-            <View style={styles.ratingRow}>
-              {starArray.map((num) => (
-                <Ionicons
-                  key={num}
-                  name={num <= Math.floor(product.rating) ? 'star' : 'star-half'}
-                  size={13}
-                  color={muted}
-                />
-              ))}
-              <ThemedText style={[styles.ratingText, { color: muted }]}>
-                {product.rating.toFixed(1)} ({product.reviewCount} Reviews)
-              </ThemedText>
+          <View
+            style={[
+              styles.detailsCard,
+              {
+                backgroundColor: palette.elevated,
+                borderColor: palette.line,
+              },
+            ]}
+          >
+            <ThemedText style={[styles.brand, { color: palette.mutedText }]}>{product.brand}</ThemedText>
+            <ThemedText style={[styles.title, { color: palette.text }]}>{product.name}</ThemedText>
+
+            <View style={styles.metaRibbon}>
+              <View style={[styles.ratingChip, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+                <View style={styles.ratingStars}>
+                  {starArray.map((num) => (
+                    <Ionicons key={num} name={getStarIconName(num, product.rating)} size={11} color={palette.gold} />
+                  ))}
+                </View>
+                <ThemedText style={[styles.ratingValue, { color: palette.text }]}>{product.rating.toFixed(1)}</ThemedText>
+                <ThemedText style={[styles.ratingCount, { color: palette.mutedText }]}>
+                  ({product.reviewCount})
+                </ThemedText>
+              </View>
+
+              <View style={[styles.stockChip, { backgroundColor: palette.subtleGlow }]}>
+                <View style={[styles.stockDot, { backgroundColor: '#4CA47A' }]} />
+                <ThemedText style={[styles.stockText, { color: palette.text }]}>In stock</ThemedText>
+              </View>
             </View>
 
-            <ThemedText style={styles.title}>{product.name}</ThemedText>
-
             <View style={styles.priceRow}>
-              <ThemedText style={styles.price}>{money(product.price)}</ThemedText>
+              <ThemedText style={[styles.price, { color: palette.text }]}>{money(product.price)}</ThemedText>
               {product.originalPrice ? (
-                <ThemedText style={[styles.originalPrice, { color: muted }]}>{money(product.originalPrice)}</ThemedText>
+                <ThemedText style={[styles.originalPrice, { color: palette.mutedText }]}>
+                  {money(product.originalPrice)}
+                </ThemedText>
               ) : null}
               {savingPercent ? (
-                <View style={[styles.savePill, { borderColor: border, backgroundColor: card }]}>
-                  <ThemedText style={styles.saveText}>SAVE {savingPercent}%</ThemedText>
+                <View style={[styles.savePill, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+                  <ThemedText style={[styles.saveText, { color: palette.text }]}>SAVE {savingPercent}%</ThemedText>
                 </View>
               ) : null}
             </View>
 
-            <View style={styles.optionGroup}>
-              <ThemedText style={[styles.optionLabel, { color: muted }]}>Color - {selectedColorName}</ThemedText>
+            <ThemedText style={[styles.description, { color: palette.mutedText }]}>{product.description}</ThemedText>
+
+            <View style={[styles.trustGrid, { borderTopColor: palette.line, borderBottomColor: palette.line }]}>
+              <View style={styles.trustItem}>
+                <Ionicons name="shield-checkmark-outline" size={16} color={palette.gold} />
+                <ThemedText style={[styles.trustText, { color: palette.text }]}>Authentic craft</ThemedText>
+              </View>
+              <View style={styles.trustItem}>
+                <Ionicons name="refresh-outline" size={16} color={palette.gold} />
+                <ThemedText style={[styles.trustText, { color: palette.text }]}>Easy returns</ThemedText>
+              </View>
+              <View style={styles.trustItem}>
+                <Ionicons name="card-outline" size={16} color={palette.gold} />
+                <ThemedText style={[styles.trustText, { color: palette.text }]}>Secure checkout</ThemedText>
+              </View>
+            </View>
+
+            <View style={styles.optionBlock}>
+              <View style={styles.optionHeaderRow}>
+                <ThemedText style={[styles.optionTitle, { color: palette.mutedText }]}>Color</ThemedText>
+                <ThemedText style={[styles.optionSelected, { color: palette.text }]}>{selectedColorName}</ThemedText>
+              </View>
+
               <View style={styles.colorRow}>
                 {product.colors.map((color) => {
                   const active = color.id === selectedColorId;
+
                   return (
                     <Pressable
                       key={color.id}
                       onPress={() => setSelectedColorId(color.id)}
-                      style={[styles.colorOuter, { borderColor: active ? text : border }]}
+                      style={[
+                        styles.colorOuter,
+                        {
+                          borderColor: active ? palette.text : palette.line,
+                          backgroundColor: palette.surface,
+                        },
+                      ]}
                     >
                       <View style={[styles.colorInner, { backgroundColor: color.hex }]} />
                     </Pressable>
@@ -128,11 +259,16 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               </View>
             </View>
 
-            <View style={styles.optionGroup}>
-              <ThemedText style={[styles.optionLabel, { color: muted }]}>Size</ThemedText>
+            <View style={styles.optionBlock}>
+              <View style={styles.optionHeaderRow}>
+                <ThemedText style={[styles.optionTitle, { color: palette.mutedText }]}>Size</ThemedText>
+                <ThemedText style={[styles.optionSelected, { color: palette.text }]}>{selectedSize}</ThemedText>
+              </View>
+
               <View style={styles.sizeGrid}>
                 {product.sizes.map((size) => {
                   const active = size === selectedSize;
+
                   return (
                     <Pressable
                       key={size}
@@ -140,12 +276,21 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                       style={[
                         styles.sizeButton,
                         {
-                          borderColor: border,
-                          backgroundColor: active ? text : card,
+                          backgroundColor: active ? palette.text : palette.surface,
+                          borderColor: active ? palette.text : palette.line,
                         },
                       ]}
                     >
-                      <ThemedText style={[styles.sizeButtonText, active && { color: background }]}>{size}</ThemedText>
+                      <ThemedText
+                        style={[
+                          styles.sizeText,
+                          {
+                            color: active ? palette.elevated : palette.text,
+                          },
+                        ]}
+                      >
+                        {size}
+                      </ThemedText>
                     </Pressable>
                   );
                 })}
@@ -153,63 +298,115 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             </View>
           </View>
 
-          <View style={[styles.shipCard, { backgroundColor: card, borderColor: border }]}> 
-            <Ionicons name="car-outline" size={18} color={text} />
-            <View style={styles.shipTextWrap}>
-              <ThemedText style={styles.shipTitle}>{product.shippingLine}</ThemedText>
-              <ThemedText style={[styles.shipSub, { color: muted }]}>{product.shippingEta}</ThemedText>
+          <View style={styles.sectionWrap}>
+            <View
+              style={[
+                styles.shippingCard,
+                {
+                  backgroundColor: palette.surface,
+                  borderColor: palette.line,
+                },
+              ]}
+            >
+              <View style={[styles.shippingIconWrap, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+                <Ionicons name="car-sport-outline" size={18} color={palette.text} />
+              </View>
+              <View style={styles.shippingCopy}>
+                <ThemedText style={[styles.shippingTitle, { color: palette.text }]}>{product.shippingLine}</ThemedText>
+                <ThemedText style={[styles.shippingSub, { color: palette.mutedText }]}>{product.shippingEta}</ThemedText>
+              </View>
             </View>
           </View>
 
-          <View style={styles.sectionPad}>
-            <View style={[styles.separator, { borderColor: border }]} />
-            <ThemedText style={styles.sectionTitle}>Artisan Craftsmanship</ThemedText>
-            <ThemedText style={[styles.description, { color: muted }]}>{product.description}</ThemedText>
-
-            <View style={styles.featureList}>
-              {product.features.map((feature) => (
-                <View key={feature} style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color={text} />
-                  <ThemedText style={styles.featureText}>{feature}</ThemedText>
+          <View style={styles.sectionWrap}>
+            <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>Highlights</ThemedText>
+            <View
+              style={[
+                styles.featureCard,
+                {
+                  backgroundColor: palette.elevated,
+                  borderColor: palette.line,
+                },
+              ]}
+            >
+              {product.features.map((feature, index) => (
+                <View
+                  key={feature}
+                  style={[
+                    styles.featureRow,
+                    {
+                      borderBottomColor: index === product.features.length - 1 ? 'transparent' : palette.line,
+                    },
+                  ]}
+                >
+                  <View style={[styles.featureIcon, { backgroundColor: palette.subtleGlow }]}>
+                    <Ionicons name="checkmark" size={13} color={palette.gold} />
+                  </View>
+                  <ThemedText style={[styles.featureText, { color: palette.text }]}>{feature}</ThemedText>
                 </View>
               ))}
             </View>
           </View>
 
-          <View style={styles.relatedSection}>
-            <ThemedText style={[styles.sectionTitle, styles.sectionPadHorizontal]}>Complete Your Collection</ThemedText>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedScroller}>
-              {product.related.map((related) => (
-                <View key={related.id} style={styles.relatedCard}>
-                  <Image source={{ uri: related.image }} style={styles.relatedImage} contentFit="cover" />
-                  <ThemedText style={styles.relatedName}>{related.name}</ThemedText>
-                  <ThemedText style={[styles.relatedPrice, { color: muted }]}>{related.price}</ThemedText>
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          <View style={[styles.sectionPad, { paddingTop: spacing.lg }]}> 
-            <View style={styles.reviewHeader}>
-              <ThemedText style={styles.sectionTitle}>Reviews</ThemedText>
-              <ThemedText style={[styles.writeReview, { color: muted }]}>Write Review</ThemedText>
+          <View style={styles.sectionWrap}>
+            <View style={styles.rowHeader}>
+              <ThemedText style={[styles.sectionHeading, styles.sectionHeadingNoMargin, { color: palette.text }]}>Reviews</ThemedText>
+              <ThemedText style={[styles.linkText, { color: palette.mutedText }]}>Write review</ThemedText>
             </View>
 
             {product.reviews.map((review) => (
-              <View key={review.id} style={[styles.reviewCard, { borderColor: border }]}>
-                <View style={styles.reviewTop}>
-                  <View style={styles.reviewStars}>
+              <View
+                key={review.id}
+                style={[
+                  styles.reviewCard,
+                  {
+                    backgroundColor: palette.elevated,
+                    borderColor: palette.line,
+                  },
+                ]}
+              >
+                <View style={styles.reviewTopRow}>
+                  <View style={styles.starsWrap}>
                     {starArray.map((num) => (
-                      <Ionicons key={num} name="star" size={12} color={num <= review.rating ? text : border} />
+                      <Ionicons key={num} name={getStarIconName(num, review.rating)} size={13} color={palette.gold} />
                     ))}
                   </View>
-                  {review.verified ? <ThemedText style={[styles.verified, { color: muted }]}>Verified Buyer</ThemedText> : null}
+                  {review.verified ? (
+                    <ThemedText style={[styles.verifiedTag, { color: palette.mutedText }]}>Verified buyer</ThemedText>
+                  ) : null}
                 </View>
-                <ThemedText style={styles.reviewTitle}>{review.title}</ThemedText>
-                <ThemedText style={[styles.reviewBody, { color: muted }]}>{review.body}</ThemedText>
-                <ThemedText style={[styles.reviewAuthor, { color: muted }]}>- {review.author}, {review.date}</ThemedText>
+
+                <ThemedText style={[styles.reviewTitle, { color: palette.text }]}>{review.title}</ThemedText>
+                <ThemedText style={[styles.reviewBody, { color: palette.mutedText }]}>{review.body}</ThemedText>
+                <ThemedText style={[styles.reviewAuthor, { color: palette.mutedText }]}> 
+                  {review.author} - {review.date}
+                </ThemedText>
               </View>
             ))}
+          </View>
+
+          <View style={styles.sectionWrap}>
+            <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>You may also like</ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
+              {product.related.map((related) => (
+                <Pressable
+                  key={related.id}
+                  style={[
+                    styles.relatedCard,
+                    {
+                      backgroundColor: palette.elevated,
+                      borderColor: palette.line,
+                    },
+                  ]}
+                >
+                  <Image source={{ uri: related.image }} style={styles.relatedImage} contentFit="cover" />
+                  <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
+                    {related.name}
+                  </ThemedText>
+                  <ThemedText style={[styles.relatedPrice, { color: palette.mutedText }]}>{related.price}</ThemedText>
+                </Pressable>
+              ))}
+            </ScrollView>
           </View>
         </ScrollView>
 
@@ -217,24 +414,34 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
           style={[
             styles.bottomBar,
             {
-              backgroundColor: card,
-              borderTopColor: border,
-              paddingBottom: Math.max(insets.bottom, 10),
+              backgroundColor: palette.elevated,
+              borderTopColor: palette.line,
+              paddingBottom: Math.max(insets.bottom, 12),
             },
-          ]}>
+          ]}
+        >
+          <View style={styles.bottomSummaryRow}>
+            <View>
+              <ThemedText style={[styles.totalLabel, { color: palette.mutedText }]}>Total</ThemedText>
+              <ThemedText style={[styles.totalValue, { color: palette.text }]}>{money(total)}</ThemedText>
+            </View>
+            <ThemedText style={[styles.totalLabel, { color: palette.mutedText }]}>Qty {quantity}</ThemedText>
+          </View>
+
           <View style={styles.bottomRow}>
-            <View style={[styles.qtyWrap, { borderColor: border }]}> 
-              <Pressable style={styles.qtyAction} onPress={() => setQuantity((q) => Math.max(1, q - 1))}>
-                <Ionicons name="remove" size={18} color={text} />
+            <View style={[styles.qtyCard, { borderColor: palette.line, backgroundColor: palette.surface }]}> 
+              <Pressable style={styles.qtyButton} onPress={() => setQuantity((q) => Math.max(1, q - 1))}>
+                <Ionicons name="remove" size={18} color={palette.text} />
               </Pressable>
-              <ThemedText style={styles.qtyValue}>{quantity}</ThemedText>
-              <Pressable style={styles.qtyAction} onPress={() => setQuantity((q) => q + 1)}>
-                <Ionicons name="add" size={18} color={text} />
+              <ThemedText style={[styles.qtyValue, { color: palette.text }]}>{quantity}</ThemedText>
+              <Pressable style={styles.qtyButton} onPress={() => setQuantity((q) => q + 1)}>
+                <Ionicons name="add" size={18} color={palette.text} />
               </Pressable>
             </View>
 
-            <Pressable style={[styles.addToCartButton, { backgroundColor: text }]}>
-              <ThemedText style={[styles.addToCartText, { color: background }]}>Add to Cart - {money(product.price)}</ThemedText>
+            <Pressable style={[styles.addButton, { backgroundColor: palette.text }]}> 
+              <Ionicons name="bag-add-outline" size={16} color={palette.elevated} />
+              <ThemedText style={[styles.addButtonText, { color: palette.elevated }]}>Add to cart</ThemedText>
             </Pressable>
           </View>
         </View>
@@ -244,78 +451,551 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  root: { flex: 1 },
-  header: {
+  safeArea: {
+    flex: 1,
+  },
+  root: {
+    flex: 1,
+  },
+  atmosphereLayer: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
+    height: 360,
+  },
+  orbOne: {
+    position: 'absolute',
+    width: 300,
+    height: 300,
+    borderRadius: 300,
+    left: -122,
+    top: 32,
+    opacity: 0.56,
+  },
+  orbTwo: {
+    position: 'absolute',
+    width: 244,
+    height: 244,
+    borderRadius: 244,
+    right: -90,
+    top: 170,
+    opacity: 0.5,
+  },
+  headerRow: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
     zIndex: 20,
-    height: 62,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    ...luxuryShadow,
+  },
+  headerButtonLarge: {
+    width: 44,
+    height: 44,
+  },
+  heroSection: {
     paddingHorizontal: spacing.lg,
+  },
+  heroCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    overflow: 'hidden',
+    ...luxuryShadow,
+  },
+  heroImage: {
+    width: '100%',
+    aspectRatio: 1.07,
+  },
+  heroTopShade: {
+    ...StyleSheet.absoluteFillObject,
+    bottom: '46%',
+  },
+  heroBottomShade: {
+    ...StyleSheet.absoluteFillObject,
+    top: '42%',
+  },
+  heroTopRow: {
+    position: 'absolute',
+    top: spacing.sm,
+    left: spacing.sm,
+    right: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  badge: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  badgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
+  photoCountPill: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  photoCountText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  heroBottomMeta: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+  },
+  heroMetaTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 19,
+    lineHeight: 24,
+    fontWeight: '700',
+  },
+  heroMetaSub: {
+    marginTop: 2,
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  thumbRail: {
+    gap: spacing.xs,
+    paddingTop: spacing.sm,
+    paddingBottom: 2,
+  },
+  thumbButton: {
+    borderWidth: 1,
+    borderRadius: radius.sm,
+    padding: 4,
+  },
+  thumbImage: {
+    width: 62,
+    height: 62,
+    borderRadius: 8,
+  },
+  detailsCard: {
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.lg,
+    ...luxuryShadow,
+  },
+  brand: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  title: {
+    fontFamily: Fonts.serif,
+    fontSize: 30,
+    lineHeight: 36,
+    fontWeight: '700',
+  },
+  metaRibbon: {
+    marginTop: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  ratingChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  ratingStars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  ratingValue: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  ratingCount: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  stockChip: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  stockDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 8,
+  },
+  stockText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: spacing.md,
+  },
+  price: {
+    fontFamily: Fonts.serif,
+    fontSize: 32,
+    fontWeight: '700',
+  },
+  originalPrice: {
+    fontFamily: Fonts.serif,
+    fontSize: 20,
+    textDecorationLine: 'line-through',
+  },
+  savePill: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginLeft: 'auto',
+  },
+  saveText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+    fontWeight: '700',
+  },
+  description: {
+    marginTop: spacing.md,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  trustGrid: {
+    marginTop: spacing.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    paddingVertical: spacing.sm,
+    gap: 10,
+  },
+  trustItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  trustText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  optionBlock: {
+    marginTop: spacing.md,
+  },
+  optionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  optionTitle: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
+  optionSelected: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  colorRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  colorOuter: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  colorInner: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+  },
+  sizeGrid: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    flexWrap: 'wrap',
+  },
+  sizeButton: {
+    minWidth: 86,
+    height: 40,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+  },
+  sizeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+  },
+  sectionWrap: {
+    marginTop: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
+  shippingCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  shippingIconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shippingCopy: {
+    flex: 1,
+  },
+  shippingTitle: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  shippingSub: {
+    marginTop: 2,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+  },
+  sectionHeading: {
+    fontFamily: Fonts.serif,
+    fontSize: 23,
+    fontWeight: '700',
+    marginBottom: spacing.sm,
+  },
+  sectionHeadingNoMargin: {
+    marginBottom: 0,
+  },
+  featureCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+  },
+  featureIcon: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  rowHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  linkText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.9,
+    fontWeight: '700',
+  },
+  reviewCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  reviewTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  starsWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  verifiedTag: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  reviewTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 17,
+    fontWeight: '700',
+    marginBottom: 6,
+  },
+  reviewBody: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  reviewAuthor: {
+    marginTop: spacing.sm,
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  relatedRail: {
+    gap: spacing.sm,
+  },
+  relatedCard: {
+    width: 178,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.sm,
+  },
+  relatedImage: {
+    width: '100%',
+    aspectRatio: 1,
+    borderRadius: radius.sm,
+    marginBottom: spacing.xs,
+  },
+  relatedName: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 6,
+    minHeight: 34,
+  },
+  relatedPrice: {
+    fontFamily: Fonts.serif,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderTopWidth: 1,
+    paddingTop: 10,
+    paddingHorizontal: spacing.lg,
+  },
+  bottomSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  totalLabel: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+    fontWeight: '700',
+  },
+  totalValue: {
+    marginTop: 1,
+    fontFamily: Fonts.serif,
+    fontSize: 21,
+    fontWeight: '700',
+  },
+  bottomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  qtyCard: {
+    width: 110,
+    height: 52,
+    borderRadius: radius.pill,
+    borderWidth: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderBottomWidth: 1,
+    paddingHorizontal: 10,
   },
-  headerButton: { width: 36, height: 36, alignItems: 'center', justifyContent: 'center' },
-  brandText: { fontFamily: Fonts.serif, fontSize: 14, letterSpacing: 1.5, fontWeight: '700', textTransform: 'uppercase', flex: 1, textAlign: 'center' },
-  heroWrap: { position: 'relative' },
-  heroImage: { width: '100%', aspectRatio: 4 / 5 },
-  badgeWrap: { position: 'absolute', top: spacing.md, left: 0, paddingHorizontal: 14, paddingVertical: 7 },
-  badgeText: { fontFamily: Fonts.sans, fontSize: 10, textTransform: 'uppercase', letterSpacing: 1.1, fontWeight: '700' },
-  wishlistButton: { position: 'absolute', top: spacing.md, right: spacing.md, width: 46, height: 46, borderRadius: 46, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  dotWrap: { position: 'absolute', bottom: spacing.md, left: 0, right: 0, flexDirection: 'row', justifyContent: 'center', gap: 8 },
-  dot: { width: 7, height: 7, borderRadius: 7 },
-  sectionPad: { paddingHorizontal: spacing.lg, paddingVertical: spacing.lg },
-  ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginBottom: spacing.xs },
-  ratingText: { marginLeft: 8, fontFamily: Fonts.sans, fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.8, fontWeight: '700' },
-  title: { fontFamily: Fonts.serif, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: 0.2, marginBottom: spacing.md },
-  priceRow: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, marginBottom: spacing.lg },
-  price: { fontFamily: Fonts.serif, fontSize: 30, fontWeight: '700' },
-  originalPrice: { fontFamily: Fonts.serif, fontSize: 20, textDecorationLine: 'line-through' },
-  savePill: { marginLeft: 'auto', borderWidth: 1, borderRadius: radius.sm, paddingHorizontal: 8, paddingVertical: 4 },
-  saveText: { fontFamily: Fonts.sans, fontSize: 11, fontWeight: '700' },
-  optionGroup: { marginTop: spacing.sm },
-  optionLabel: { fontFamily: Fonts.sans, fontSize: 11, letterSpacing: 1.1, textTransform: 'uppercase', fontWeight: '700', marginBottom: spacing.sm },
-  colorRow: { flexDirection: 'row', gap: spacing.xs },
-  colorOuter: { width: 34, height: 34, borderRadius: 34, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  colorInner: { width: 24, height: 24, borderRadius: 24 },
-  sizeGrid: { flexDirection: 'row', gap: spacing.xs },
-  sizeButton: { flex: 1, height: 44, borderWidth: 1, alignItems: 'center', justifyContent: 'center' },
-  sizeButtonText: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
-  shipCard: { marginHorizontal: spacing.lg, borderWidth: 1, borderRadius: radius.md, padding: spacing.md, flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
-  shipTextWrap: { flex: 1 },
-  shipTitle: { fontFamily: Fonts.sans, fontSize: 13, fontWeight: '700' },
-  shipSub: { fontFamily: Fonts.sans, fontSize: 13, marginTop: 4 },
-  separator: { borderTopWidth: 1, marginBottom: spacing.lg },
-  sectionTitle: { fontFamily: Fonts.serif, fontSize: 24, fontWeight: '700', marginBottom: spacing.sm },
-  description: { fontFamily: Fonts.sans, fontSize: 15, lineHeight: 24 },
-  featureList: { marginTop: spacing.md, gap: spacing.sm },
-  featureRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  featureText: { fontFamily: Fonts.sans, fontSize: 14, fontWeight: '600' },
-  relatedSection: { paddingVertical: spacing.lg },
-  sectionPadHorizontal: { paddingHorizontal: spacing.lg },
-  relatedScroller: { paddingHorizontal: spacing.lg, gap: spacing.sm },
-  relatedCard: { width: 168 },
-  relatedImage: { width: '100%', aspectRatio: 1, borderRadius: radius.md, marginBottom: 10 },
-  relatedName: { fontFamily: Fonts.sans, fontSize: 12, fontWeight: '700', textTransform: 'uppercase', marginBottom: 4 },
-  relatedPrice: { fontFamily: Fonts.serif, fontSize: 14, fontWeight: '700' },
-  reviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.sm },
-  writeReview: { fontFamily: Fonts.sans, fontSize: 11, textTransform: 'uppercase', fontWeight: '700', letterSpacing: 0.8 },
-  reviewCard: { borderBottomWidth: 1, paddingVertical: spacing.md },
-  reviewTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  reviewStars: { flexDirection: 'row', gap: 2 },
-  verified: { fontFamily: Fonts.sans, fontSize: 10, textTransform: 'uppercase', fontWeight: '700' },
-  reviewTitle: { fontFamily: Fonts.serif, fontSize: 16, fontWeight: '700', marginBottom: 6 },
-  reviewBody: { fontFamily: Fonts.sans, fontSize: 13, lineHeight: 21 },
-  reviewAuthor: { marginTop: 10, fontFamily: Fonts.sans, fontSize: 11, fontWeight: '500' },
-  bottomBar: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopWidth: 1, paddingTop: 12, paddingHorizontal: spacing.lg },
-  bottomRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  qtyWrap: { width: 108, height: 56, borderWidth: 1, borderRadius: radius.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 8 },
-  qtyAction: { width: 28, height: 28, alignItems: 'center', justifyContent: 'center' },
-  qtyValue: { fontFamily: Fonts.serif, fontSize: 20, fontWeight: '700' },
-  addToCartButton: { flex: 1, height: 56, borderRadius: radius.sm, alignItems: 'center', justifyContent: 'center' },
-  addToCartText: { fontFamily: Fonts.sans, fontSize: 13, textTransform: 'uppercase', letterSpacing: 1.2, fontWeight: '700' },
+  qtyButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qtyValue: {
+    fontFamily: Fonts.serif,
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  addButton: {
+    flex: 1,
+    height: 52,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  addButtonText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    fontWeight: '700',
+  },
 });
