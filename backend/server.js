@@ -14,6 +14,8 @@ const Order = require('./models/Order');
 const Wishlist = require('./models/Wishlist');
 const BuyLater = require('./models/BuyLater');
 
+const { upload } = require('./config/cloudinary');
+
 const app = express();
 const PORT = process.env.PORT || 3001;
 
@@ -136,6 +138,19 @@ app.get('/products/:id', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: 'Server error' });
   }
+});
+
+// Image Upload Route (Cloudinary)
+app.post('/upload', authenticateToken, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image uploaded' });
+  }
+  
+  // Return the secure Cloudinary URL that Multer-Storage-Cloudinary generated
+  res.json({
+    imageUrl: req.file.path,
+    message: 'Image uploaded successfully'
+  });
 });
 
 // --- Cart Routes ---
