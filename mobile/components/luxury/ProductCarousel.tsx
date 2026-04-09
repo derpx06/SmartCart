@@ -37,7 +37,15 @@ export function ProductCarousel({
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.skeletonRow}>
           {[1, 2].map((item) => (
-            <View key={item} style={[styles.skeletonCard, { backgroundColor: card, borderColor: border }]}>
+            <View
+              key={item}
+              style={[
+                styles.skeletonCard,
+                {
+                  backgroundColor: card,
+                  borderColor: border,
+                },
+              ]}>
               <SkeletonBlock height={145} borderRadius={radius.md} />
               <SkeletonBlock height={16} width="80%" style={styles.skeletonLine} />
               <SkeletonBlock height={16} width="42%" style={styles.skeletonLine} />
@@ -67,7 +75,17 @@ export function ProductCarousel({
                     contentFit="cover"
                     transition={450}
                   />
-                  <View style={[styles.wishlistChip, { backgroundColor: background, borderColor: border }]}>
+                  <View style={[styles.featureChip, { backgroundColor: text }]}>
+                    <Text style={[styles.featureText, { color: background }]}>NEW</Text>
+                  </View>
+                  <View
+                    style={[
+                      styles.wishlistChip,
+                      {
+                        backgroundColor: card,
+                        borderColor: border,
+                      },
+                    ]}>
                     <Ionicons name="heart-outline" size={16} color={text} />
                   </View>
                 </View>
@@ -76,7 +94,7 @@ export function ProductCarousel({
                     {product.name}
                   </Text>
                   <Text style={[styles.price, { color: text }]}>{product.price}</Text>
-                  <View style={styles.ratingRow}>
+                  <View style={[styles.ratingRow, { backgroundColor: card, borderColor: border }]}>
                     <Ionicons name="star" size={13} color={text} />
                     <Text style={[styles.rating, { color: mutedText }]}>
                       {product.rating.toFixed(1)}
@@ -94,11 +112,11 @@ export function ProductCarousel({
 
 const styles = StyleSheet.create({
   skeletonRow: {
-    paddingRight: spacing.lg,
+    paddingRight: spacing.xl,
   },
   skeletonCard: {
     width: 188,
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
     padding: spacing.sm,
     borderRadius: radius.lg,
     backgroundColor: 'transparent',
@@ -109,11 +127,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   scrollContent: {
-    paddingRight: spacing.lg,
+    paddingRight: spacing.xl,
   },
   cardWrap: {
     width: 188,
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   card: {
     borderRadius: radius.lg,
@@ -127,6 +145,20 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
+  },
+  featureChip: {
+    position: 'absolute',
+    left: spacing.xs,
+    top: spacing.xs,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  featureText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    fontWeight: '700',
   },
   image: {
     width: '100%',
@@ -147,7 +179,7 @@ const styles = StyleSheet.create({
   },
   content: {
     marginTop: spacing.sm,
-    gap: 6,
+    gap: 8,
   },
   name: {
     fontFamily: Fonts.sans,
@@ -165,6 +197,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderWidth: 1,
   },
   rating: {
     fontFamily: Fonts.sans,

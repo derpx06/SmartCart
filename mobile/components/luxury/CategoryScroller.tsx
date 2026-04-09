@@ -18,7 +18,6 @@ type CategoryScrollerProps = {
 export function CategoryScroller({ categories, loading = false }: CategoryScrollerProps) {
   const card = useThemeColor({}, 'card');
   const text = useThemeColor({}, 'text');
-  const background = useThemeColor({}, 'background');
 
   return (
     <View>
@@ -39,8 +38,8 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
             <AnimatedPressable key={category.id} containerStyle={styles.cardWrap}>
               <View style={[styles.card, { backgroundColor: card }]}>
                 <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={450} />
-                <View style={[styles.tint, { backgroundColor: background, opacity: 0.2 }]} />
-                <Text style={[styles.label, { color: text }]}>{category.title}</Text>
+                <View style={[styles.tint, { backgroundColor: text, opacity: 0.32 }]} />
+                <Text style={[styles.label, { color: '#FFF7EE' }]}>{category.title}</Text>
               </View>
             </AnimatedPressable>
           ))}
@@ -52,14 +51,14 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
 
 const styles = StyleSheet.create({
   loadingRow: {
-    gap: spacing.sm,
-    paddingRight: spacing.lg,
+    gap: spacing.md,
+    paddingRight: spacing.xl,
   },
   scrollContent: {
-    paddingRight: spacing.lg,
+    paddingRight: spacing.xl,
   },
   cardWrap: {
-    marginRight: spacing.sm,
+    marginRight: spacing.md,
   },
   card: {
     width: 130,

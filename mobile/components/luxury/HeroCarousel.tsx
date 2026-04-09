@@ -22,13 +22,13 @@ type HeroCarouselProps = {
 };
 
 export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
-  const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
   const border = useThemeColor({}, 'border');
   const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
   const { width } = useWindowDimensions();
+  const slideGap = spacing.md;
   const cardWidth = useMemo(() => width - spacing.lg * 2, [width]);
+  const snapInterval = useMemo(() => cardWidth + slideGap, [cardWidth, slideGap]);
   const listRef = useRef<FlatList<HeroSlide>>(null);
   const activeRef = useRef(0);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -41,7 +41,7 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
     const timer = setInterval(() => {
       const nextIndex = (activeRef.current + 1) % slides.length;
       listRef.current?.scrollToOffset({
-        offset: nextIndex * cardWidth,
+        offset: nextIndex * snapInterval,
         animated: true,
       });
       activeRef.current = nextIndex;
@@ -49,7 +49,7 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
     }, 5200);
 
     return () => clearInterval(timer);
-  }, [cardWidth, loading, slides.length]);
+  }, [loading, slides.length, snapInterval]);
 
   if (loading) {
     return (
@@ -59,16 +59,31 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
     );
   }
 
-  const renderSlide: ListRenderItem<HeroSlide> = ({ item }) => (
-    <View style={[styles.slideWrap, { width: cardWidth, backgroundColor: card }]}>
+  const renderSlide: ListRenderItem<HeroSlide> = ({ item, index }) => (
+    <View
+      style={[
+        styles.slideWrap,
+        {
+          width: cardWidth,
+          backgroundColor: card,
+          marginRight: index === slides.length - 1 ? 0 : slideGap,
+        },
+      ]}>
       <Image source={{ uri: item.image }} style={styles.heroImage} contentFit="cover" transition={700} />
-      <View style={[styles.overlay, { backgroundColor: background, opacity: 0.3 }]} />
+      <View style={[styles.overlay, { backgroundColor: text, opacity: 0.34 }]} />
       <View style={styles.copyWrap}>
-        <Text style={[styles.title, { color: text }]}>{item.title}</Text>
-        <Text style={[styles.subtitle, { color: mutedText }]}>{item.subtitle}</Text>
+        <Text style={[styles.title, { color: '#FFF9F2' }]}>{item.title}</Text>
+        <Text style={[styles.subtitle, { color: '#F2E8DD' }]}>{item.subtitle}</Text>
         <AnimatedPressable containerStyle={styles.ctaWrap}>
-          <View style={[styles.ctaButton, { backgroundColor: card, borderColor: border }]}>
-            <Text style={[styles.ctaText, { color: text }]}>{item.ctaLabel}</Text>
+          <View
+            style={[
+              styles.ctaButton,
+              {
+                backgroundColor: card,
+                borderColor: border,
+              },
+            ]}>
+            <Text style={[styles.ctaText, { color: '#221F1A' }]}>{item.ctaLabel}</Text>
           </View>
         </AnimatedPressable>
       </View>
@@ -86,15 +101,15 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        snapToInterval={cardWidth}
+        snapToInterval={snapInterval}
         decelerationRate="fast"
         getItemLayout={(_, index) => ({
-          length: cardWidth,
-          offset: cardWidth * index,
+          length: snapInterval,
+          offset: snapInterval * index,
           index,
         })}
         onMomentumScrollEnd={(event) => {
-          const next = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
+          const next = Math.round(event.nativeEvent.contentOffset.x / snapInterval);
           activeRef.current = next;
           setActiveIndex(next);
         }}

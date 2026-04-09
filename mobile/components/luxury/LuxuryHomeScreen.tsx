@@ -66,9 +66,6 @@ export function LuxuryHomeScreen() {
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
       <View style={[styles.root, { backgroundColor: background }]}>
-        <View style={[styles.bgOrbOne, { backgroundColor: text }]} />
-        <View style={[styles.bgOrbTwo, { backgroundColor: text }]} />
-
         <Animated.View
           style={[
             styles.stickyHeader,
@@ -92,15 +89,34 @@ export function LuxuryHomeScreen() {
               <Text style={[styles.brand, { color: text }]}>AURELIA HOME</Text>
             </View>
             <View style={styles.iconRow}>
-              <Feather name="heart" size={19} color={text} />
-              <Feather name="shopping-bag" size={19} color={text} />
+              <Pressable style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
+                <Feather name="heart" size={17} color={text} />
+              </Pressable>
+              <Pressable style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
+                <Feather name="shopping-bag" size={17} color={text} />
+              </Pressable>
               <Pressable
                 onPress={() => router.push('/(auth)/sign-in')}
                 hitSlop={10}
-                style={styles.profileTrigger}>
-                <Feather name="user" size={19} color={text} />
+                style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
+                <Feather name="user" size={17} color={text} />
               </Pressable>
             </View>
+          </View>
+
+          <View style={styles.headerMetaRow}>
+            <View
+              style={[
+                styles.metaPill,
+                {
+                  backgroundColor: card,
+                  borderColor: border,
+                },
+              ]}>
+              <Feather name="truck" size={12} color={text} />
+              <Text style={[styles.metaText, { color: mutedText }]}>Express delivery in 90 mins</Text>
+            </View>
+            <Text style={[styles.metaLink, { color: text }]}>Curated picks</Text>
           </View>
 
           <View style={[styles.searchWrap, { backgroundColor: card, borderColor: border }]}>
@@ -118,7 +134,7 @@ export function LuxuryHomeScreen() {
         <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={{
-            paddingTop: insets.top + 126,
+            paddingTop: insets.top + 142,
             paddingBottom: 110,
           }}
           showsVerticalScrollIndicator={false}
@@ -127,7 +143,7 @@ export function LuxuryHomeScreen() {
             { useNativeDriver: false },
           )}
           scrollEventThrottle={16}>
-          <RevealSection>
+          <RevealSection style={styles.heroWrap}>
             <HeroCarousel slides={heroSlides} loading={loading} />
           </RevealSection>
 
@@ -177,24 +193,6 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  bgOrbOne: {
-    position: 'absolute',
-    top: -120,
-    right: -70,
-    width: 260,
-    height: 260,
-    borderRadius: 260,
-    opacity: 0.05,
-  },
-  bgOrbTwo: {
-    position: 'absolute',
-    top: 290,
-    left: -120,
-    width: 250,
-    height: 250,
-    borderRadius: 250,
-    opacity: 0.04,
-  },
   stickyHeader: {
     position: 'absolute',
     top: 0,
@@ -238,9 +236,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  profileTrigger: {
+  iconButton: {
     borderRadius: 999,
-    padding: 2,
+    borderWidth: 1,
+    width: 34,
+    height: 34,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  metaPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  metaText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    letterSpacing: 0.2,
+  },
+  metaLink: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    letterSpacing: 0.4,
+    fontWeight: '600',
   },
   searchWrap: {
     borderRadius: radius.pill,
@@ -262,6 +290,9 @@ const styles = StyleSheet.create({
   },
   sectionWrap: {
     paddingHorizontal: spacing.lg,
-    marginTop: spacing.xxl,
+    marginTop: 44,
+  },
+  heroWrap: {
+    marginTop: spacing.lg,
   },
 });
