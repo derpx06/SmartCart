@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Lock, User } from 'lucide-react';
+import { Lock, ShieldCheck, Sparkles, User } from 'lucide-react';
 
 export default function Login() {
   const { login, authError } = useAuth();
@@ -13,45 +13,82 @@ export default function Login() {
   };
 
   return (
-    <div style={{ display: 'flex', width: '100%', alignItems: 'center', justifyContent: 'center' }}>
-      <div className="glass-card" style={{ width: '400px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
-        <div style={{ textAlign: 'center', marginBottom: '8px' }}>
-          <h2 style={{ color: 'white', marginBottom: '8px' }}>Admin Console</h2>
-          <p className="text-muted" style={{ fontSize: '14px' }}>Sign in to access your dashboard.</p>
-        </div>
-
-        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ position: 'relative' }}>
-            <User style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-secondary)' }} size={18} />
-            <input 
-              type="text" 
-              className="input-field" 
-              placeholder="Username"
-              style={{ paddingLeft: '40px' }}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          
-          <div style={{ position: 'relative' }}>
-            <Lock style={{ position: 'absolute', left: '12px', top: '12px', color: 'var(--text-secondary)' }} size={18} />
-            <input 
-              type="password" 
-              className="input-field" 
-              placeholder="Password"
-              style={{ paddingLeft: '40px' }}
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-            />
+    <div className="login-shell">
+      <div className="login-card glass">
+        <section className="login-brand-panel">
+          <div className="login-brand-badge">
+            <ShieldCheck size={16} />
+            <span>SmartCart Core</span>
           </div>
 
-          <button type="submit" className="btn btn-primary" style={{ marginTop: '8px', padding: '12px' }}>
-            Access Dashboard
-          </button>
-          {authError ? <p style={{ color: 'var(--danger)', fontSize: '13px' }}>{authError}</p> : null}
-        </form>
+          <h1 className="login-brand-title">Operations Control Center</h1>
+          <p className="login-brand-subtext">
+            Monitor products, orders, and storefront performance from one secure workspace.
+          </p>
+
+          <div className="login-brand-points">
+            <div className="login-point">
+              <Sparkles size={14} />
+              <span>Real-time product and order visibility</span>
+            </div>
+            <div className="login-point">
+              <Sparkles size={14} />
+              <span>Protected admin-only workflows</span>
+            </div>
+            <div className="login-point">
+              <Sparkles size={14} />
+              <span>Fast actions with clean dashboard controls</span>
+            </div>
+          </div>
+        </section>
+
+        <section className="login-form-panel">
+          <div className="login-form-header">
+            <h2>Welcome Back</h2>
+            <p className="text-muted">Sign in to access your dashboard.</p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="login-form">
+            <label className="login-field">
+              <span className="login-field-label">Username</span>
+              <div className="login-input-wrap">
+                <User className="login-input-icon" size={18} />
+                <input
+                  type="text"
+                  className="input-field login-input"
+                  placeholder="admin@smartcart.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              </div>
+            </label>
+
+            <label className="login-field">
+              <span className="login-field-label">Password</span>
+              <div className="login-input-wrap">
+                <Lock className="login-input-icon" size={18} />
+                <input
+                  type="password"
+                  className="input-field login-input"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </label>
+
+            <button type="submit" className="btn btn-primary login-submit-btn">
+              Access Dashboard
+            </button>
+            {authError ? <p className="login-error">{authError}</p> : null}
+          </form>
+
+          <p className="login-help text-muted">
+            Need access? Contact your system administrator to provision credentials.
+          </p>
+        </section>
       </div>
     </div>
   );
