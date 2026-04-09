@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -10,6 +10,8 @@ import { radius, spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
 import { useThemeColor } from '@/hooks/use-theme-color';
+import { api } from '@/lib/api';
+import { useSmartCartStore } from '@/store/smart-cart-store';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -35,6 +37,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [selectedColorId, setSelectedColorId] = useState(product.selectedColorId);
   const [selectedSize, setSelectedSize] = useState(product.selectedSize);
   const [quantity, setQuantity] = useState(1);
+  const [saving, setSaving] = useState(false);
 
   const savingPercent = useMemo(() => {
     if (!product.originalPrice || product.originalPrice <= product.price) {
@@ -44,6 +47,37 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   }, [product.originalPrice, product.price]);
 
   const selectedColorName = product.colors.find((c) => c.id === selectedColorId)?.name ?? product.colors[0]?.name;
+
+  const handleAddToCart = async () => {
+    if (!product.id) {
+      Alert.alert('Unavailable', 'This product is not synced with the backend yet.');
+      return;
+    }
+
+    try {
+      setSaving(true);
+      await api.addToCart(product.id, quantity);
+      await useSmartCartStore.getState().refresh();
+      router.push('/(tabs)/cart');
+    } catch (err: any) {
+      Alert.alert('Cart update failed', err.message || 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleAddToWishlist = async () => {
+    if (!product.id) {
+      return;
+    }
+
+    try {
+      await api.addToWishlist(product.id);
+      Alert.alert('Saved', 'Added to wishlist.');
+    } catch (err: any) {
+      Alert.alert('Wishlist update failed', err.message || 'Please try again.');
+    }
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
@@ -66,7 +100,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               <ThemedText style={[styles.badgeText, { color: background }]}>{product.badge}</ThemedText>
             </View>
 
-            <Pressable style={[styles.wishlistButton, { backgroundColor: card, borderColor: border }]}>
+            <Pressable onPress={handleAddToWishlist} style={[styles.wishlistButton, { backgroundColor: card, borderColor: border }]}>
               <Ionicons name="heart" size={20} color={text} />
             </Pressable>
 
@@ -180,11 +214,14 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             <ThemedText style={[styles.sectionTitle, styles.sectionPadHorizontal]}>Complete Your Collection</ThemedText>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedScroller}>
               {product.related.map((related) => (
-                <View key={related.id} style={styles.relatedCard}>
+                <Pressable
+                  key={related.id}
+                  style={styles.relatedCard}
+                  onPress={() => related.slug && router.push(`/product/${related.slug}`)}>
                   <Image source={{ uri: related.image }} style={styles.relatedImage} contentFit="cover" />
                   <ThemedText style={styles.relatedName}>{related.name}</ThemedText>
                   <ThemedText style={[styles.relatedPrice, { color: muted }]}>{related.price}</ThemedText>
-                </View>
+                </Pressable>
               ))}
             </ScrollView>
           </View>
@@ -233,8 +270,10 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               </Pressable>
             </View>
 
-            <Pressable style={[styles.addToCartButton, { backgroundColor: text }]}>
-              <ThemedText style={[styles.addToCartText, { color: background }]}>Add to Cart - {money(product.price)}</ThemedText>
+            <Pressable onPress={handleAddToCart} style={[styles.addToCartButton, { backgroundColor: text }]}>
+              <ThemedText style={[styles.addToCartText, { color: background }]}>
+                {saving ? 'ADDING...' : `Add to Cart - ${money(product.price)}`}
+              </ThemedText>
             </Pressable>
           </View>
         </View>

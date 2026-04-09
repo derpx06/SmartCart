@@ -25,6 +25,8 @@ export default function OrderDetails() {
       case 'Pending': return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
       case 'Shipped': return { bg: 'rgba(109, 64, 255, 0.1)', color: 'var(--accent-base)' };
       case 'Delivered': return { bg: 'rgba(0, 210, 133, 0.1)', color: 'var(--success)' };
+      case 'Cancelled': return { bg: 'rgba(255, 74, 90, 0.1)', color: 'var(--danger)' };
+      default: return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
     }
   };
 
@@ -44,7 +46,7 @@ export default function OrderDetails() {
         </div>
         <select 
           value={order.status} 
-          onChange={(e) => updateOrderStatus(order.id, e.target.value as Order['status'])}
+          onChange={(e) => void updateOrderStatus(order.id, e.target.value as Order['status'])}
           style={{
             backgroundColor: scheme.bg,
             color: scheme.color,
@@ -62,6 +64,7 @@ export default function OrderDetails() {
           <option value="Pending" style={{ color: 'black' }}>Pending</option>
           <option value="Shipped" style={{ color: 'black' }}>Shipped</option>
           <option value="Delivered" style={{ color: 'black' }}>Delivered</option>
+          <option value="Cancelled" style={{ color: 'black' }}>Cancelled</option>
         </select>
       </div>
 

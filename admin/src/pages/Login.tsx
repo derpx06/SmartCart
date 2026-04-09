@@ -3,13 +3,13 @@ import { useAuth } from '../contexts/AuthContext';
 import { Lock, User } from 'lucide-react';
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, authError } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    login(email, password);
+    await login(email, password);
   };
 
   return (
@@ -50,6 +50,7 @@ export default function Login() {
           <button type="submit" className="btn btn-primary" style={{ marginTop: '8px', padding: '12px' }}>
             Access Dashboard
           </button>
+          {authError ? <p style={{ color: 'var(--danger)', fontSize: '13px' }}>{authError}</p> : null}
         </form>
       </div>
     </div>

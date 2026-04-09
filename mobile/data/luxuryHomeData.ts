@@ -21,6 +21,7 @@ export type CollectionItem = {
 
 export type ProductItem = {
   id: string;
+  slug?: string;
   name: string;
   price: string;
   rating: number;

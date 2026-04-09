@@ -6,6 +6,10 @@ export default function Products() {
   const { products, removeProduct } = useData();
   const navigate = useNavigate();
 
+  const handleRemove = async (id: string) => {
+    await removeProduct(id);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px', position: 'relative' }}>
       
@@ -79,7 +83,7 @@ export default function Products() {
                     <button className="btn btn-outline" style={{ padding: '6px', marginRight: '8px' }} onClick={() => navigate(`/products/${p.id}`)}>
                       <Edit2 size={16} />
                     </button>
-                    <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => removeProduct(p.id)}>
+                    <button className="btn btn-danger" style={{ padding: '6px' }} onClick={() => void handleRemove(p.id)}>
                       <Trash2 size={16} />
                     </button>
                   </td>

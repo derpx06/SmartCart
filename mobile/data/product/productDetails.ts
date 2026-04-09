@@ -10,12 +10,14 @@ export type ProductReview = {
 
 export type RelatedProduct = {
   id: string;
+  slug?: string;
   name: string;
   price: string;
   image: string;
 };
 
 export type ProductDetail = {
+  id?: string;
   slug: string;
   brand: string;
   name: string;
