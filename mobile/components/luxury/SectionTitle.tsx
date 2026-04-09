@@ -1,9 +1,8 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { spacing } from '@/components/luxury/design';
+import { spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type SectionTitleProps = {
   title: string;
@@ -11,13 +10,12 @@ type SectionTitleProps = {
 };
 
 export function SectionTitle({ title, caption }: SectionTitleProps) {
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const palette = useLuxuryPalette();
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: text }]}>{title}</Text>
-      {caption ? <Text style={[styles.caption, { color: mutedText }]}>{caption}</Text> : null}
+      <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
+      {caption ? <Text style={[styles.caption, { color: palette.mutedText }]}>{caption}</Text> : null}
     </View>
   );
 }

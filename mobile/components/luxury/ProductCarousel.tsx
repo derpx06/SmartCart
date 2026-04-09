@@ -4,12 +4,11 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type ProductCarouselProps = {
   title: string;
@@ -24,11 +23,7 @@ export function ProductCarousel({
   products,
   loading = false,
 }: ProductCarouselProps) {
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
-  const background = useThemeColor({}, 'background');
+  const palette = useLuxuryPalette();
 
   return (
     <View>
@@ -42,8 +37,8 @@ export function ProductCarousel({
               style={[
                 styles.skeletonCard,
                 {
-                  backgroundColor: card,
-                  borderColor: border,
+                  backgroundColor: palette.elevated,
+                  borderColor: palette.line,
                 },
               ]}>
               <SkeletonBlock height={145} borderRadius={radius.md} />
@@ -63,8 +58,8 @@ export function ProductCarousel({
                 style={[
                   styles.card,
                   {
-                    backgroundColor: card,
-                    borderColor: border,
+                    backgroundColor: palette.elevated,
+                    borderColor: palette.line,
                   },
                   luxuryShadow,
                 ]}>
@@ -75,28 +70,28 @@ export function ProductCarousel({
                     contentFit="cover"
                     transition={450}
                   />
-                  <View style={[styles.featureChip, { backgroundColor: text }]}>
-                    <Text style={[styles.featureText, { color: background }]}>NEW</Text>
+                  <View style={[styles.featureChip, { backgroundColor: palette.gold }]}>
+                    <Text style={[styles.featureText, { color: palette.chipText }]}>NEW</Text>
                   </View>
                   <View
                     style={[
                       styles.wishlistChip,
                       {
-                        backgroundColor: card,
-                        borderColor: border,
+                        backgroundColor: palette.wishlistChip,
+                        borderColor: palette.line,
                       },
                     ]}>
-                    <Ionicons name="heart-outline" size={16} color={text} />
+                    <Ionicons name="heart-outline" size={16} color={palette.text} />
                   </View>
                 </View>
                 <View style={styles.content}>
-                  <Text style={[styles.name, { color: text }]} numberOfLines={2}>
+                  <Text style={[styles.name, { color: palette.text }]} numberOfLines={2}>
                     {product.name}
                   </Text>
-                  <Text style={[styles.price, { color: text }]}>{product.price}</Text>
-                  <View style={[styles.ratingRow, { backgroundColor: card, borderColor: border }]}>
-                    <Ionicons name="star" size={13} color={text} />
-                    <Text style={[styles.rating, { color: mutedText }]}>
+                  <Text style={[styles.price, { color: palette.text }]}>{product.price}</Text>
+                  <View style={[styles.ratingRow, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+                    <Ionicons name="star" size={13} color={palette.gold} />
+                    <Text style={[styles.rating, { color: palette.mutedText }]}>
                       {product.rating.toFixed(1)}
                     </Text>
                   </View>

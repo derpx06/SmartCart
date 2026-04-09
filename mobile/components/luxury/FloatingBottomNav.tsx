@@ -4,9 +4,8 @@ import { StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 const items = [
   { key: 'home', icon: 'home-outline', label: 'Home' },
@@ -22,9 +21,7 @@ type FloatingBottomNavProps = {
 
 export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps) {
   const insets = useSafeAreaInsets();
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const palette = useLuxuryPalette();
 
   return (
     <View style={[styles.wrap, { bottom: Math.max(insets.bottom + 8, 18) }]} pointerEvents="box-none">
@@ -32,8 +29,8 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
         style={[
           styles.nav,
           {
-            backgroundColor: card,
-            borderColor: border,
+            backgroundColor: palette.navBg,
+            borderColor: palette.navBorder,
           },
           luxuryShadow,
         ]}>
@@ -46,18 +43,18 @@ export function FloatingBottomNav({ activeKey = 'home' }: FloatingBottomNavProps
                 style={[
                   styles.item,
                   active && styles.itemActive,
-                  active && { backgroundColor: border },
+                  active && { backgroundColor: palette.navActiveBg },
                 ]}>
                 <Ionicons
                   name={item.icon}
                   size={18}
-                  color={active ? card : mutedText}
+                  color={active ? palette.navTextActive : palette.navText}
                 />
                 <Text
                   style={[
                     styles.label,
                     active && styles.labelActive,
-                    { color: active ? card : mutedText },
+                    { color: active ? palette.navTextActive : palette.navText },
                   ]}>
                   {item.label}
                 </Text>

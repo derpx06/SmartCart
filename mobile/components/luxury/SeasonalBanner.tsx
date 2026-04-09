@@ -3,20 +3,16 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type SeasonalBannerProps = {
   loading?: boolean;
 };
 
 export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const palette = useLuxuryPalette();
 
   if (loading) {
     return <SkeletonBlock height={148} borderRadius={radius.xl} />;
@@ -28,15 +24,15 @@ export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
         style={[
           styles.banner,
           {
-            backgroundColor: card,
-            borderColor: border,
+            backgroundColor: palette.seasonalBg,
+            borderColor: palette.seasonalBorder,
           },
           luxuryShadow,
         ]}>
         <View style={styles.copyWrap}>
-          <Text style={[styles.eyebrow, { color: text }]}>Seasonal Atelier</Text>
-          <Text style={[styles.title, { color: text }]}>Spring Entertaining Curations</Text>
-          <Text style={[styles.subtitle, { color: mutedText }]}>
+          <Text style={[styles.eyebrow, { color: palette.gold }]}>Seasonal Atelier</Text>
+          <Text style={[styles.title, { color: palette.text }]}>Spring Entertaining Curations</Text>
+          <Text style={[styles.subtitle, { color: palette.mutedText }]}>
             Quietly elegant pieces for refined hosting.
           </Text>
         </View>

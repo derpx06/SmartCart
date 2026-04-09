@@ -18,7 +18,7 @@ import { HeroCarousel } from '@/components/luxury/HeroCarousel';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import {
   bestsellers,
   categories,
@@ -35,31 +35,22 @@ export function LuxuryHomeScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [loading, setLoading] = useState(true);
   const background = useThemeColor({}, 'background');
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const palette = useLuxuryPalette();
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1400);
     return () => clearTimeout(timer);
   }, []);
 
-  const headerBackground = scrollY.interpolate({
-    inputRange: [0, 90],
-    outputRange: ['transparent', background],
-    extrapolate: 'clamp',
-  });
-
   const headerBorder = scrollY.interpolate({
     inputRange: [0, 90],
-    outputRange: [0, 1],
+    outputRange: [0, 0.9],
     extrapolate: 'clamp',
   });
 
   const headerShadow = scrollY.interpolate({
     inputRange: [0, 90],
-    outputRange: [0, 0.15],
+    outputRange: [0, 0.18],
     extrapolate: 'clamp',
   });
 
@@ -71,62 +62,71 @@ export function LuxuryHomeScreen() {
             styles.stickyHeader,
             {
               paddingTop: insets.top + 10,
-              backgroundColor: headerBackground,
-              borderBottomColor: border,
-              borderBottomWidth: headerBorder,
-              shadowColor: text,
+              shadowColor: '#140E08',
               shadowOpacity: headerShadow,
             },
           ]}>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.headerBackdrop,
+              {
+                backgroundColor: palette.surface,
+                borderBottomColor: palette.line,
+                borderBottomWidth: headerBorder,
+                opacity: 1,
+              },
+            ]}
+          />
+
           <View style={styles.headerTopRow}>
             <View style={styles.brandWrap}>
               <View
                 style={[
                   styles.logoDot,
-                  { backgroundColor: text, borderColor: background },
+                  { backgroundColor: palette.gold, borderColor: palette.surface },
                 ]}
               />
-              <Text style={[styles.brand, { color: text }]}>AURELIA HOME</Text>
+              <View>
+                <Text style={[styles.brandEyebrow, { color: palette.mutedText }]}>AURELIA ATELIER</Text>
+                <Text style={[styles.brand, { color: palette.text }]}>Luxury Home</Text>
+              </View>
             </View>
             <View style={styles.iconRow}>
-              <Pressable style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
-                <Feather name="heart" size={17} color={text} />
+              <Pressable
+                style={[
+                  styles.iconButton,
+                  { backgroundColor: palette.elevated, borderColor: palette.line },
+                ]}>
+                <Feather name="heart" size={17} color={palette.text} />
               </Pressable>
-              <Pressable style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
-                <Feather name="shopping-bag" size={17} color={text} />
+              <Pressable
+                style={[
+                  styles.iconButton,
+                  { backgroundColor: palette.elevated, borderColor: palette.line },
+                ]}>
+                <Feather name="shopping-bag" size={17} color={palette.text} />
               </Pressable>
               <Pressable
                 onPress={() => router.push('/(auth)/sign-in')}
                 hitSlop={10}
-                style={[styles.iconButton, { backgroundColor: card, borderColor: border }]}>
-                <Feather name="user" size={17} color={text} />
+                style={[
+                  styles.iconButton,
+                  { backgroundColor: palette.elevated, borderColor: palette.line },
+                ]}>
+                <Feather name="user" size={17} color={palette.text} />
               </Pressable>
             </View>
           </View>
 
-          <View style={styles.headerMetaRow}>
-            <View
-              style={[
-                styles.metaPill,
-                {
-                  backgroundColor: card,
-                  borderColor: border,
-                },
-              ]}>
-              <Feather name="truck" size={12} color={text} />
-              <Text style={[styles.metaText, { color: mutedText }]}>Express delivery in 90 mins</Text>
-            </View>
-            <Text style={[styles.metaLink, { color: text }]}>Curated picks</Text>
-          </View>
-
-          <View style={[styles.searchWrap, { backgroundColor: card, borderColor: border }]}>
-            <Ionicons name="search" size={16} color={mutedText} />
+          <View style={[styles.searchWrap, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+            <Ionicons name="search" size={16} color={palette.mutedText} />
             <TextInput
               value=""
               editable={false}
               placeholder="Search cookware, furniture, decor..."
-              placeholderTextColor={mutedText}
-              style={[styles.searchInput, { color: mutedText }]}
+              placeholderTextColor={palette.mutedText}
+              style={[styles.searchInput, { color: palette.text }]}
             />
           </View>
         </Animated.View>
@@ -134,7 +134,7 @@ export function LuxuryHomeScreen() {
         <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={{
-            paddingTop: insets.top + 142,
+            paddingTop: insets.top + 116,
             paddingBottom: 110,
           }}
           showsVerticalScrollIndicator={false}
@@ -143,6 +143,11 @@ export function LuxuryHomeScreen() {
             { useNativeDriver: false },
           )}
           scrollEventThrottle={16}>
+          <View pointerEvents="none" style={styles.atmosphereLayer}>
+            <View style={[styles.orbOne, { backgroundColor: palette.orbOne }]} />
+            <View style={[styles.orbTwo, { backgroundColor: palette.orbTwo }]} />
+          </View>
+
           <RevealSection style={styles.heroWrap}>
             <HeroCarousel slides={heroSlides} loading={loading} />
           </RevealSection>
@@ -193,6 +198,31 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
+  atmosphereLayer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 340,
+  },
+  orbOne: {
+    position: 'absolute',
+    width: 290,
+    height: 290,
+    borderRadius: 290,
+    left: -118,
+    top: 28,
+    opacity: 0.56,
+  },
+  orbTwo: {
+    position: 'absolute',
+    width: 240,
+    height: 240,
+    borderRadius: 240,
+    right: -94,
+    top: 138,
+    opacity: 0.48,
+  },
   stickyHeader: {
     position: 'absolute',
     top: 0,
@@ -207,6 +237,11 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     elevation: 10,
   },
+  headerBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: -1,
+    borderBottomWidth: 0,
+  },
   headerTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -218,6 +253,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
+  brandEyebrow: {
+    fontFamily: Fonts.sans,
+    letterSpacing: 1.2,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    marginBottom: 2,
+    fontWeight: '700',
+  },
   logoDot: {
     width: 16,
     height: 16,
@@ -228,8 +271,8 @@ const styles = StyleSheet.create({
   },
   brand: {
     fontFamily: Fonts.serif,
-    letterSpacing: 1,
-    fontSize: 15,
+    letterSpacing: 0.5,
+    fontSize: 16,
   },
   iconRow: {
     flexDirection: 'row',
@@ -243,32 +286,6 @@ const styles = StyleSheet.create({
     height: 34,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  headerMetaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: spacing.sm,
-  },
-  metaPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  metaText: {
-    fontFamily: Fonts.sans,
-    fontSize: 11,
-    letterSpacing: 0.2,
-  },
-  metaLink: {
-    fontFamily: Fonts.sans,
-    fontSize: 12,
-    letterSpacing: 0.4,
-    fontWeight: '600',
   },
   searchWrap: {
     borderRadius: radius.pill,

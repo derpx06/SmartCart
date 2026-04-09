@@ -3,12 +3,11 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CollectionItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type EditorialCollectionsProps = {
   collections: CollectionItem[];
@@ -16,8 +15,7 @@ type EditorialCollectionsProps = {
 };
 
 export function EditorialCollections({ collections, loading = false }: EditorialCollectionsProps) {
-  const card = useThemeColor({}, 'card');
-  const text = useThemeColor({}, 'text');
+  const palette = useLuxuryPalette();
 
   if (loading) {
     return (
@@ -42,12 +40,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
 
       {lead ? (
         <AnimatedPressable containerStyle={styles.leadWrap}>
-          <View style={[styles.leadCard, { backgroundColor: card }, luxuryShadow]}>
+          <View style={[styles.leadCard, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
             <Image source={{ uri: lead.image }} style={styles.leadImage} contentFit="cover" transition={700} />
-            <View style={[styles.overlay, { backgroundColor: text, opacity: 0.4 }]} />
+            <View style={[styles.overlay, { backgroundColor: palette.collectionOverlay }]} />
             <View style={styles.copyWrap}>
-              <Text style={[styles.leadTitle, { color: '#FFF9F1' }]}>{lead.title}</Text>
-              <Text style={[styles.subtitle, { color: '#EFE4D7' }]}>{lead.subtitle}</Text>
+              <Text style={[styles.leadTitle, { color: palette.heroTitle }]}>{lead.title}</Text>
+              <Text style={[styles.subtitle, { color: palette.heroSubtitle }]}>{lead.subtitle}</Text>
             </View>
           </View>
         </AnimatedPressable>
@@ -56,12 +54,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
       <View style={styles.secondaryRow}>
         {secondary.slice(0, 2).map((item) => (
           <AnimatedPressable key={item.id} containerStyle={styles.secondaryWrap}>
-            <View style={[styles.secondaryCard, { backgroundColor: card }, luxuryShadow]}>
+            <View style={[styles.secondaryCard, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
               <Image source={{ uri: item.image }} style={styles.secondaryImage} contentFit="cover" transition={550} />
-              <View style={[styles.secondaryTint, { backgroundColor: text, opacity: 0.42 }]} />
+              <View style={[styles.secondaryTint, { backgroundColor: palette.collectionSecondaryOverlay }]} />
               <View style={styles.secondaryCopy}>
-                <Text style={[styles.secondaryTitle, { color: '#FFF9F1' }]}>{item.title}</Text>
-                <Text style={[styles.secondarySubtitle, { color: '#EFE4D7' }]} numberOfLines={2}>
+                <Text style={[styles.secondaryTitle, { color: palette.heroTitle }]}>{item.title}</Text>
+                <Text style={[styles.secondarySubtitle, { color: palette.heroSubtitle }]} numberOfLines={2}>
                   {item.subtitle}
                 </Text>
               </View>
@@ -88,6 +86,8 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: radius.xl,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent',
     backgroundColor: 'transparent',
   },
   leadImage: {
@@ -126,6 +126,8 @@ const styles = StyleSheet.create({
     height: 165,
     borderRadius: radius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent',
     backgroundColor: 'transparent',
   },
   secondaryImage: {

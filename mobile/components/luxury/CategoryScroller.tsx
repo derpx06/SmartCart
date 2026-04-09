@@ -3,12 +3,11 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { radius, spacing } from '@/components/luxury/design';
+import { radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CategoryItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type CategoryScrollerProps = {
   categories: CategoryItem[];
@@ -16,8 +15,7 @@ type CategoryScrollerProps = {
 };
 
 export function CategoryScroller({ categories, loading = false }: CategoryScrollerProps) {
-  const card = useThemeColor({}, 'card');
-  const text = useThemeColor({}, 'text');
+  const palette = useLuxuryPalette();
 
   return (
     <View>
@@ -36,10 +34,10 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
           contentContainerStyle={styles.scrollContent}>
           {categories.map((category) => (
             <AnimatedPressable key={category.id} containerStyle={styles.cardWrap}>
-              <View style={[styles.card, { backgroundColor: card }]}>
+              <View style={[styles.card, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
                 <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={450} />
-                <View style={[styles.tint, { backgroundColor: text, opacity: 0.32 }]} />
-                <Text style={[styles.label, { color: '#FFF7EE' }]}>{category.title}</Text>
+                <View style={[styles.tint, { backgroundColor: palette.categoryTint }]} />
+                <Text style={[styles.label, { color: palette.categoryLabel }]}>{category.title}</Text>
               </View>
             </AnimatedPressable>
           ))}
@@ -65,6 +63,8 @@ const styles = StyleSheet.create({
     height: 156,
     borderRadius: radius.lg,
     overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'transparent',
     backgroundColor: 'transparent',
   },
   image: {
