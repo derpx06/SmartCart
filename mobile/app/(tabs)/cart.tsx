@@ -52,18 +52,30 @@ const CART_ITEMS: CartItem[] = [
   },
 ];
 
+import { useSmartCartState } from '@/hooks/use-smart-cart-state';
+
 function money(value: number) {
   return `$${value.toFixed(2)}`;
 }
 
 export default function CartScreen() {
+  const { state, loading, error } = useSmartCartState();
   const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
   const text = useThemeColor({}, 'text');
   const muted = useThemeColor({}, 'mutedText');
   const border = useThemeColor({}, 'border');
 
-  const subtotal = CART_ITEMS.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: background, justifyContent: 'center', alignItems: 'center' }]}>
+        <ThemedText>Loading your SmartCart...</ThemedText>
+      </SafeAreaView>
+    );
+  }
+
+  const items = state?.cart.items || [];
+  const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
 
@@ -81,9 +93,17 @@ export default function CartScreen() {
 
         <View style={styles.heroHeader}>
           <ThemedText style={[styles.kicker, { color: muted }]}>
-            {CART_ITEMS.length} items - {money(subtotal)}
+            {items.length} items - {money(subtotal)}
           </ThemedText>
           <ThemedText style={styles.mainHeading}>Your Selection</ThemedText>
+          {state?.session.behavior === 'slow' && (
+            <View style={[styles.perkPill, { borderColor: border, backgroundColor: '#fffbe6' }]}>
+              <Ionicons name="bulb-outline" size={14} color="#856404" />
+              <ThemedText style={[styles.perkText, { color: '#856404' }]}>
+                Take your time. We've saved your progress.
+              </ThemedText>
+            </View>
+          )}
           <View style={[styles.perkPill, { borderColor: border }]}>
             <Ionicons name="sparkles-outline" size={14} color={text} />
             <ThemedText style={[styles.perkText, { color: text }]}>
@@ -93,9 +113,12 @@ export default function CartScreen() {
         </View>
 
         <View style={styles.itemsWrap}>
-          {CART_ITEMS.map((item) => (
-            <View key={item.id} style={[styles.itemCard, { backgroundColor: card, borderColor: border }]}>
-              <Image source={{ uri: item.image }} style={styles.itemImage} />
+          {items.map((item) => (
+            <View key={item.productId} style={[styles.itemCard, { backgroundColor: card, borderColor: border }]}>
+              {/* Note: In a real app we'd fetch the actual image URL from the product model if not in the state bundle */}
+              <View style={[styles.itemImage, { backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="cart-outline" size={40} color={muted} />
+              </View>
               <View style={styles.itemBody}>
                 <View style={styles.itemTopLine}>
                   <ThemedText numberOfLines={2} style={styles.itemName}>
@@ -103,7 +126,7 @@ export default function CartScreen() {
                   </ThemedText>
                   <ThemedText style={styles.itemPrice}>{money(item.price)}</ThemedText>
                 </View>
-                <ThemedText style={[styles.variant, { color: muted }]}>{item.variant}</ThemedText>
+                <ThemedText style={[styles.variant, { color: muted }]}>{item.category}</ThemedText>
                 <View style={styles.itemBottom}>
                   <View style={[styles.qtyPill, { borderColor: border }]}>
                     <Pressable style={styles.qtyBtn}>
@@ -115,16 +138,17 @@ export default function CartScreen() {
                     </Pressable>
                   </View>
                   <View style={styles.metaWrap}>
-                    {item.lowStock ? (
+                    {state?.inventory[item.productId] === 'OUT_OF_STOCK' ? (
                       <View style={styles.metaRow}>
-                        <Ionicons name="flame-outline" size={12} color="#c52b2b" />
-                        <ThemedText style={styles.lowStock}>{item.lowStock}</ThemedText>
+                        <Ionicons name="alert-circle-outline" size={12} color="#c52b2b" />
+                        <ThemedText style={styles.lowStock}>Out of Stock</ThemedText>
                       </View>
-                    ) : null}
-                    <View style={styles.metaRow}>
-                      <Ionicons name="time-outline" size={12} color={muted} />
-                      <ThemedText style={[styles.delivery, { color: muted }]}>{item.delivery}</ThemedText>
-                    </View>
+                    ) : (
+                      <View style={styles.metaRow}>
+                        <Ionicons name="checkmark-circle-outline" size={12} color="green" />
+                        <ThemedText style={[styles.delivery, { color: 'green' }]}>In Stock</ThemedText>
+                      </View>
+                    )}
                   </View>
                 </View>
               </View>
@@ -146,6 +170,11 @@ export default function CartScreen() {
             <ThemedText style={[styles.rowLabel, { color: muted }]}>Promo (HERITAGE10)</ThemedText>
             <ThemedText style={styles.rowValue}>-{money(discount)}</ThemedText>
           </View>
+          {state?.session.confidence < 0.5 && (
+            <ThemedText style={{ fontSize: 11, color: '#c52b2b', marginTop: 4 }}>
+              * Check if you missed something? Our AI noticed some removals.
+            </ThemedText>
+          )}
           <View style={[styles.totalRow, { borderColor: border }]}>
             <ThemedText style={styles.totalLabel}>Total</ThemedText>
             <ThemedText style={styles.totalValue}>{money(total)}</ThemedText>
