@@ -3,11 +3,12 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CollectionItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type EditorialCollectionsProps = {
   collections: CollectionItem[];
@@ -15,7 +16,10 @@ type EditorialCollectionsProps = {
 };
 
 export function EditorialCollections({ collections, loading = false }: EditorialCollectionsProps) {
-  const luxuryPalette = useLuxuryPalette();
+  const card = useThemeColor({}, 'card');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
+  const background = useThemeColor({}, 'background');
 
   if (loading) {
     return (
@@ -40,12 +44,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
 
       {lead ? (
         <AnimatedPressable containerStyle={styles.leadWrap}>
-          <View style={[styles.leadCard, { backgroundColor: luxuryPalette.beige }]}>
+          <View style={[styles.leadCard, { backgroundColor: card }, luxuryShadow]}>
             <Image source={{ uri: lead.image }} style={styles.leadImage} contentFit="cover" transition={700} />
-            <View style={[styles.overlay, { backgroundColor: luxuryPalette.collectionOverlay }]} />
+            <View style={[styles.overlay, { backgroundColor: background, opacity: 0.35 }]} />
             <View style={styles.copyWrap}>
-              <Text style={[styles.leadTitle, { color: luxuryPalette.heroTitle }]}>{lead.title}</Text>
-              <Text style={[styles.subtitle, { color: luxuryPalette.heroSubtitle }]}>{lead.subtitle}</Text>
+              <Text style={[styles.leadTitle, { color: text }]}>{lead.title}</Text>
+              <Text style={[styles.subtitle, { color: mutedText }]}>{lead.subtitle}</Text>
             </View>
           </View>
         </AnimatedPressable>
@@ -54,14 +58,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
       <View style={styles.secondaryRow}>
         {secondary.slice(0, 2).map((item) => (
           <AnimatedPressable key={item.id} containerStyle={styles.secondaryWrap}>
-            <View style={[styles.secondaryCard, { backgroundColor: luxuryPalette.beige }]}>
+            <View style={[styles.secondaryCard, { backgroundColor: card }, luxuryShadow]}>
               <Image source={{ uri: item.image }} style={styles.secondaryImage} contentFit="cover" transition={550} />
-              <View
-                style={[styles.secondaryTint, { backgroundColor: luxuryPalette.collectionSecondaryOverlay }]}
-              />
+              <View style={[styles.secondaryTint, { backgroundColor: background, opacity: 0.4 }]} />
               <View style={styles.secondaryCopy}>
-                <Text style={[styles.secondaryTitle, { color: luxuryPalette.heroTitle }]}>{item.title}</Text>
-                <Text style={[styles.secondarySubtitle, { color: luxuryPalette.heroSubtitle }]} numberOfLines={2}>
+                <Text style={[styles.secondaryTitle, { color: text }]}>{item.title}</Text>
+                <Text style={[styles.secondarySubtitle, { color: mutedText }]} numberOfLines={2}>
                   {item.subtitle}
                 </Text>
               </View>
@@ -88,8 +90,7 @@ const styles = StyleSheet.create({
     height: 220,
     borderRadius: radius.xl,
     overflow: 'hidden',
-    backgroundColor: '#D8D0C3',
-    ...luxuryShadow,
+    backgroundColor: 'transparent',
   },
   leadImage: {
     width: '100%',
@@ -127,8 +128,7 @@ const styles = StyleSheet.create({
     height: 165,
     borderRadius: radius.lg,
     overflow: 'hidden',
-    backgroundColor: '#D8D0C3',
-    ...luxuryShadow,
+    backgroundColor: 'transparent',
   },
   secondaryImage: {
     width: '100%',

@@ -3,16 +3,20 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type BrandStoryCardProps = {
   loading?: boolean;
 };
 
 export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
-  const luxuryPalette = useLuxuryPalette();
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   if (loading) {
     return <SkeletonBlock height={180} borderRadius={radius.xl} />;
@@ -24,9 +28,10 @@ export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
         style={[
           styles.card,
           {
-            backgroundColor: luxuryPalette.elevated,
-            borderColor: luxuryPalette.line,
+            backgroundColor: card,
+            borderColor: border,
           },
+          luxuryShadow,
         ]}>
         <Image
           source={{
@@ -37,8 +42,8 @@ export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
           transition={500}
         />
         <View style={styles.copyWrap}>
-          <Text style={[styles.title, { color: luxuryPalette.text }]}>Crafted For A Lifetime</Text>
-          <Text style={[styles.copy, { color: luxuryPalette.mutedText }]}>
+          <Text style={[styles.title, { color: text }]}>Crafted For A Lifetime</Text>
+          <Text style={[styles.copy, { color: mutedText }]}>
             Every material is selected for performance, touch, and longevity. Our pieces are built to
             age beautifully in modern homes.
           </Text>
@@ -52,10 +57,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
     overflow: 'hidden',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: '#000',
-    ...luxuryShadow,
+    borderColor: 'transparent',
   },
   image: {
     width: '100%',

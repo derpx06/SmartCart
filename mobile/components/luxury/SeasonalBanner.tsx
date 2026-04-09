@@ -3,16 +3,20 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type SeasonalBannerProps = {
   loading?: boolean;
 };
 
 export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
-  const luxuryPalette = useLuxuryPalette();
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   if (loading) {
     return <SkeletonBlock height={148} borderRadius={radius.xl} />;
@@ -24,14 +28,15 @@ export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
         style={[
           styles.banner,
           {
-            backgroundColor: luxuryPalette.seasonalBg,
-            borderColor: luxuryPalette.seasonalBorder,
+            backgroundColor: card,
+            borderColor: border,
           },
+          luxuryShadow,
         ]}>
         <View style={styles.copyWrap}>
-          <Text style={[styles.eyebrow, { color: luxuryPalette.gold }]}>Seasonal Atelier</Text>
-          <Text style={[styles.title, { color: luxuryPalette.text }]}>Spring Entertaining Curations</Text>
-          <Text style={[styles.subtitle, { color: luxuryPalette.mutedText }]}>
+          <Text style={[styles.eyebrow, { color: text }]}>Seasonal Atelier</Text>
+          <Text style={[styles.title, { color: text }]}>Spring Entertaining Curations</Text>
+          <Text style={[styles.subtitle, { color: mutedText }]}>
             Quietly elegant pieces for refined hosting.
           </Text>
         </View>
@@ -51,14 +56,13 @@ export function SeasonalBanner({ loading = false }: SeasonalBannerProps) {
 const styles = StyleSheet.create({
   banner: {
     borderRadius: radius.xl,
-    backgroundColor: '#fff',
+    backgroundColor: 'transparent',
     padding: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
     borderWidth: 1,
-    borderColor: '#000',
-    ...luxuryShadow,
+    borderColor: 'transparent',
   },
   copyWrap: {
     flex: 1,

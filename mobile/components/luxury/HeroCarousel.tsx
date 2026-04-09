@@ -10,10 +10,11 @@ import {
 } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { radius, spacing } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { HeroSlide } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 type HeroCarouselProps = {
   slides: HeroSlide[];
@@ -21,7 +22,11 @@ type HeroCarouselProps = {
 };
 
 export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
-  const luxuryPalette = useLuxuryPalette();
+  const background = useThemeColor({}, 'background');
+  const card = useThemeColor({}, 'card');
+  const border = useThemeColor({}, 'border');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
   const { width } = useWindowDimensions();
   const cardWidth = useMemo(() => width - spacing.lg * 2, [width]);
   const listRef = useRef<FlatList<HeroSlide>>(null);
@@ -55,15 +60,15 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
   }
 
   const renderSlide: ListRenderItem<HeroSlide> = ({ item }) => (
-    <View style={[styles.slideWrap, { width: cardWidth, backgroundColor: luxuryPalette.beige }]}>
+    <View style={[styles.slideWrap, { width: cardWidth, backgroundColor: card }]}>
       <Image source={{ uri: item.image }} style={styles.heroImage} contentFit="cover" transition={700} />
-      <View style={[styles.overlay, { backgroundColor: luxuryPalette.overlay }]} />
+      <View style={[styles.overlay, { backgroundColor: background, opacity: 0.3 }]} />
       <View style={styles.copyWrap}>
-        <Text style={[styles.title, { color: luxuryPalette.heroTitle }]}>{item.title}</Text>
-        <Text style={[styles.subtitle, { color: luxuryPalette.heroSubtitle }]}>{item.subtitle}</Text>
+        <Text style={[styles.title, { color: text }]}>{item.title}</Text>
+        <Text style={[styles.subtitle, { color: mutedText }]}>{item.subtitle}</Text>
         <AnimatedPressable containerStyle={styles.ctaWrap}>
-          <View style={[styles.ctaButton, { backgroundColor: luxuryPalette.heroCtaBg }]}>
-            <Text style={[styles.ctaText, { color: luxuryPalette.heroCtaText }]}>{item.ctaLabel}</Text>
+          <View style={[styles.ctaButton, { backgroundColor: card, borderColor: border }]}>
+            <Text style={[styles.ctaText, { color: text }]}>{item.ctaLabel}</Text>
           </View>
         </AnimatedPressable>
       </View>
@@ -102,7 +107,7 @@ export function HeroCarousel({ slides, loading = false }: HeroCarouselProps) {
               styles.dot,
               {
                 width: activeIndex === index ? 24 : 8,
-                backgroundColor: activeIndex === index ? luxuryPalette.gold : luxuryPalette.line,
+                backgroundColor: activeIndex === index ? text : border,
               },
             ]}
           />
@@ -124,7 +129,7 @@ const styles = StyleSheet.create({
     height: 350,
     borderRadius: radius.xl,
     overflow: 'hidden',
-    backgroundColor: '#D8D0C3',
+    backgroundColor: 'transparent',
   },
   heroImage: {
     width: '100%',
@@ -158,6 +163,7 @@ const styles = StyleSheet.create({
   },
   ctaButton: {
     borderRadius: radius.pill,
+    borderWidth: 1,
     paddingHorizontal: spacing.lg,
     paddingVertical: 11,
   },
