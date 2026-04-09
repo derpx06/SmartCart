@@ -12,7 +12,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BrandStoryCard } from '@/components/luxury/BrandStoryCard';
 import { CategoryScroller } from '@/components/luxury/CategoryScroller';
 import { EditorialCollections } from '@/components/luxury/EditorialCollections';
-import { FloatingBottomNav } from '@/components/luxury/FloatingBottomNav';
 import { HeroCarousel } from '@/components/luxury/HeroCarousel';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
@@ -101,7 +100,7 @@ export function LuxuryHomeScreen() {
           style={styles.scrollView}
           contentContainerStyle={{
             paddingTop: insets.top + 126,
-            paddingBottom: 155,
+            paddingBottom: 110,
           }}
           showsVerticalScrollIndicator={false}
           onScroll={Animated.event(
@@ -147,8 +146,6 @@ export function LuxuryHomeScreen() {
             <BrandStoryCard loading={loading} />
           </RevealSection>
         </Animated.ScrollView>
-
-        <FloatingBottomNav activeKey="home" />
       </View>
     </SafeAreaView>
   );

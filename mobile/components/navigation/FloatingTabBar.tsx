@@ -1,0 +1,165 @@
+import { Ionicons } from '@expo/vector-icons';
+import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
+import * as Haptics from 'expo-haptics';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+import { ThemedText } from '@/components/themed-text';
+import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
+
+type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart';
+
+type TabMeta = {
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+};
+
+const TAB_META: Record<TabRouteName, TabMeta> = {
+  index: { label: 'HOME', icon: 'home-outline' },
+  recipe: { label: 'RECIPE', icon: 'restaurant-outline' },
+  registry: { label: 'REGISTRY', icon: 'gift-outline' },
+  orders: { label: 'ORDERS', icon: 'cube-outline' },
+  cart: { label: 'CART', icon: 'cart-outline' },
+};
+
+export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const insets = useSafeAreaInsets();
+  const bottomOffset = Math.max(insets.bottom, 8) + 10;
+  const styles = useMemo(() => createFloatingTabBarStyles(bottomOffset), [bottomOffset]);
+
+  const animationState = useRef<Record<string, Animated.Value>>({});
+  const pressState = useRef<Record<string, Animated.Value>>({});
+
+  const visibleRoutes = state.routes.filter((route) => route.name in TAB_META);
+
+  useEffect(() => {
+    visibleRoutes.forEach((route) => {
+      if (!animationState.current[route.key]) {
+        animationState.current[route.key] = new Animated.Value(0);
+      }
+      if (!pressState.current[route.key]) {
+        pressState.current[route.key] = new Animated.Value(1);
+      }
+    });
+  }, [visibleRoutes]);
+
+  useEffect(() => {
+    visibleRoutes.forEach((route) => {
+      const routeIndex = state.routes.findIndex((tabRoute) => tabRoute.key === route.key);
+      const active = state.index === routeIndex;
+
+      Animated.timing(animationState.current[route.key], {
+        toValue: active ? 1 : 0,
+        duration: 220,
+        useNativeDriver: true,
+      }).start();
+    });
+  }, [state.index, state.routes, visibleRoutes]);
+
+  return (
+    <View pointerEvents="box-none" style={styles.root}>
+      <View style={styles.bar}>
+        {visibleRoutes.map((route) => {
+          const routeName = route.name as TabRouteName;
+          const meta = TAB_META[routeName];
+          const routeIndex = state.routes.findIndex((tabRoute) => tabRoute.key === route.key);
+          const isFocused = state.index === routeIndex;
+
+          if (!animationState.current[route.key]) {
+            animationState.current[route.key] = new Animated.Value(isFocused ? 1 : 0);
+          }
+          if (!pressState.current[route.key]) {
+            pressState.current[route.key] = new Animated.Value(1);
+          }
+
+          const activeAnim = animationState.current[route.key];
+          const pressAnim = pressState.current[route.key];
+          const activeScale = activeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [1, 1.05],
+          });
+          const iconScale = Animated.multiply(activeScale, pressAnim);
+          const iconOpacity = activeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [0, 1],
+          });
+          const iconLift = activeAnim.interpolate({
+            inputRange: [0, 1],
+            outputRange: [3, 0],
+          });
+
+          const onPress = () => {
+            const event = navigation.emit({
+              type: 'tabPress',
+              target: route.key,
+              canPreventDefault: true,
+            });
+
+            if (!isFocused && !event.defaultPrevented) {
+              navigation.navigate(route.name as never, route.params as never);
+            }
+          };
+
+          const onLongPress = () => {
+            navigation.emit({
+              type: 'tabLongPress',
+              target: route.key,
+            });
+          };
+
+          const onPressIn = () => {
+            if (process.env.EXPO_OS === 'ios') {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }
+            Animated.spring(pressState.current[route.key], {
+              toValue: 0.95,
+              speed: 24,
+              bounciness: 5,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          const onPressOut = () => {
+            Animated.spring(pressState.current[route.key], {
+              toValue: 1,
+              speed: 20,
+              bounciness: 7,
+              useNativeDriver: true,
+            }).start();
+          };
+
+          return (
+            <Pressable
+              key={route.key}
+              accessibilityRole="button"
+              accessibilityState={isFocused ? { selected: true } : {}}
+              accessibilityLabel={descriptors[route.key].options.tabBarAccessibilityLabel}
+              testID={descriptors[route.key].options.tabBarButtonTestID}
+              onPress={onPress}
+              onLongPress={onLongPress}
+              onPressIn={onPressIn}
+              onPressOut={onPressOut}
+              style={styles.tabButton}>
+              <Animated.View
+                style={[
+                  styles.iconPill,
+                  isFocused && styles.iconPillActive,
+                  { opacity: iconOpacity, transform: [{ translateY: iconLift }] },
+                ]}
+              />
+              <Animated.View style={{ transform: [{ scale: iconScale }] }}>
+                <Ionicons
+                  name={meta.icon}
+                  size={24}
+                  color={isFocused ? '#1C1C1E' : '#8E8E93'}
+                />
+              </Animated.View>
+              <ThemedText style={[styles.label, isFocused && styles.labelActive]}>{meta.label}</ThemedText>
+            </Pressable>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
