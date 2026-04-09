@@ -24,6 +24,7 @@ import {
   categories,
   collections,
   heroSlides,
+  ProductItem,
   recommendedProducts,
 } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
@@ -53,6 +54,10 @@ export function LuxuryHomeScreen() {
     outputRange: [0, 0.18],
     extrapolate: 'clamp',
   });
+
+  const openProduct = (_product: ProductItem) => {
+    router.push('/product/signature-enameled-cast-iron-dutch-oven');
+  };
 
   return (
     <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
@@ -166,6 +171,7 @@ export function LuxuryHomeScreen() {
               caption="Most loved by modern hosts and home chefs."
               products={bestsellers}
               loading={loading}
+              onPressProduct={openProduct}
             />
           </RevealSection>
 
@@ -179,6 +185,7 @@ export function LuxuryHomeScreen() {
               caption="Personalized picks based on your taste and recent browsing."
               products={recommendedProducts}
               loading={loading}
+              onPressProduct={openProduct}
             />
           </RevealSection>
 

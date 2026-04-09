@@ -15,6 +15,7 @@ type ProductCarouselProps = {
   caption?: string;
   products: ProductItem[];
   loading?: boolean;
+  onPressProduct?: (product: ProductItem) => void;
 };
 
 export function ProductCarousel({
@@ -22,6 +23,7 @@ export function ProductCarousel({
   caption,
   products,
   loading = false,
+  onPressProduct,
 }: ProductCarouselProps) {
   const palette = useLuxuryPalette();
 
@@ -53,7 +55,10 @@ export function ProductCarousel({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
           {products.map((product) => (
-            <AnimatedPressable key={product.id} containerStyle={styles.cardWrap}>
+            <AnimatedPressable
+              key={product.id}
+              containerStyle={styles.cardWrap}
+              onPress={() => onPressProduct?.(product)}>
               <View
                 style={[
                   styles.card,

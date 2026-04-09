@@ -29,7 +29,7 @@ export default function TabTwoScreen() {
         <ThemedText
           type="title"
           style={{
-            fontFamily: Fonts.rounded,
+            fontFamily: Fonts.serif,
           }}>
           Explore
         </ThemedText>
@@ -84,7 +84,7 @@ export default function TabTwoScreen() {
           This template includes an example of an animated component. The{' '}
           <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
           the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
+          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.sans }}>
             react-native-reanimated
           </ThemedText>{' '}
           library to create a waving hand animation.
