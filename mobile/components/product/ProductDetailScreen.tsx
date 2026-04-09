@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
@@ -45,6 +45,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
   const selectedColor = product.colors.find((color) => color.id === selectedColorId);
   const selectedColorName = selectedColor?.name ?? product.colors[0]?.name ?? '';
@@ -150,35 +151,9 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                 },
               ]}
             >
-              <Image source={{ uri: product.images[activeImageIndex] }} style={styles.heroImage} contentFit="cover" />
-
-              <View style={[styles.heroTopShade, { backgroundColor: palette.heroTopShade }]} />
-              <View style={[styles.heroBottomShade, { backgroundColor: palette.heroBottomShade }]} />
-
-              <View style={styles.heroTopRow}>
-                <View
-                  style={[
-                    styles.badge,
-                    {
-                      backgroundColor: palette.elevated,
-                      borderColor: palette.line,
-                    },
-                  ]}
-                >
-                  <ThemedText style={[styles.badgeText, { color: palette.text }]}>{product.badge}</ThemedText>
-                </View>
-
-                <View style={[styles.photoCountPill, { backgroundColor: palette.categoryTint }]}>
-                  <ThemedText style={[styles.photoCountText, { color: palette.categoryLabel }]}>
-                    {activeImageIndex + 1}/{product.images.length}
-                  </ThemedText>
-                </View>
-              </View>
-
-              <View style={styles.heroBottomMeta}>
-                <ThemedText style={[styles.heroMetaTitle, { color: palette.heroTitle }]}>{product.name}</ThemedText>
-                <ThemedText style={[styles.heroMetaSub, { color: palette.heroSubtitle }]}>Color: {selectedColorName}</ThemedText>
-              </View>
+              <Pressable onPress={() => setIsImagePreviewOpen(true)} style={styles.heroImagePressable}>
+                <Image source={{ uri: product.images[activeImageIndex] }} style={styles.heroImage} contentFit="cover" />
+              </Pressable>
             </View>
 
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.thumbRail}>
@@ -447,6 +422,27 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
           </View>
         </ScrollView>
 
+        <Modal
+          visible={isImagePreviewOpen}
+          transparent
+          animationType="fade"
+          onRequestClose={() => setIsImagePreviewOpen(false)}
+        >
+          <View style={[styles.imageModalBackdrop, { backgroundColor: 'rgba(9, 8, 7, 0.74)' }]}>
+            <Pressable style={styles.imageModalDismissLayer} onPress={() => setIsImagePreviewOpen(false)} />
+
+            <View style={[styles.imageModalCard, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+              <Image source={{ uri: product.images[activeImageIndex] }} style={styles.imageModalImage} contentFit="contain" />
+              <Pressable
+                onPress={() => setIsImagePreviewOpen(false)}
+                style={[styles.imageModalCloseButton, { backgroundColor: palette.elevated, borderColor: palette.line }]}
+              >
+                <Ionicons name="close" size={20} color={palette.text} />
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
+
         <View
           style={[
             styles.bottomBar,
@@ -566,63 +562,40 @@ const styles = StyleSheet.create({
     width: '100%',
     aspectRatio: 1.07,
   },
-  heroTopShade: {
-    ...StyleSheet.absoluteFillObject,
-    bottom: '46%',
+  heroImagePressable: {
+    width: '100%',
   },
-  heroBottomShade: {
-    ...StyleSheet.absoluteFillObject,
-    top: '42%',
+  imageModalBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
   },
-  heroTopRow: {
+  imageModalDismissLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  imageModalCard: {
+    width: '100%',
+    maxWidth: 460,
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  imageModalImage: {
+    width: '100%',
+    aspectRatio: 1,
+  },
+  imageModalCloseButton: {
     position: 'absolute',
     top: spacing.sm,
-    left: spacing.sm,
     right: spacing.sm,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  badge: {
+    width: 38,
+    height: 38,
     borderRadius: radius.pill,
     borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-  },
-  badgeText: {
-    fontFamily: Fonts.sans,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  photoCountPill: {
-    borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
-  photoCountText: {
-    fontFamily: Fonts.sans,
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  heroBottomMeta: {
-    position: 'absolute',
-    left: spacing.md,
-    right: spacing.md,
-    bottom: spacing.md,
-  },
-  heroMetaTitle: {
-    fontFamily: Fonts.serif,
-    fontSize: 19,
-    lineHeight: 24,
-    fontWeight: '700',
-  },
-  heroMetaSub: {
-    marginTop: 2,
-    fontFamily: Fonts.sans,
-    fontSize: 12,
-    fontWeight: '600',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...luxuryShadow,
   },
   thumbRail: {
     gap: spacing.xs,
