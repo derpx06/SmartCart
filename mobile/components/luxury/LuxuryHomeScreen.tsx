@@ -3,7 +3,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Animated,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -16,7 +15,9 @@ import { HeroCarousel } from '@/components/luxury/HeroCarousel';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
+import { ThemedText } from '@/components/themed-text';
 import { luxuryShadow, palette, radius, spacing } from '@/components/luxury/design';
+import { useThemeColor } from '@/hooks/use-theme-color';
 import {
   bestsellers,
   categories,
@@ -30,6 +31,11 @@ export function LuxuryHomeScreen() {
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
   const [loading, setLoading] = useState(true);
+  const background = useThemeColor({}, 'background');
+  const border = useThemeColor({}, 'border');
+  const card = useThemeColor({}, 'card');
+  const text = useThemeColor({}, 'text');
+  const mutedText = useThemeColor({}, 'mutedText');
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1400);
@@ -39,7 +45,7 @@ export function LuxuryHomeScreen() {
 
   const headerBackground = scrollY.interpolate({
     inputRange: [0, 90],
-    outputRange: ['rgba(255, 249, 241, 0)', '#FFF9F1'],
+    outputRange: ['rgba(0,0,0,0)', background],
     extrapolate: 'clamp',
   });
 
@@ -56,8 +62,8 @@ export function LuxuryHomeScreen() {
   });
 
   return (
-    <SafeAreaView edges={["left", "right"]} style={styles.safeArea}>
-      <View style={styles.root}>
+    <SafeAreaView edges={["left", "right"]} style={[styles.safeArea, { backgroundColor: background }]}>
+      <View style={[styles.root, { backgroundColor: background }]}>
         <View style={styles.bgOrbOne} />
         <View style={styles.bgOrbTwo} />
 
@@ -67,7 +73,7 @@ export function LuxuryHomeScreen() {
             {
               paddingTop: insets.top + 10,
               backgroundColor: headerBackground,
-              borderBottomColor: '#EEDFCB',
+              borderBottomColor: border,
               borderBottomWidth: headerBorder,
               shadowOpacity: headerShadow,
             },
@@ -75,23 +81,23 @@ export function LuxuryHomeScreen() {
           <View style={styles.headerTopRow}>
             <View style={styles.brandWrap}>
               <View style={styles.logoDot} />
-              <Text style={styles.brand}>AURELIA HOME</Text>
+              <ThemedText style={styles.brand}>AURELIA HOME</ThemedText>
             </View>
             <View style={styles.iconRow}>
-              <Feather name="heart" size={19} color={palette.text} />
-              <Feather name="shopping-bag" size={19} color={palette.text} />
-              <Feather name="user" size={19} color={palette.text} />
+              <Feather name="heart" size={19} color={text} />
+              <Feather name="shopping-bag" size={19} color={text} />
+              <Feather name="user" size={19} color={text} />
             </View>
           </View>
 
-          <View style={styles.searchWrap}>
-            <Ionicons name="search" size={16} color="#7C7468" />
+          <View style={[styles.searchWrap, { backgroundColor: card, borderColor: border }]}>
+            <Ionicons name="search" size={16} color={mutedText} />
             <TextInput
               value=""
               editable={false}
               placeholder="Search cookware, furniture, decor..."
-              placeholderTextColor="#8E8578"
-              style={styles.searchInput}
+              placeholderTextColor={mutedText}
+              style={[styles.searchInput, { color: mutedText }]}
             />
           </View>
         </Animated.View>
@@ -154,11 +160,9 @@ export function LuxuryHomeScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: palette.background,
   },
   root: {
     flex: 1,
-    backgroundColor: palette.background,
   },
   bgOrbOne: {
     position: 'absolute',
@@ -214,10 +218,10 @@ const styles = StyleSheet.create({
     borderColor: '#EADCC6',
   },
   brand: {
-    color: palette.text,
-    fontFamily: Fonts.serif,
+    fontFamily: Fonts.sans,
     letterSpacing: 1,
     fontSize: 15,
+    fontWeight: '700',
   },
   iconRow: {
     flexDirection: 'row',
@@ -226,9 +230,7 @@ const styles = StyleSheet.create({
   },
   searchWrap: {
     borderRadius: radius.pill,
-    backgroundColor: '#FFFCF7',
     borderWidth: 1,
-    borderColor: '#E9DDCC',
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
@@ -238,7 +240,6 @@ const styles = StyleSheet.create({
   },
   searchInput: {
     flex: 1,
-    color: '#8E8578',
     fontFamily: Fonts.sans,
     fontSize: 13,
   },
