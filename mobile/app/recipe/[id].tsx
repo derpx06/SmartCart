@@ -6,19 +6,21 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { luxuryShadow, palette, radius, spacing } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { bestsellers, recommendedProducts } from '@/data/luxuryHomeData';
 import { mockRecipes } from '@/data/recipesData';
 
 const RECIPE_COLORS = {
-  background: '#FAF9F7',
-  surface: '#FFFFFF',
-  text: '#1C1B1F',
-  mutedText: 'rgba(28, 27, 31, 0.68)',
-  accent: '#7D7365',
-  border: 'rgba(28, 27, 31, 0.08)',
+  background: palette.background,
+  surface: palette.elevated,
+  text: palette.text,
+  mutedText: palette.mutedText,
+  accent: palette.gold,
+  accentSoft: palette.line,
+  border: palette.line,
+  overlay: palette.overlay,
 };
 
 export default function RecipeDetailScreen() {
@@ -49,9 +51,9 @@ export default function RecipeDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}>
-        {/* Hero Image */}
         <View style={styles.heroWrapper}>
           <Image source={{ uri: recipe.image }} style={styles.heroImage} contentFit="cover" />
+          <View style={styles.heroShade} />
           <View style={[styles.navOverlay, { paddingTop: insets.top || spacing.md }]}>
             <Pressable onPress={() => router.back()} style={styles.circleBtn}>
               <Ionicons name="arrow-back" size={20} color={RECIPE_COLORS.text} />
@@ -63,22 +65,31 @@ export default function RecipeDetailScreen() {
         </View>
 
         <View style={styles.contentPad}>
-          {/* Header Info */}
           <View style={styles.headerArea}>
             <View style={styles.metaRow}>
-              <ThemedText style={styles.difficultyTag}>{recipe.difficulty}</ThemedText>
-              <View style={styles.metaDot} />
-              <Ionicons name="time-outline" size={14} color={RECIPE_COLORS.accent} />
-              <ThemedText style={styles.timeText}>{recipe.time}</ThemedText>
+              <View style={styles.accentChip}>
+                <ThemedText style={styles.accentChipText}>{recipe.difficulty}</ThemedText>
+              </View>
+              <View style={styles.infoChip}>
+                <Ionicons name="time-outline" size={13} color={RECIPE_COLORS.accent} />
+                <ThemedText style={styles.infoChipText}>{recipe.time}</ThemedText>
+              </View>
+              <View style={styles.infoChip}>
+                <Ionicons name="people-outline" size={13} color={RECIPE_COLORS.accent} />
+                <ThemedText style={styles.infoChipText}>{recipe.servings}</ThemedText>
+              </View>
             </View>
+
             <ThemedText style={styles.title}>{recipe.title}</ThemedText>
             <ThemedText style={styles.description}>{recipe.description}</ThemedText>
           </View>
 
-          {/* Equipment Needed (Shoppable) */}
           {requiredProducts.length > 0 && (
             <View style={styles.section}>
-              <ThemedText style={styles.sectionTitle}>Equipment Needed</ThemedText>
+              <View style={styles.sectionIntro}>
+                <ThemedText style={styles.sectionTitle}>Goods you&apos;ll need</ThemedText>
+                <ThemedText style={styles.sectionHint}>Tap a card to open the product.</ThemedText>
+              </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -110,27 +121,44 @@ export default function RecipeDetailScreen() {
             </View>
           )}
 
-          {/* Ingredients */}
           <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Ingredients</ThemedText>
-            <View style={styles.listWrap}>
+            <View style={styles.sectionHeadRow}>
+              <ThemedText style={[styles.sectionTitle, styles.sectionTitleFlex]}>Ingredients</ThemedText>
+              <View style={styles.sectionCountPill}>
+                <ThemedText style={styles.sectionCount}>{recipe.ingredients.length} items</ThemedText>
+              </View>
+            </View>
+            <View style={styles.listCard}>
               {recipe.ingredients.map((ing, idx) => (
-                <View key={idx} style={styles.listItem}>
-                  <View style={styles.bullet} />
+                <View
+                  key={idx}
+                  style={[
+                    styles.ingredientRow,
+                    idx < recipe.ingredients.length - 1 ? styles.ingredientRowDivider : null,
+                  ]}>
+                  <View style={styles.bulletWrap}>
+                    <View style={styles.bullet} />
+                  </View>
                   <ThemedText style={styles.listText}>{ing}</ThemedText>
                 </View>
               ))}
             </View>
           </View>
 
-          {/* Instructions */}
           <View style={styles.section}>
-            <ThemedText style={styles.sectionTitle}>Instructions</ThemedText>
-            <View style={styles.listWrap}>
+            <View style={styles.sectionHeadRow}>
+              <ThemedText style={[styles.sectionTitle, styles.sectionTitleFlex]}>Instructions</ThemedText>
+              <View style={styles.sectionCountPill}>
+                <ThemedText style={styles.sectionCount}>{recipe.instructions.length} steps</ThemedText>
+              </View>
+            </View>
+            <View style={styles.stepsWrap}>
               {recipe.instructions.map((inst, idx) => (
-                <View key={idx} style={styles.instructItem}>
-                  <ThemedText style={styles.stepNum}>{idx + 1}</ThemedText>
-                  <ThemedText style={styles.listText}>{inst}</ThemedText>
+                <View key={idx} style={styles.stepCard}>
+                  <View style={styles.stepBadge}>
+                    <ThemedText style={styles.stepNum}>{idx + 1}</ThemedText>
+                  </View>
+                  <ThemedText style={[styles.listText, styles.stepBodyText]}>{inst}</ThemedText>
                 </View>
               ))}
             </View>
@@ -171,12 +199,17 @@ const styles = StyleSheet.create({
   },
   heroWrapper: {
     width: '100%',
-    height: 380,
+    height: 390,
     position: 'relative',
+    backgroundColor: palette.surface,
   },
   heroImage: {
     width: '100%',
     height: '100%',
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: RECIPE_COLORS.overlay,
   },
   navOverlay: {
     position: 'absolute',
@@ -188,138 +221,241 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   circleBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 42,
+    height: 42,
+    borderRadius: 21,
     backgroundColor: 'rgba(255, 255, 255, 0.9)',
     justifyContent: 'center',
     alignItems: 'center',
     ...luxuryShadow,
   },
   contentPad: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
     backgroundColor: RECIPE_COLORS.background,
     marginTop: -radius.xl,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
+    overflow: 'hidden',
   },
   headerArea: {
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.lg,
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
+    flexWrap: 'wrap',
+    rowGap: spacing.xs,
+    columnGap: spacing.xs,
   },
-  difficultyTag: {
+  accentChip: {
+    borderRadius: radius.pill,
+    backgroundColor: RECIPE_COLORS.accentSoft,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  accentChipText: {
     fontSize: 11,
     fontFamily: Fonts.sans,
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.9,
     color: RECIPE_COLORS.accent,
   },
-  metaDot: {
-    width: 3,
-    height: 3,
-    borderRadius: 1.5,
-    backgroundColor: RECIPE_COLORS.mutedText,
-    marginHorizontal: spacing.sm,
+  infoChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: RECIPE_COLORS.border,
+    backgroundColor: RECIPE_COLORS.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
   },
-  timeText: {
+  infoChipText: {
     fontSize: 12,
     fontFamily: Fonts.sans,
-    color: RECIPE_COLORS.accent,
-    marginLeft: 4,
+    fontWeight: '600',
+    color: RECIPE_COLORS.text,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontFamily: Fonts.serif,
+    fontWeight: '600',
     color: RECIPE_COLORS.text,
-    lineHeight: 38,
+    lineHeight: 36,
     marginBottom: spacing.sm,
+    letterSpacing: 0.2,
   },
   description: {
     fontSize: 15,
     fontFamily: Fonts.sans,
     color: RECIPE_COLORS.mutedText,
-    lineHeight: 22,
+    lineHeight: 23,
   },
   section: {
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  sectionIntro: {
+    marginBottom: spacing.md,
+    gap: 6,
+  },
+  sectionHeadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+    gap: spacing.md,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: Fonts.serif,
+    fontWeight: '600',
     color: RECIPE_COLORS.text,
-    marginBottom: spacing.lg,
+    lineHeight: 28,
+  },
+  sectionTitleFlex: {
+    flex: 1,
+    minWidth: 0,
+    paddingRight: spacing.xs,
+  },
+  sectionHint: {
+    color: RECIPE_COLORS.mutedText,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  sectionCountPill: {
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: RECIPE_COLORS.border,
+    backgroundColor: RECIPE_COLORS.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    alignSelf: 'flex-start',
+    marginTop: 2,
+  },
+  sectionCount: {
+    fontSize: 11,
+    fontFamily: Fonts.sans,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    textTransform: 'uppercase',
+    color: RECIPE_COLORS.text,
   },
   horizontalScrollArea: {
+    flexDirection: 'row',
     gap: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.xs,
+    paddingRight: spacing.lg,
   },
   productCard: {
-    width: 140,
+    width: 156,
     backgroundColor: RECIPE_COLORS.surface,
-    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: RECIPE_COLORS.border,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     ...luxuryShadow,
+    shadowOpacity: 0.06,
   },
   productImageWrap: {
     width: '100%',
     aspectRatio: 1,
-    backgroundColor: '#E9E9E7',
+    backgroundColor: palette.surface,
   },
   productImage: {
     width: '100%',
     height: '100%',
   },
   productInfo: {
-    padding: spacing.sm,
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    minHeight: 72,
+    justifyContent: 'space-between',
   },
   productName: {
-    fontSize: 12,
-    fontFamily: Fonts.sans,
-    color: RECIPE_COLORS.text,
-    lineHeight: 16,
-    marginBottom: 4,
-  },
-  productPrice: {
     fontSize: 13,
     fontFamily: Fonts.sans,
+    fontWeight: '600',
     color: RECIPE_COLORS.text,
+    lineHeight: 18,
+    marginBottom: 6,
   },
-  listWrap: {
-    gap: spacing.md,
+  productPrice: {
+    fontSize: 14,
+    fontFamily: Fonts.sans,
+    fontWeight: '700',
+    color: RECIPE_COLORS.text,
+    letterSpacing: 0.2,
   },
-  listItem: {
+  listCard: {
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: RECIPE_COLORS.border,
+    backgroundColor: RECIPE_COLORS.surface,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+  },
+  ingredientRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    paddingVertical: spacing.sm,
+  },
+  ingredientRowDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: RECIPE_COLORS.border,
+  },
+  bulletWrap: {
+    width: 22,
+    alignItems: 'center',
+    paddingTop: 8,
   },
   bullet: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: RECIPE_COLORS.accent,
-    marginTop: 8,
-    marginRight: spacing.sm,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: RECIPE_COLORS.text,
   },
   listText: {
     flex: 1,
     fontSize: 15,
     fontFamily: Fonts.sans,
     color: RECIPE_COLORS.text,
-    lineHeight: 22,
+    lineHeight: 23,
   },
-  instructItem: {
+  stepsWrap: {
+    gap: spacing.md,
+  },
+  stepCard: {
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: RECIPE_COLORS.border,
+    backgroundColor: RECIPE_COLORS.surface,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
     flexDirection: 'row',
     alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  stepBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: RECIPE_COLORS.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   stepNum: {
-    fontSize: 13,
+    fontSize: 14,
     fontFamily: Fonts.sans,
-    color: RECIPE_COLORS.accent,
-    width: 24,
-    marginTop: 2,
+    fontWeight: '700',
+    color: RECIPE_COLORS.text,
+  },
+  stepBodyText: {
+    paddingTop: 4,
   },
 });

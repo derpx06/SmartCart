@@ -3,6 +3,7 @@ import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -69,7 +70,12 @@ function WishlistCard({
   const addedText = formatAddedAt(item.addedAt);
 
   return (
-    <View style={[styles.card, { backgroundColor: WISHLIST_COLORS.card, borderColor: WISHLIST_COLORS.line }, luxuryShadow]}>
+    <View
+      style={[
+        styles.card,
+        { backgroundColor: WISHLIST_COLORS.card, borderColor: WISHLIST_COLORS.line },
+        luxuryShadow,
+      ]}>
       <Pressable
         disabled={!canOpen}
         onPress={() => onOpen(item)}
@@ -89,24 +95,31 @@ function WishlistCard({
           <ThemedText numberOfLines={2} style={[styles.name, { color: WISHLIST_COLORS.text }]}>
             {item.name}
           </ThemedText>
-          <ThemedText style={[styles.price, { color: WISHLIST_COLORS.text }]}>{money(item.price)}</ThemedText>
-          {addedText ? (
-            <ThemedText style={[styles.addedAt, { color: WISHLIST_COLORS.muted }]}>Saved {addedText}</ThemedText>
-          ) : null}
+          <View style={styles.cardMetaRow}>
+            <ThemedText style={[styles.price, { color: WISHLIST_COLORS.text }]}>{money(item.price)}</ThemedText>
+            {addedText ? (
+              <ThemedText style={[styles.addedAt, { color: WISHLIST_COLORS.muted }]}>{addedText}</ThemedText>
+            ) : null}
+          </View>
         </View>
       </Pressable>
 
       <Pressable
         onPress={() => onRemove(item.productId)}
         disabled={syncing}
+        accessibilityRole="button"
+        accessibilityLabel={`Remove ${item.name} from wishlist`}
         style={({ pressed }) => [
-          styles.removeButton,
+          styles.removeIconButton,
           { backgroundColor: WISHLIST_COLORS.soft, borderColor: WISHLIST_COLORS.line },
-          pressed ? styles.removeButtonPressed : null,
-          syncing ? styles.removeButtonDisabled : null,
+          pressed ? styles.removeIconButtonPressed : null,
+          syncing ? styles.removeIconButtonDisabled : null,
         ]}>
-        <Ionicons name="heart" size={15} color="#D14862" />
-        <ThemedText style={[styles.removeText, { color: WISHLIST_COLORS.text }]}>Saved</ThemedText>
+        {syncing ? (
+          <ActivityIndicator size="small" color={WISHLIST_COLORS.text} />
+        ) : (
+          <Ionicons name="close" size={18} color={WISHLIST_COLORS.muted} />
+        )}
       </Pressable>
     </View>
   );
@@ -150,6 +163,14 @@ export default function WishlistScreen() {
     void removeWishlistItem(productId);
   };
 
+  const goBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.push('/(tabs)');
+    }
+  };
+
   const showLoading = !hasLoaded || (loading && items.length === 0);
 
   return (
@@ -171,16 +192,37 @@ export default function WishlistScreen() {
           <View style={[styles.orbTwo, { backgroundColor: WISHLIST_COLORS.orbTwo }]} />
         </View>
 
-        <View style={styles.headerRow}>
+        <View style={styles.headerBlock}>
+          <View style={styles.headerTopRow}>
+            <Pressable
+              onPress={goBack}
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              style={[
+                styles.backButton,
+                { backgroundColor: WISHLIST_COLORS.card, borderColor: WISHLIST_COLORS.line },
+              ]}>
+              <Ionicons name="chevron-back" size={22} color={WISHLIST_COLORS.text} />
+            </Pressable>
+            {items.length > 0 ? (
+              <View style={[styles.countPill, { backgroundColor: WISHLIST_COLORS.soft, borderColor: WISHLIST_COLORS.line }]}>
+                <ThemedText style={[styles.countPillText, { color: WISHLIST_COLORS.text }]}>
+                  {items.length} {items.length === 1 ? 'item' : 'items'}
+                </ThemedText>
+              </View>
+            ) : (
+              <View style={styles.headerTopSpacer} />
+            )}
+          </View>
+
           <View style={styles.headerCopy}>
-            <ThemedText style={[styles.kicker, { color: WISHLIST_COLORS.text }]}>Account</ThemedText>
+            <ThemedText style={[styles.kicker, { color: WISHLIST_COLORS.muted }]}>Saved for later</ThemedText>
             <ThemedText style={[styles.title, { color: WISHLIST_COLORS.text }]}>Wishlist</ThemedText>
             <ThemedText style={[styles.subtitle, { color: WISHLIST_COLORS.muted }]}>
-              {items.length === 0 ? 'Save products you love and revisit them anytime.' : `${items.length} saved ${items.length === 1 ? 'item' : 'items'}.`}
+              {items.length === 0
+                ? 'Heart products while you browse and open them here anytime.'
+                : 'Tap a card to view details, or remove pieces you are no longer considering.'}
             </ThemedText>
-          </View>
-          <View style={[styles.iconBadge, { borderColor: WISHLIST_COLORS.line, backgroundColor: WISHLIST_COLORS.card }]}>
-            <Ionicons name="heart-outline" size={18} color={WISHLIST_COLORS.text} />
           </View>
         </View>
 
@@ -198,7 +240,8 @@ export default function WishlistScreen() {
 
         {showLoading ? (
           <View style={styles.loadingWrap}>
-            <ThemedText style={[styles.loadingText, { color: WISHLIST_COLORS.muted }]}>Loading your wishlist...</ThemedText>
+            <ActivityIndicator color={WISHLIST_COLORS.text} />
+            <ThemedText style={[styles.loadingText, { color: WISHLIST_COLORS.muted }]}>Loading your wishlist…</ThemedText>
           </View>
         ) : null}
 
@@ -238,7 +281,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     gap: spacing.md,
   },
   atmosphereLayer: {
@@ -266,39 +309,64 @@ const styles = StyleSheet.create({
     borderRadius: 176,
     opacity: 0.24,
   },
-  headerRow: {
+  headerBlock: {
+    gap: spacing.md,
+    marginBottom: spacing.xs,
+  },
+  headerTopRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+  },
+  headerTopSpacer: {
+    width: 44,
+    height: 44,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...luxuryShadow,
+    shadowOpacity: 0.08,
+  },
+  countPill: {
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+  },
+  countPillText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   headerCopy: {
-    maxWidth: 280,
-    gap: 4,
+    gap: 6,
+    paddingRight: spacing.xs,
   },
   kicker: {
     fontFamily: Fonts.sans,
     fontSize: 11,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+    fontWeight: '600',
   },
   title: {
     fontFamily: Fonts.serif,
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '600',
-    lineHeight: 40,
+    lineHeight: 38,
+    letterSpacing: 0.2,
   },
   subtitle: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  iconBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 2,
   },
   errorCard: {
     borderWidth: 1,
@@ -329,6 +397,7 @@ const styles = StyleSheet.create({
   loadingWrap: {
     paddingVertical: spacing.xl,
     alignItems: 'center',
+    gap: spacing.sm,
   },
   loadingText: {
     fontFamily: Fonts.sans,
@@ -359,25 +428,31 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   listWrap: {
-    gap: spacing.sm,
+    gap: spacing.md,
   },
   card: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
-    padding: spacing.sm,
-    gap: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingLeft: spacing.sm,
+    paddingRight: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   cardMain: {
+    flex: 1,
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.md,
+    minWidth: 0,
   },
   cardPressed: {
     opacity: 0.9,
   },
   imageWrap: {
-    width: 88,
-    height: 108,
-    borderRadius: radius.md,
+    width: 96,
+    height: 118,
+    borderRadius: radius.lg,
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
@@ -393,51 +468,54 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     flex: 1,
-    gap: 5,
+    gap: 6,
     justifyContent: 'center',
+    minWidth: 0,
+    paddingVertical: 4,
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 2,
   },
   category: {
     fontFamily: Fonts.sans,
     fontSize: 10,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.85,
+    fontWeight: '700',
   },
   name: {
     fontFamily: Fonts.serif,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '600',
   },
   price: {
     fontFamily: Fonts.sans,
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   addedAt: {
     fontFamily: Fonts.sans,
     fontSize: 11,
+    fontWeight: '500',
   },
-  removeButton: {
-    borderWidth: 1,
-    borderRadius: radius.pill,
-    flexDirection: 'row',
+  removeIconButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 8,
-    gap: 6,
   },
-  removeButtonPressed: {
-    opacity: 0.85,
+  removeIconButtonPressed: {
+    opacity: 0.88,
   },
-  removeButtonDisabled: {
-    opacity: 0.6,
-  },
-  removeText: {
-    fontFamily: Fonts.sans,
-    fontSize: 12,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
+  removeIconButtonDisabled: {
+    opacity: 0.55,
   },
 });

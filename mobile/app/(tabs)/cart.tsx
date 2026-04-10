@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState, useEffect } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View, Modal, Animated } from 'react-native';
+import React, { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
@@ -101,13 +101,17 @@ export default function CartScreen() {
             <View style={[styles.orbTwo, { backgroundColor: CART_COLORS.orbTwo }]} />
           </View>
 
-          <View style={styles.topRow}>
-            <View style={styles.topCopy}>
-              <SkeletonBlock height={12} width={90} borderRadius={radius.pill} />
-              <SkeletonBlock height={42} width={220} borderRadius={radius.md} />
-              <SkeletonBlock height={14} width="88%" />
+          <View style={styles.headerBlock}>
+            <View style={styles.headerTopRow}>
+              <View style={styles.headerTopFlex} />
+              <SkeletonBlock height={36} width={100} borderRadius={radius.pill} />
+              <SkeletonBlock height={44} width={44} borderRadius={22} style={styles.skeletonHeaderIconGap} />
             </View>
-            <SkeletonBlock height={44} width={44} borderRadius={22} />
+            <View style={styles.topCopy}>
+              <SkeletonBlock height={12} width={120} borderRadius={radius.pill} />
+              <SkeletonBlock height={36} width={200} borderRadius={radius.md} />
+              <SkeletonBlock height={14} width="92%" />
+            </View>
           </View>
 
           <View style={[styles.cartSearchWrap, styles.skeletonSearchWrap, { backgroundColor: CART_COLORS.cardBg }]}>
@@ -125,7 +129,7 @@ export default function CartScreen() {
                   { backgroundColor: CART_COLORS.cardBg },
                 ]}>
                 <View style={styles.itemPressableMain}>
-                  <SkeletonBlock height={112} width={92} borderRadius={radius.lg} />
+                  <SkeletonBlock height={118} width={96} borderRadius={radius.lg} />
                   <View style={styles.skeletonItemBody}>
                     <SkeletonBlock height={11} width="34%" />
                     <SkeletonBlock height={20} width="92%" />
@@ -228,20 +232,36 @@ export default function CartScreen() {
           <View style={[styles.orbTwo, { backgroundColor: CART_COLORS.orbTwo }]} />
         </View>
 
-        <View style={styles.topRow}>
-          <View style={styles.topCopy}>
-            <ThemedText style={[styles.kicker, { color: accent }]}>Your cart</ThemedText>
-            <ThemedText style={[styles.pageTitle, { color: text }]}>Your selection</ThemedText>
-            <ThemedText style={[styles.topSub, { color: muted }]}>
-              Curate your picks, adjust quantities, and checkout when everything feels right.
-            </ThemedText>
+        <View style={styles.headerBlock}>
+          <View style={styles.headerTopRow}>
+            <View style={styles.headerTopFlex} />
+            {hasCartItems ? (
+              <View
+                style={[
+                  styles.headerCountPill,
+                  { backgroundColor: softSurface, borderColor: CART_COLORS.border },
+                ]}>
+                <Ionicons name="bag-handle-outline" size={14} color={text} />
+                <ThemedText style={[styles.headerCountText, { color: text }]}>
+                  {allItems.length} {allItems.length === 1 ? 'item' : 'items'}
+                </ThemedText>
+              </View>
+            ) : null}
+            <View
+              style={[
+                styles.iconBadge,
+                { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
+                hasCartItems ? styles.iconBadgeWithGap : null,
+              ]}>
+              <Ionicons name="bag-outline" size={18} color={text} />
+            </View>
           </View>
-          <View
-            style={[
-              styles.iconBadge,
-              { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
-            ]}>
-            <Ionicons name="bag-outline" size={18} color={text} />
+          <View style={styles.topCopy}>
+            <ThemedText style={[styles.kicker, { color: muted }]}>Shopping bag</ThemedText>
+            <ThemedText style={[styles.pageTitle, { color: text }]}>Cart</ThemedText>
+            <ThemedText style={[styles.topSub, { color: muted }]}>
+              Review quantities, then place your order when the total feels right.
+            </ThemedText>
           </View>
         </View>
 
@@ -278,8 +298,10 @@ export default function CartScreen() {
         <CartIntelligencePanel panel={state?.intelligencePanel} />
 
         {!items.length ? (
-          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
-            <Ionicons name={cartSearch ? 'search-outline' : 'bag-handle-outline'} size={30} color={muted} />
+          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }, luxuryShadow]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: softSurface }]}>
+              <Ionicons name={cartSearch ? 'search-outline' : 'bag-handle-outline'} size={28} color={muted} />
+            </View>
             <ThemedText style={[styles.emptyTitle, { color: text }]}>
               {cartSearch ? 'No matching items' : 'Your cart is empty'}
             </ThemedText>
@@ -345,12 +367,15 @@ export default function CartScreen() {
                 matchingProduct?.image ||
                 rankedMatch?.image;
 
+              const lineTotal = item.price * item.quantity;
+
               return (
                 <View
                   key={`${item.productId}-${item.slug ?? 'noslug'}-${index}`}
                   style={[
                     styles.itemCard,
                     { backgroundColor: card, borderColor: CART_COLORS.border },
+                    luxuryShadow,
                   ]}>
                   <Pressable
                     disabled={!canOpenProduct}
@@ -380,9 +405,14 @@ export default function CartScreen() {
                         <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
                           {item.name}
                         </ThemedText>
-                        <ThemedText style={[styles.itemPrice, { color: text }]}>
-                          {money(item.price)}
-                        </ThemedText>
+                        <View style={styles.itemPriceCol}>
+                          <ThemedText style={[styles.itemLineTotal, { color: text }]}>{money(lineTotal)}</ThemedText>
+                          {item.quantity > 1 ? (
+                            <ThemedText style={[styles.itemUnitMeta, { color: muted }]}>
+                              {money(item.price)} each
+                            </ThemedText>
+                          ) : null}
+                        </View>
                       </View>
                     </View>
 
@@ -445,21 +475,41 @@ export default function CartScreen() {
         )}
 
         {hasCartItems ? (
-          <View style={[styles.summaryCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
-            <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
-            <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
+          <View
+            style={[
+              styles.summaryCard,
+              { backgroundColor: card, borderColor: CART_COLORS.border },
+              luxuryShadow,
+            ]}>
+            <View style={styles.summaryHeader}>
+              <View
+                style={[
+                  styles.summaryIconWrap,
+                  { backgroundColor: softSurface, borderColor: CART_COLORS.border },
+                ]}>
+                <Ionicons name="receipt-outline" size={16} color={text} />
+              </View>
+              <View style={styles.summaryHeaderCopy}>
+                <ThemedText style={[styles.collectionLabel, { color: muted }]}>Order summary</ThemedText>
+                <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
+              </View>
+            </View>
 
-            <View style={styles.row}>
-              <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
-              <ThemedText style={[styles.rowValue, { color: text }]}>{money(subtotal)}</ThemedText>
-            </View>
-            <View style={styles.row}>
-              <ThemedText style={[styles.rowLabel, { color: muted }]}>Delivery</ThemedText>
-              <ThemedText style={[styles.rowValue, { color: text }]}>Included</ThemedText>
-            </View>
-            <View style={styles.row}>
-              <ThemedText style={[styles.rowLabel, { color: muted }]}>Private client adjustment</ThemedText>
-              <ThemedText style={[styles.savingsValue, { color: accent }]}>-{money(discount)}</ThemedText>
+            <View style={[styles.summaryDivider, { backgroundColor: CART_COLORS.border }]} />
+
+            <View style={styles.summaryRowPad}>
+              <View style={styles.row}>
+                <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
+                <ThemedText style={[styles.rowValue, { color: text }]}>{money(subtotal)}</ThemedText>
+              </View>
+              <View style={styles.row}>
+                <ThemedText style={[styles.rowLabel, { color: muted }]}>Delivery</ThemedText>
+                <ThemedText style={[styles.rowValue, { color: text }]}>Included</ThemedText>
+              </View>
+              <View style={styles.row}>
+                <ThemedText style={[styles.rowLabel, { color: muted }]}>Private client adjustment</ThemedText>
+                <ThemedText style={[styles.savingsValue, { color: accent }]}>-{money(discount)}</ThemedText>
+              </View>
             </View>
 
             <View
@@ -468,7 +518,9 @@ export default function CartScreen() {
                 { backgroundColor: softSurface, borderColor: CART_COLORS.border },
               ]}>
               <Ionicons name="diamond-outline" size={14} color={accent} />
-              <ThemedText style={[styles.rowLabel, { color: muted }]}>Preferred pricing applied</ThemedText>
+              <ThemedText style={[styles.savingsRowLabel, { color: muted }]} numberOfLines={2}>
+                Preferred pricing applied
+              </ThemedText>
               <ThemedText style={[styles.savingsValue, { color: accent }]}>{money(discount)}</ThemedText>
             </View>
 
@@ -497,8 +549,8 @@ export default function CartScreen() {
             { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
             luxuryShadow,
           ]}>
-          <View style={styles.checkoutMetaInline}>
-            <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Total</ThemedText>
+          <View style={styles.checkoutLeft}>
+            <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Estimated total</ThemedText>
             <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
           </View>
 
@@ -508,14 +560,14 @@ export default function CartScreen() {
             style={[
               styles.billButtonInline,
               {
-                borderColor: CART_COLORS.border,
+                borderColor: 'transparent',
                 backgroundColor: placingOrder ? CART_COLORS.checkoutBtnDisabledBg : CART_COLORS.checkoutBtnBg,
               },
             ]}>
             {placingOrder ? (
               <ActivityIndicator size="small" color={CART_COLORS.checkoutBtnDisabledText} />
             ) : (
-              <Ionicons name="bag-check-outline" size={16} color={CART_COLORS.checkoutBtnText} />
+              <Ionicons name="bag-check-outline" size={17} color={CART_COLORS.checkoutBtnText} />
             )}
             <ThemedText
               style={[
@@ -539,7 +591,7 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: 176,
     gap: spacing.md,
   },
@@ -568,41 +620,68 @@ const styles = StyleSheet.create({
     borderRadius: 188,
     opacity: 0.24,
   },
-  topRow: {
+  headerBlock: {
+    gap: spacing.md,
+    marginBottom: spacing.xxs,
+  },
+  headerTopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  headerTopFlex: {
+    flex: 1,
+  },
+  headerCountPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.pill,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 8,
+  },
+  headerCountText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
   topCopy: {
-    gap: 4,
-    maxWidth: 280,
+    gap: 6,
+    paddingRight: spacing.xxs,
   },
   kicker: {
     fontFamily: Fonts.sans,
     fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 1.4,
+    letterSpacing: 1.2,
+    fontWeight: '600',
   },
   pageTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: '600',
-    lineHeight: 40,
+    lineHeight: 38,
+    letterSpacing: 0.2,
   },
   topSub: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 20,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: 2,
   },
   cartSearchWrap: {
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radius.pill,
-    borderWidth: 1,
-    paddingHorizontal: spacing.sm,
-    height: 46,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.md,
+    height: 48,
     gap: spacing.xs,
     ...luxuryShadow,
+    shadowOpacity: 0.06,
+    elevation: 2,
   },
   skeletonSearchWrap: {
     borderWidth: 0,
@@ -610,8 +689,8 @@ const styles = StyleSheet.create({
   cartSearchInput: {
     flex: 1,
     fontFamily: Fonts.sans,
-    fontSize: 14,
-    letterSpacing: -0.1,
+    fontSize: 15,
+    letterSpacing: 0.05,
   },
   cartSearchClear: {
     width: 26,
@@ -624,18 +703,28 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.pill,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+    ...luxuryShadow,
+    shadowOpacity: 0.08,
+  },
+  iconBadgeWithGap: {
+    marginLeft: spacing.xs,
+  },
+  skeletonHeaderIconGap: {
+    marginLeft: spacing.xs,
   },
   errorPill: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 12,
+    ...luxuryShadow,
+    shadowOpacity: 0.04,
   },
   errorText: {
     fontFamily: Fonts.sans,
@@ -649,15 +738,26 @@ const styles = StyleSheet.create({
     letterSpacing: 1.4,
   },
   emptyCard: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.sm,
+    shadowOpacity: 0.06,
+    elevation: 2,
+  },
+  emptyIconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.xxs,
   },
   emptyTitle: {
     fontFamily: Fonts.serif,
     fontSize: 24,
+    fontWeight: '600',
   },
   emptyText: {
     fontFamily: Fonts.sans,
@@ -688,10 +788,12 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   itemCard: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
+    shadowOpacity: 0.06,
+    elevation: 2,
   },
   skeletonItemCard: {
     borderWidth: 0,
@@ -710,8 +812,8 @@ const styles = StyleSheet.create({
     opacity: 0.88,
   },
   itemImage: {
-    width: 92,
-    height: 112,
+    width: 96,
+    height: 118,
     borderRadius: radius.lg,
     justifyContent: 'center',
     alignItems: 'center',
@@ -739,13 +841,25 @@ const styles = StyleSheet.create({
   itemName: {
     flex: 1,
     fontFamily: Fonts.serif,
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 17,
+    lineHeight: 23,
+    fontWeight: '600',
   },
-  itemPrice: {
+  itemPriceCol: {
+    alignItems: 'flex-end',
+    gap: 2,
+    maxWidth: '42%',
+  },
+  itemLineTotal: {
     fontFamily: Fonts.sans,
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
+    letterSpacing: 0.15,
+  },
+  itemUnitMeta: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '500',
   },
   itemBottom: {
     flexDirection: 'row',
@@ -754,12 +868,12 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   qtyPill: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.pill,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 6,
-    paddingVertical: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
   },
   qtyBtn: {
     width: 28,
@@ -787,10 +901,37 @@ const styles = StyleSheet.create({
     letterSpacing: 0.4,
   },
   summaryCard: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.lg,
     gap: spacing.sm,
+    shadowOpacity: 0.06,
+    elevation: 2,
+  },
+  summaryHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  summaryIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  summaryHeaderCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  summaryDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: '100%',
+    marginVertical: spacing.xs,
+  },
+  summaryRowPad: {
+    gap: 10,
   },
   skeletonSummaryCard: {
     borderWidth: 0,
@@ -798,7 +939,9 @@ const styles = StyleSheet.create({
   },
   summaryTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 24,
+    fontSize: 22,
+    fontWeight: '600',
+    lineHeight: 28,
   },
   row: {
     flexDirection: 'row',
@@ -816,13 +959,20 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   savingsRow: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
+  },
+  savingsRowLabel: {
+    flex: 1,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    marginRight: spacing.xs,
   },
   savingsValue: {
     marginLeft: 'auto',
@@ -831,20 +981,21 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   totalRow: {
-    marginTop: spacing.xs,
-    paddingTop: 12,
-    borderTopWidth: 1,
+    marginTop: spacing.sm,
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   totalLabel: {
     fontFamily: Fonts.serif,
-    fontSize: 24,
+    fontSize: 22,
+    fontWeight: '600',
   },
   totalValue: {
     fontFamily: Fonts.serif,
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
   },
   taxNote: {
@@ -854,52 +1005,57 @@ const styles = StyleSheet.create({
   },
   checkoutWrap: {
     position: 'absolute',
-    left: 16,
-    right: 16,
-    borderWidth: 1,
+    left: spacing.lg,
+    right: spacing.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 10,
+    gap: spacing.md,
+    shadowOpacity: 0.12,
+    elevation: 8,
   },
   skeletonCheckoutWrap: {
     borderWidth: 0,
     justifyContent: 'space-between',
   },
-  checkoutMetaInline: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
+  checkoutLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
   },
   checkoutCaption: {
     fontFamily: Fonts.sans,
-    fontSize: 12,
+    fontSize: 11,
     textTransform: 'uppercase',
-    letterSpacing: 0.8,
+    letterSpacing: 0.85,
+    fontWeight: '600',
   },
   checkoutAmount: {
     fontFamily: Fonts.serif,
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
   },
   billButtonInline: {
-    borderWidth: 1,
     borderRadius: radius.pill,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
+    gap: 8,
+    ...luxuryShadow,
+    shadowOpacity: 0.14,
+    elevation: 3,
   },
   billText: {
     fontFamily: Fonts.sans,
     fontSize: 12,
     fontWeight: '700',
-    letterSpacing: 0.5,
+    letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
 });

@@ -1,7 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
@@ -230,7 +231,10 @@ export function LuxuryHomeScreen() {
   const filterUnderlineX = useRef(new Animated.Value(0)).current;
   const filterUnderlineWidth = useRef(new Animated.Value(0)).current;
   const [filterLayouts, setFilterLayouts] = useState<Record<string, { x: number; width: number }>>({});
+  const [focusSkeleton, setFocusSkeleton] = useState(false);
+  const homeFirstFocusRef = useRef(true);
   const showInitialSkeleton = loading && !hasFetched;
+  const showHomeSkeleton = showInitialSkeleton || focusSkeleton;
 
   useEffect(() => {
     if (!hasFetched) {
@@ -245,6 +249,29 @@ export function LuxuryHomeScreen() {
 
   const normalizeFilter = (filter: string | null) =>
     filter && filter !== 'All Product' ? filter : undefined;
+
+  useFocusEffect(
+    useCallback(() => {
+      if (homeFirstFocusRef.current) {
+        homeFirstFocusRef.current = false;
+        return undefined;
+      }
+      if (!hasFetched) {
+        return undefined;
+      }
+      let active = true;
+      setFocusSkeleton(true);
+      void refreshHome(normalizeFilter(activeFilter), { silent: true }).finally(() => {
+        if (active) {
+          setFocusSkeleton(false);
+        }
+      });
+      return () => {
+        active = false;
+        setFocusSkeleton(false);
+      };
+    }, [hasFetched, activeFilter, refreshHome]),
+  );
 
   const onRefresh = async () => {
     await refreshHome(normalizeFilter(activeFilter));
@@ -412,7 +439,7 @@ export function LuxuryHomeScreen() {
               </View>
             </View>
           </View>
-          {showInitialSkeleton ? (
+          {showHomeSkeleton ? (
             <HomeLoadingSkeleton />
           ) : (
             <>
