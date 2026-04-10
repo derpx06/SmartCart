@@ -119,13 +119,13 @@ async function getRecentConversation(sessionId: string, limit = 8) {
 }
 
 async function rankProducts(query: string, limit = 6) {
+  const fallbackQuery = {
+    slug: { $exists: true, $nin: [null, ''] },
+  } as const;
+
   const queryEmbedding = await embedText(query);
   if (!queryEmbedding.length) {
-    const fallback = await Product.find({
-      slug: { $exists: true, $nin: [null, ''] },
-    })
-      .limit(limit)
-      .lean();
+    const fallback = await Product.find(fallbackQuery).limit(limit).lean();
     return fallback;
   }
 
@@ -144,7 +144,33 @@ async function rankProducts(query: string, limit = 6) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return scored.map((s) => s.product);
+  const ranked = scored.map((s) => s.product);
+  if (ranked.length > 0) return ranked;
+
+  // Fallback 1: keyword match for cases where embeddings are sparse/missing relevance.
+  const tokens = String(query || '')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+    .filter((t) => !['the', 'and', 'for', 'with', 'some', 'good', 'best', 'show', 'me', 'recommend'].includes(t))
+    .slice(0, 5);
+
+  if (tokens.length > 0) {
+    const pattern = tokens.join('|');
+    const keywordMatches = await Product.find({
+      ...fallbackQuery,
+      $or: [
+        { name: { $regex: pattern, $options: 'i' } },
+        { category: { $regex: pattern, $options: 'i' } },
+      ],
+    })
+      .limit(limit)
+      .lean();
+    if (keywordMatches.length > 0) return keywordMatches;
+  }
+
+  // Fallback 2: generic top products so chat still returns cards.
+  return Product.find(fallbackQuery).limit(limit).lean();
 }
 
 function userAskedForProducts(text: string): boolean {

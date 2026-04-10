@@ -10,6 +10,7 @@ const emptyProductForm: Omit<Product, 'id'> = {
   category: '',
   description: '',
   images: [],
+  tags: [],
 };
 
 function ProductDetailsForm({
@@ -133,6 +134,33 @@ function ProductDetailsForm({
             </div>
 
             <div style={{ gridColumn: '1 / -1' }}>
+              <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Tags</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                {(formData.tags || []).map((tag, idx) => (
+                  <span key={idx} style={{ padding: '6px 12px', background: 'rgba(255,255,255,0.1)', borderRadius: '16px', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    {tag}
+                    <button type="button" onClick={() => setFormData({ ...formData, tags: formData.tags.filter((_, i) => i !== idx) })} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}>×</button>
+                  </span>
+                ))}
+              </div>
+              <input
+                type="text"
+                className="input-field"
+                placeholder="Add a tag and press Enter..."
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const val = e.currentTarget.value.trim();
+                    if (val && !(formData.tags || []).includes(val)) {
+                      setFormData({ ...formData, tags: [...(formData.tags || []), val] });
+                      e.currentTarget.value = '';
+                    }
+                  }
+                }}
+              />
+            </div>
+
+            <div style={{ gridColumn: '1 / -1' }}>
               <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Image URLs</label>
               {(formData.images || []).map((url, idx) => (
                 <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
@@ -226,6 +254,7 @@ export default function ProductDetails() {
                   category: existingProduct.category,
                   description: existingProduct.description,
                   images: existingProduct.images || [],
+                  tags: existingProduct.tags || [],
                 }
               : emptyProductForm
           }
