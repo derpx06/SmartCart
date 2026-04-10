@@ -50,6 +50,10 @@ function getStarIconName(index: number, rating: number): 'star' | 'star-half' | 
   return 'star-outline';
 }
 
+function normalizeRowKey(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
 export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -572,10 +576,52 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             recommendationRows.map((row) =>
               row.items?.length ? (
                 <View key={row.id} style={styles.sectionWrap}>
-                  <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>{row.title}</ThemedText>
-                  {row.subtitle ? (
-                    <ThemedText style={[styles.description, { color: palette.mutedText }]}>{row.subtitle}</ThemedText>
-                  ) : null}
+                  {(() => {
+                    const titleKey = normalizeRowKey(row.title);
+                    const isFrequentlyBought = titleKey.includes('frequently bought together');
+                    const isCompleteSetup = titleKey.includes('complete your setup');
+                    const rowBadge = isFrequentlyBought
+                      ? 'Curated bundle'
+                      : isCompleteSetup
+                        ? 'Room-ready picks'
+                        : null;
+                    const rowIcon = isFrequentlyBought ? 'git-compare-outline' : isCompleteSetup ? 'layers-outline' : 'sparkles-outline';
+                    const effectiveSubtitle =
+                      row.subtitle ||
+                      (isFrequentlyBought
+                        ? 'Pair this piece with matching essentials commonly chosen together.'
+                        : isCompleteSetup
+                          ? 'Finish your space with coordinated pieces selected for this item.'
+                          : '');
+
+                    return (
+                      <View
+                        style={[
+                          styles.recRowHeaderCard,
+                          {
+                            backgroundColor: palette.elevated,
+                            borderColor: palette.line,
+                          },
+                        ]}>
+                        <View style={styles.recRowHeadingTop}>
+                          <View style={[styles.recRowIconWrap, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+                            <Ionicons name={rowIcon as any} size={15} color={palette.text} />
+                          </View>
+                          {rowBadge ? (
+                            <View style={[styles.recRowBadge, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+                              <ThemedText style={[styles.recRowBadgeText, { color: palette.text }]}>{rowBadge}</ThemedText>
+                            </View>
+                          ) : null}
+                        </View>
+                        <ThemedText style={[styles.sectionHeading, styles.sectionHeadingNoMargin, { color: palette.text }]}>
+                          {row.title}
+                        </ThemedText>
+                        {effectiveSubtitle ? (
+                          <ThemedText style={[styles.recRowSubtitle, { color: palette.mutedText }]}>{effectiveSubtitle}</ThemedText>
+                        ) : null}
+                      </View>
+                    );
+                  })()}
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
                     {row.items.map((related) => (
                       <View key={`${row.id}-${related.productId}`} style={styles.relatedCardContainer}>
@@ -1406,35 +1452,76 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   relatedRail: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 0,
     paddingBottom: spacing.md,
     gap: spacing.md,
   },
-  relatedCardContainer: {
-    width: 160,
-    position: 'relative',
-  },
-  relatedCard: {
-    width: 160,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    padding: 10,
-    gap: 8,
-  },
-  relatedImagePlaceholder: {
-    width: '100%',
-    height: 120,
+  recRowHeaderCard: {
     borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    gap: 6,
+  },
+  recRowHeadingTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  recRowIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  recRowBadge: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  recRowBadgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.65,
+  },
+  recRowSubtitle: {
+    marginTop: 2,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  relatedCardContainer: {
+    width: 174,
+    position: 'relative',
+  },
+  relatedCard: {
+    width: 174,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: 11,
+    gap: 9,
+  },
+  relatedImagePlaceholder: {
+    width: '100%',
+    height: 126,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
   miniBadge: {
     position: 'absolute',
-    top: 6,
-    left: 6,
+    top: 8,
+    left: 8,
     backgroundColor: '#00000080',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: radius.sm,
   },
   miniBadgeText: {
@@ -1446,25 +1533,26 @@ const styles = StyleSheet.create({
   },
   relatedName: {
     fontFamily: Fonts.serif,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 19,
     fontWeight: '600',
   },
   relatedPrice: {
     fontFamily: Fonts.sans,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '700',
   },
   miniAddBtn: {
     position: 'absolute',
-    bottom: 8,
-    right: 8,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    bottom: 10,
+    right: 10,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10,
+    ...luxuryShadow,
   },
   bottomBar: {
     position: 'absolute',
