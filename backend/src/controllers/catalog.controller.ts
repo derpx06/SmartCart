@@ -284,7 +284,7 @@ export const getProductRecommendationRows = async (req: Request, res: Response):
 
     const relatedSorted = [...related].sort((a: any, b: any) => b.score - a.score);
     const fbtRaw = relatedSorted.filter((r: any) => r.type === 'co_occurrence');
-    const fbtPool = (fbtRaw.length ? fbtRaw : relatedSorted).slice(0, 18);
+    const fbtPool = (fbtRaw.length ? fbtRaw : relatedSorted).slice(0, 50);
     const frequentlyBoughtTogether = fbtPool
       .map((r: any) => {
         const p = candidateById.get(r.productId);
@@ -299,11 +299,11 @@ export const getProductRecommendationRows = async (req: Request, res: Response):
         const text = `${c.name} ${c.category} ${c.description || ''}`.toLowerCase();
         return needs.some((n) => text.includes(String(n).toLowerCase()));
       })
-      .slice(0, 12)
+      .slice(0, 50)
       .map((p: any) => toItem(p, 'Completes your setup'));
 
     const semanticRaw = relatedSorted.filter((r: any) => r.type === 'embedding');
-    const semanticPool = (semanticRaw.length ? semanticRaw : relatedSorted).slice(0, 20);
+    const semanticPool = (semanticRaw.length ? semanticRaw : relatedSorted).slice(0, 50);
     const semanticSimilar = semanticPool
       .map((r: any) => {
         const p = candidateById.get(r.productId);
@@ -311,11 +311,11 @@ export const getProductRecommendationRows = async (req: Request, res: Response):
       })
       .filter(Boolean);
 
-    const dedupe = (items: any[]) => {
-      const seen = new Set<string>();
+    const globalSeen = new Set<string>();
+    const dedupeAndTrack = (items: any[]) => {
       return items.filter((i) => {
-        if (!i?.productId || seen.has(i.productId)) return false;
-        seen.add(i.productId);
+        if (!i?.productId || globalSeen.has(i.productId)) return false;
+        globalSeen.add(i.productId);
         return true;
       });
     };
@@ -326,19 +326,19 @@ export const getProductRecommendationRows = async (req: Request, res: Response):
           id: 'frequently-bought-together',
           title: 'Frequently Bought Together',
           subtitle: 'Customers pair these with this product.',
-          items: dedupe(frequentlyBoughtTogether).slice(0, 8),
+          items: dedupeAndTrack(frequentlyBoughtTogether).slice(0, 8),
         },
         {
           id: 'complete-your-setup',
           title: 'Complete Your Setup',
           subtitle: 'Missing essentials that make this setup complete.',
-          items: dedupe(completeSetup).slice(0, 8),
+          items: dedupeAndTrack(completeSetup).slice(0, 8),
         },
         {
           id: 'semantic-similar',
           title: 'Similar Items (Semantic)',
           subtitle: 'Close matches by meaning, use, and style.',
-          items: dedupe(semanticSimilar).slice(0, 8),
+          items: dedupeAndTrack(semanticSimilar).slice(0, 8),
         },
       ],
     });
@@ -352,10 +352,10 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const { title, body, rating, author } = req.body;
-    
+
     // Auth user if possible
     const userId = (req as any).user?.userId || 'anonymous';
-    
+
     // Find product
     const product = await Product.findById(id);
     if (!product) {
@@ -374,11 +374,11 @@ export const addReview = async (req: Request, res: Response): Promise<void> => {
     };
 
     product.reviews.push(newReview as any);
-    
+
     // Recalculate average
     const currentCount = product.ratings?.count || 0;
     const currentAvg = product.ratings?.average || 0;
-    
+
     const newCount = currentCount + 1;
     const newAvg = ((currentAvg * currentCount) + newReview.rating) / newCount;
 

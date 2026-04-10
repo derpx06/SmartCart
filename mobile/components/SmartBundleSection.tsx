@@ -21,6 +21,7 @@ export function SmartBundleSection({
       <ThemedText style={styles.title}>Split by goals</ThemedText>
       {bundles.map((bundle) => (
         <View key={bundle.kitId} style={styles.bundleCard}>
+          <ThemedText style={styles.kitTag}>Kit: {bundle.intentLabel}</ThemedText>
           <ThemedText style={styles.bundleTitle}>
             {bundle.title} ({bundle.completionPercent}%)
           </ThemedText>
@@ -76,6 +77,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   bundleTitle: { fontFamily: Fonts.serif, fontSize: 18, color: '#1c1b1f' },
+  kitTag: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: 'rgba(28,27,31,0.72)',
+  },
   bundleSub: { fontFamily: Fonts.sans, fontSize: 12, color: 'rgba(28,27,31,0.7)' },
   metaLine: { fontFamily: Fonts.sans, fontSize: 12, color: 'rgba(28,27,31,0.78)' },
   missing: { fontFamily: Fonts.sans, fontSize: 12, color: 'rgba(28,27,31,0.75)' },
