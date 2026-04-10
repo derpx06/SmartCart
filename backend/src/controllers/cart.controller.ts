@@ -8,6 +8,35 @@ import { getRelatedProducts } from '../services/relationship.service';
 import { rankItems } from '../services/ranking.service';
 import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
 
+function mediaUrl(req: Request, path: string): string {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const imagePath = normalizedPath.startsWith('/images/') ? normalizedPath : `/images${normalizedPath}`;
+  return `${req.protocol}://${req.get('host')}${imagePath}`;
+}
+
+function hashSeed(value: string): number {
+  let h = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    h = (h * 31 + value.charCodeAt(i)) >>> 0;
+  }
+  return h || 1;
+}
+
+function withRecommendationVariety(items: any[], seedRaw: string): any[] {
+  if (items.length <= 2) return items;
+  const seed = hashSeed(seedRaw);
+  const top = items.slice(0, 10);
+  const rest = items.slice(10);
+  const varied = [...top].sort((a, b) => {
+    const ak = hashSeed(`${seed}:${a.productId}`);
+    const bk = hashSeed(`${seed}:${b.productId}`);
+    return ak - bk;
+  });
+  return [...varied, ...rest];
+}
+
 export const getSmartCartState = async (req: Request, res: Response): Promise<void> => {
   try {
     await ensureCatalogSeededFromSkus();
@@ -41,6 +70,12 @@ export const getSmartCartState = async (req: Request, res: Response): Promise<vo
       semantic,
       related,
     });
+    const rankedWithMedia = ranked.map((item) => ({
+      ...item,
+      image: mediaUrl(req, item.image || '/images/img17m.jpg'),
+    }));
+    const requestSeed = String(req.get('x-reco-seed') || `${Date.now()}`);
+    const variedRanked = withRecommendationVariety(rankedWithMedia, requestSeed);
 
     // Strip embeddings and vectors from response payloads
     const safeItems = state.cart.items.map(({ embedding, ...rest }) => rest);
@@ -53,7 +88,7 @@ export const getSmartCartState = async (req: Request, res: Response): Promise<vo
       inventory,
       semantic: safeSemantic,
       related,
-      ranked,
+      ranked: variedRanked,
     });
   } catch (error) {
     console.error('State build failed:', error);

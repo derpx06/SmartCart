@@ -2,7 +2,6 @@ import { Request } from 'express';
 import Cart from '../models/Cart';
 import Product from '../models/Product';
 import { SmartCartState } from '../types/state';
-import { ensureProductEmbedding } from './productEmbedding.service';
 
 export async function buildSmartCartState(req: Request): Promise<SmartCartState> {
     const userId = (req as any).user?.userId ?? 'user_001';
@@ -17,20 +16,7 @@ export async function buildSmartCartState(req: Request): Promise<SmartCartState>
         _id: { $in: productIds }
     }).lean();
 
-    // Ensure embeddings for cart products (small set, safe to compute on request)
-    for (const product of products as any[]) {
-        if (!product.embedding || product.embedding.length === 0) {
-            try {
-                const embedding = await ensureProductEmbedding(product);
-                if (embedding.length) {
-                    await Product.updateOne({ _id: product._id }, { $set: { embedding } });
-                    product.embedding = embedding;
-                }
-            } catch {
-                // Skip embedding failures; cart can still load.
-            }
-        }
-    }
+    // Request path stays read-only for reliability; embedding backfills run in vectorize scripts/jobs.
 
     const productMap = new Map(
         products.map((p: any) => [p._id.toString(), p])

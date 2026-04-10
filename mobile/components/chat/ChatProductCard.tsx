@@ -14,14 +14,17 @@ type ChatProductCardProps = {
 };
 
 export function ChatProductCard({ product, onPress }: ChatProductCardProps) {
+  const formattedPrice = Number(product.price || 0).toFixed(2);
   return (
     <Pressable
       accessibilityRole="button"
       onPress={() => onPress?.(product)}
-      style={({ pressed }) => [styles.card, pressed && { transform: [{ scale: 0.98 }] }]}
-    >
+      style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}>
       <View style={styles.imageWrap}>
         <Image source={{ uri: product.image }} style={styles.image} contentFit="cover" />
+        <View style={styles.badge}>
+          <ThemedText style={styles.badgeText}>Recommended</ThemedText>
+        </View>
       </View>
 
       <ThemedText style={styles.name} numberOfLines={2}>
@@ -31,7 +34,7 @@ export function ChatProductCard({ product, onPress }: ChatProductCardProps) {
         {product.category}
       </ThemedText>
       <ThemedText style={styles.price} numberOfLines={1}>
-        ${Number(product.price || 0).toFixed(2)}
+        ${formattedPrice}
       </ThemedText>
 
       <View style={styles.ctaRow}>
@@ -44,18 +47,22 @@ export function ChatProductCard({ product, onPress }: ChatProductCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    width: 160,
+    width: 176,
     borderWidth: 1,
-    borderRadius: radius.lg,
-    padding: 10,
-    gap: 6,
+    borderRadius: radius.xl,
+    padding: 11,
+    gap: 7,
     backgroundColor: '#FFFFFF',
     borderColor: 'rgba(28, 27, 31, 0.14)',
     ...luxuryShadow,
   },
+  cardPressed: {
+    transform: [{ scale: 0.98 }],
+    opacity: 0.92,
+  },
   imageWrap: {
     width: '100%',
-    height: 92,
+    height: 100,
     borderRadius: radius.md,
     overflow: 'hidden',
     backgroundColor: 'rgba(28, 27, 31, 0.06)',
@@ -66,8 +73,8 @@ const styles = StyleSheet.create({
   },
   name: {
     fontFamily: Fonts.serif,
-    fontSize: 14,
-    lineHeight: 18,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '600',
     color: '#1C1B1F',
   },
@@ -93,11 +100,28 @@ const styles = StyleSheet.create({
   },
   ctaText: {
     fontFamily: Fonts.sans,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     color: '#1C1B1F',
+  },
+  badge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: 'rgba(28, 27, 31, 0.78)',
+  },
+  badgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    color: '#FFFFFF',
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
 });
 

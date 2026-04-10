@@ -7,7 +7,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import User from '../models/User';
 import { ensureCatalogSeededFromSkus, syncSingleProductFromSkuLikeInput } from '../services/catalogSync.service';
-import { embedProduct } from '../services/productEmbedding.service';
+import { vectorizeAndSyncProduct } from '../services/productEmbedding.service';
 import { listAllOrders, listOrdersForUser } from '../services/storefront.service';
 
 function toAdminProduct(product: any) {
@@ -78,7 +78,7 @@ export const getAdminProductById = async (req: Request, res: Response): Promise<
     }
 
     try {
-      const embedding = await embedProduct(product);
+      const embedding = await vectorizeAndSyncProduct(product as any);
       if (embedding.length) {
         await Product.updateOne({ _id: product._id }, { $set: { embedding } });
       }
@@ -131,7 +131,7 @@ export const updateAdminProduct = async (req: Request, res: Response): Promise<v
     }
 
     try {
-      const embedding = await embedProduct(product);
+      const embedding = await vectorizeAndSyncProduct(product as any);
       if (embedding.length) {
         await Product.updateOne({ _id: product._id }, { $set: { embedding } });
       }

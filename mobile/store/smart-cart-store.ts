@@ -30,8 +30,7 @@ export const useSmartCartStore = create<SmartCartStore>((set, get) => ({
       const response = await fetch(`${Config.API_URL}/smartcart/state`, {
         headers: {
           ...(api.getToken() ? { Authorization: `Bearer ${api.getToken()}` } : {}),
-          'x-actions': 'add_pan,add_knife',
-          'x-time-spent': '120',
+          'x-reco-seed': `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         },
       });
 
