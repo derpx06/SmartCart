@@ -7,20 +7,16 @@ import { ensureCatalogSeededFromSkus } from './catalogSync.service';
 import { bumpCatalogCacheVersion } from './cache.service';
 
 function mediaUrl(req: Request, path: string): string {
-  if (!path) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(path)) {
-    return path;
-  }
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`;
-  const imagePath = normalizedPath.startsWith('/images/')
-    ? normalizedPath
-    : `/images${normalizedPath}`;
+  // If the path already includes a directory like /images/ or /models/, keep it.
+  // Otherwise, default to /images/ for backward compatibility with legacy image-only paths.
+  const hasDir = /^\/(images|models|res|uploads)\//.test(normalizedPath);
+  const assetPath = hasDir ? normalizedPath : `/images${normalizedPath}`;
 
-  return `${req.protocol}://${req.get('host')}${imagePath}`;
+  return `${req.protocol}://${req.get('host')}${assetPath}`;
 }
 
 function money(value: number): string {
@@ -107,20 +103,20 @@ function buildFallbackReviews(product: any) {
 function buildProductReviews(product: any) {
   const storedReviews = Array.isArray(product.reviews)
     ? [...product.reviews]
-        .sort((left: any, right: any) => {
-          const leftTime = new Date(left?.createdAt ?? 0).getTime();
-          const rightTime = new Date(right?.createdAt ?? 0).getTime();
-          return rightTime - leftTime;
-        })
-        .map((review: any) => ({
-          id: review._id?.toString?.() || '',
-          title: review.title,
-          body: review.body,
-          author: review.author,
-          date: formatReviewDate(review.createdAt),
-          rating: Number(review.rating ?? 0),
-          verified: Boolean(review.verified),
-        }))
+      .sort((left: any, right: any) => {
+        const leftTime = new Date(left?.createdAt ?? 0).getTime();
+        const rightTime = new Date(right?.createdAt ?? 0).getTime();
+        return rightTime - leftTime;
+      })
+      .map((review: any) => ({
+        id: review._id?.toString?.() || '',
+        title: review.title,
+        body: review.body,
+        author: review.author,
+        date: formatReviewDate(review.createdAt),
+        rating: Number(review.rating ?? 0),
+        verified: Boolean(review.verified),
+      }))
     : [];
 
   return storedReviews.length > 0 ? storedReviews : buildFallbackReviews(product);
@@ -168,6 +164,10 @@ function serializeProductDetail(req: Request, product: any, relatedProducts: any
       price: money(Number(related.price?.selling ?? 0)),
       image: mediaUrl(req, related.images?.[0] || ''),
     })),
+    model3D: product.model3D?.url ? {
+      url: mediaUrl(req, product.model3D.url),
+      format: (product.model3D.format || 'glb').toLowerCase()
+    } : undefined,
     reviews: buildProductReviews(product),
   };
 }

@@ -1,16 +1,17 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 
-import ARScene from '@/src/features/ar/componenets/ARScene';
+import ARScene from '@/src/features/ar/components/ARScene';
 
 export default function ARScreen() {
   const router = useRouter();
+  const { modelUrl } = useLocalSearchParams<{ modelUrl: string }>();
 
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
-      <ARScene />
+      <ARScene modelUrl={modelUrl} />
       <Pressable onPress={() => router.back()} style={styles.closeButton}>
         <Text style={styles.closeText}>Close</Text>
       </Pressable>
