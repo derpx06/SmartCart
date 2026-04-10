@@ -71,7 +71,7 @@ router.get('/recipes', getRecipeModules);
 router.get('/registries', getRegistryModules);
 router.get('/products', getProducts);
 router.get('/products/slug/:slug', getProductBySlug);
-router.post('/products/:id/reviews', authenticateToken, createProductReview);
+router.post('/products/:id/reviews', authenticateOptional, createProductReview);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
 

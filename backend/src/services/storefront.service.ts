@@ -258,16 +258,19 @@ export async function submitProductReview(
   }
 
   const rating = Math.min(5, Math.max(1, Math.round(Number(input.rating))));
-  const userId = req.user?.userId ?? 'user_001';
-  const user = await User.findOne({ id: userId }).lean();
+  const userId = req.user?.userId;
+  const user = userId ? await User.findOne({ id: userId }).lean() : null;
   const author = user?.name?.trim() || input.authorName?.trim() || 'SmartCart Guest';
-  const verified = Boolean(
-    await Order.exists({
-      userId,
-      status: { $ne: 'failed' },
-      'items.productId': product._id,
-    })
-  );
+  let verified = false;
+  if (userId) {
+    verified = Boolean(
+      await Order.exists({
+        userId,
+        status: { $ne: 'failed' },
+        'items.productId': product._id,
+      })
+    );
+  }
 
   const currentAverage = Number(product.ratings?.average ?? 0);
   const currentCount = Number(product.ratings?.count ?? 0);

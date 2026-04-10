@@ -5,8 +5,6 @@ import React, { useEffect, useMemo, useRef } from 'react';
 import { Animated, Easing, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { GlassCard } from '@/components/glass/GlassCard';
-import { useGlassTheme } from '@/components/glass/glassTheme';
 import { ThemedText } from '@/components/themed-text';
 import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -40,7 +38,6 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
   const bottomOffset = getFloatingTabBarBottomOffset(insets.bottom);
   const text = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
-  const glassTheme = useGlassTheme();
   const styles = useMemo(
     () => createFloatingTabBarStyles(bottomOffset, { text, mutedText }, FLOATING_TAB_BAR_HEIGHT),
     [bottomOffset, text, mutedText]
@@ -78,13 +75,16 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
   return (
     <View pointerEvents="box-none" style={styles.root}>
+      {/*
       <GlassCard
         style={styles.barGlass}
         radius={FLOATING_TAB_BAR_HEIGHT / 2}
         intensity={32}
-        tint={glassTheme.mode}
+        tint="light"
         glow
       >
+      */}
+      <View style={styles.barGlass}>
         <View style={styles.bar}>
           {visibleRoutes.map((route) => {
           const routeName = route.name as TabRouteName;
@@ -172,7 +172,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
           );
           })}
         </View>
-      </GlassCard>
+      </View>
     </View>
   );
 }
