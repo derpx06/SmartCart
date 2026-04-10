@@ -1,5 +1,6 @@
 import Product from '../models/Product';
 import Sku from '../models/Sku';
+import { embedProduct } from './productEmbedding.service';
 
 function slugify(value: string): string {
   return value
@@ -129,5 +130,13 @@ export async function syncSingleProductFromSkuLikeInput(input: {
     embedding: [],
   };
 
-  return Product.create(payload);
+  const product = await Product.create(payload);
+  try {
+    const embedding = await embedProduct(product);
+    await Product.updateOne({ _id: product._id }, { $set: { embedding } });
+  } catch {
+    // Keep product even if embedding fails; embedding can be rebuilt later.
+  }
+
+  return product;
 }

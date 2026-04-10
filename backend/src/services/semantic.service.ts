@@ -1,9 +1,53 @@
 import { SemanticState, SmartCartState } from '../types/state';
-import { INTENT_VECTORS } from '../config/intentVectors';
 import { NEEDS_MAP, GOAL_MAP } from '../config/semanticMaps';
 import { cosineSimilarity, averageEmbedding } from '../utils/vector';
+import { embedText } from './embedding.service';
 
-export function getSemanticState(state: SmartCartState): SemanticState {
+const INTENT_SEEDS: Record<string, string[]> = {
+    cooking: [
+        'cookware and kitchen essentials',
+        'pots pans and prep tools',
+        'cook at home'
+    ],
+    baking: [
+        'baking tools and mixers',
+        'bakeware and dessert prep',
+        'cookies cakes pastries'
+    ],
+    home_setup: [
+        'home setup and decor',
+        'furniture lighting and organization',
+        'home improvement essentials'
+    ],
+    gifting: [
+        'gift ideas and registry',
+        'holiday presents and premium gifts',
+        'wedding registry items'
+    ],
+};
+
+let intentVectorCache: Record<string, number[]> | null = null;
+
+async function getIntentVectors() {
+    if (intentVectorCache) return intentVectorCache;
+
+    const entries = Object.entries(INTENT_SEEDS);
+    const result: Record<string, number[]> = {};
+
+    for (const [intent, seeds] of entries) {
+        const vectors: number[][] = [];
+        for (const seed of seeds) {
+            const vector = await embedText(seed);
+            if (vector.length) vectors.push(vector);
+        }
+        result[intent] = averageEmbedding(vectors);
+    }
+
+    intentVectorCache = result;
+    return result;
+}
+
+export async function getSemanticState(state: SmartCartState): Promise<SemanticState> {
     // 1. Extract product embeddings
     const embeddings = state.cart.items
         .map(i => i.embedding)
@@ -17,11 +61,12 @@ export function getSemanticState(state: SmartCartState): SemanticState {
     const cartEmbedding = averageEmbedding(embeddings);
 
     // 3. Detect intent via similarity
+    const intentVectors = await getIntentVectors();
     let bestIntent = 'general';
     let bestScore = -1;
 
-    for (const intent in INTENT_VECTORS) {
-        const score = cosineSimilarity(cartEmbedding, INTENT_VECTORS[intent]);
+    for (const intent in intentVectors) {
+        const score = cosineSimilarity(cartEmbedding, intentVectors[intent]);
 
         if (score > bestScore) {
             bestScore = score;

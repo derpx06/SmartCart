@@ -15,6 +15,7 @@ import {
   getRecipeModules,
   getRegistryModules,
 } from '../controllers/content.controller';
+import { sendChatMessage, streamChat, chatHistory } from '../controllers/chat.controller';
 import {
   addToCart,
   getCart,
@@ -70,6 +71,10 @@ router.get('/products', getProducts);
 router.get('/products/slug/:slug', getProductBySlug);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
+
+router.post('/chat/message', sendChatMessage);
+router.post('/chat/stream', streamChat);
+router.get('/chat/history/:sessionId', chatHistory);
 
 router.get('/cart', authenticateToken, getCart);
 router.post('/cart/add', authenticateToken, addToCart);

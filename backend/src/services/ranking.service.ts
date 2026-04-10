@@ -1,10 +1,6 @@
 import { SmartCartState, SemanticState } from '../types/state';
 import { WEIGHTS } from '../config/rankingWeights';
-
-function dotProduct(a: number[], b: number[]): number {
-    if (a.length !== b.length) return 0;
-    return a.reduce((sum, val, i) => sum + val * (b[i] || 0), 0);
-}
+import { cosineSimilarity } from '../utils/vector';
 
 export interface RankedItem {
     productId: string;
@@ -47,6 +43,7 @@ function sessionScore(state: SmartCartState): number {
 }
 
 function inventoryScore(productId: string, inventory: Record<string, string>): number {
+    if (!inventory[productId]) return 0.6;
     return inventory[productId] === 'IN_STOCK' ? 1.0 : 0;
 }
 
@@ -65,7 +62,7 @@ function computeScore(item: any, context: RankingContext): number {
 
     // 🔥 Added: Semantic Vector Match (The "ML" approach)
     if (item.embedding?.length > 0 && context.semantic.vector?.length > 0) {
-        const similarity = dotProduct(item.embedding, context.semantic.vector) || 0;
+        const similarity = cosineSimilarity(item.embedding, context.semantic.vector) || 0;
         intent = (intent + similarity) / 2; // Average category match and vector match
     }
 
