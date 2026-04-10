@@ -29,6 +29,7 @@ type SortOption = (typeof SORT_OPTIONS)[number];
 
 const CARD_GAP = 12;
 const GRID_PADDING = spacing.lg;
+const ITEMS_PER_PAGE = 10;
 
 const SEARCH_COLORS = {
   background: '#FAF9F7',
@@ -237,9 +238,11 @@ export function LuxurySearchResultsScreen() {
   const [draftMinPriceInput, setDraftMinPriceInput] = useState('');
   const [draftMaxPriceInput, setDraftMaxPriceInput] = useState('');
   const [draftMinRating, setDraftMinRating] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const headerFade = useRef(new Animated.Value(0)).current;
   const searchBarAnim = useRef(new Animated.Value(0)).current;
+  const resultsScrollRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     void loadHome();
@@ -321,6 +324,22 @@ export function LuxurySearchResultsScreen() {
     (minRating > 0 ? 1 : 0) +
     (sortBy !== 'relevance' ? 1 : 0);
   const sortLabel = getSortLabel(sortBy);
+  const totalPages = Math.max(1, Math.ceil(results.length / ITEMS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedResults = useMemo(() => {
+    const start = (safeCurrentPage - 1) * ITEMS_PER_PAGE;
+    return results.slice(start, start + ITEMS_PER_PAGE);
+  }, [results, safeCurrentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [normalizedQuery, sortBy, priceBand, minPriceInput, maxPriceInput, minRating]);
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentPage, totalPages]);
 
   const openSearch = useCallback(
     (nextQuery: string) => {
@@ -391,10 +410,15 @@ export function LuxurySearchResultsScreen() {
     [toggleWishlistItem],
   );
 
+  const handleChangePage = useCallback((nextPage: number) => {
+    setCurrentPage(nextPage);
+    resultsScrollRef.current?.scrollTo({ y: 0, animated: true });
+  }, []);
+
   /* Build the 2-column layout */
   const leftColumn: { product: ProductItem; index: number }[] = [];
   const rightColumn: { product: ProductItem; index: number }[] = [];
-  results.forEach((product, i) => {
+  paginatedResults.forEach((product, i) => {
     if (i % 2 === 0) leftColumn.push({ product, index: i });
     else rightColumn.push({ product, index: i });
   });
@@ -492,6 +516,7 @@ export function LuxurySearchResultsScreen() {
 
       {/* ── Results ── */}
       <ScrollView
+        ref={resultsScrollRef}
         style={styles.resultsScroll}
         keyboardShouldPersistTaps="always"
         contentContainerStyle={styles.resultsContent}
@@ -501,6 +526,12 @@ export function LuxurySearchResultsScreen() {
           <View style={styles.resultCountRow}>
             <Text style={styles.resultCountText}>
               {results.length} product{results.length === 1 ? '' : 's'} found
+              {results.length > 0
+                ? ` • Showing ${(safeCurrentPage - 1) * ITEMS_PER_PAGE + 1}-${Math.min(
+                    safeCurrentPage * ITEMS_PER_PAGE,
+                    results.length,
+                  )}`
+                : ''}
             </Text>
             <Pressable style={styles.sortBtn} onPress={openFilterModal}>
               <Ionicons name="swap-vertical-outline" size={14} color={SEARCH_COLORS.muted} />
@@ -581,6 +612,47 @@ export function LuxurySearchResultsScreen() {
             </View>
           </View>
         )}
+
+        {results.length > 0 && totalPages > 1 ? (
+          <View style={styles.paginationWrap}>
+            <Pressable
+              onPress={() => handleChangePage(Math.max(1, safeCurrentPage - 1))}
+              disabled={safeCurrentPage === 1}
+              style={[styles.pageNavBtn, safeCurrentPage === 1 ? styles.pageNavBtnDisabled : null]}>
+              <Text style={[styles.pageNavText, safeCurrentPage === 1 ? styles.pageNavTextDisabled : null]}>
+                Prev
+              </Text>
+            </Pressable>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.pageNumbersRow}>
+              {Array.from({ length: totalPages }, (_, index) => {
+                const page = index + 1;
+                const isActive = page === safeCurrentPage;
+                return (
+                  <Pressable
+                    key={`page-${page}`}
+                    onPress={() => handleChangePage(page)}
+                    style={[styles.pageNumberBtn, isActive ? styles.pageNumberBtnActive : null]}>
+                    <Text style={[styles.pageNumberText, isActive ? styles.pageNumberTextActive : null]}>{page}</Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <Pressable
+              onPress={() => handleChangePage(Math.min(totalPages, safeCurrentPage + 1))}
+              disabled={safeCurrentPage === totalPages}
+              style={[styles.pageNavBtn, safeCurrentPage === totalPages ? styles.pageNavBtnDisabled : null]}>
+              <Text
+                style={[styles.pageNavText, safeCurrentPage === totalPages ? styles.pageNavTextDisabled : null]}>
+                Next
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
       </ScrollView>
 
       <Modal
@@ -1249,5 +1321,63 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: SEARCH_COLORS.muted,
+  },
+  paginationWrap: {
+    marginTop: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  pageNavBtn: {
+    height: 34,
+    paddingHorizontal: 12,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  pageNavBtnDisabled: {
+    opacity: 0.45,
+  },
+  pageNavText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: SEARCH_COLORS.text,
+  },
+  pageNavTextDisabled: {
+    color: SEARCH_COLORS.muted,
+  },
+  pageNumbersRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 2,
+  },
+  pageNumberBtn: {
+    minWidth: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 8,
+  },
+  pageNumberBtnActive: {
+    backgroundColor: SEARCH_COLORS.accent,
+    borderColor: SEARCH_COLORS.accent,
+  },
+  pageNumberText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    color: SEARCH_COLORS.text,
+  },
+  pageNumberTextActive: {
+    color: '#FFFFFF',
   },
 });

@@ -53,6 +53,10 @@ function initials(name: string) {
     .join('');
 }
 
+function normalizeKey(value?: string) {
+  return (value || '').trim().toLowerCase();
+}
+
 export default function CartScreen() {
   const router = useRouter();
   const { state, loading, error } = useSmartCartState();
@@ -172,12 +176,13 @@ export default function CartScreen() {
           (item.category && item.category.toLowerCase().includes(cartSearch)),
       )
     : allItems;
+  const hasCartItems = allItems.length > 0;
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
 
   const handleOpenPayment = () => {
-    if (!items.length) return;
+    if (!hasCartItems) return;
     setShowPaymentModal(true);
     setPaymentStep('loading');
     setTimeout(() => {
@@ -228,7 +233,7 @@ export default function CartScreen() {
             <ThemedText style={[styles.kicker, { color: accent }]}>Your cart</ThemedText>
             <ThemedText style={[styles.pageTitle, { color: text }]}>Your selection</ThemedText>
             <ThemedText style={[styles.topSub, { color: muted }]}>
-              Review items and place your order — it is completed on our side with no payment screen.
+              Curate your picks, adjust quantities, and checkout when everything feels right.
             </ThemedText>
           </View>
           <View
@@ -283,6 +288,17 @@ export default function CartScreen() {
                 ? 'Try a different search term to find items in your cart.'
                 : 'Add pieces to begin a more considered checkout experience.'}
             </ThemedText>
+            {!cartSearch ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push('/(tabs)/search')}
+                style={[styles.emptyBrowseButton, { backgroundColor: CART_COLORS.checkoutBtnBg }]}>
+                <Ionicons name="sparkles-outline" size={14} color={CART_COLORS.checkoutBtnText} />
+                <ThemedText style={[styles.emptyBrowseText, { color: CART_COLORS.checkoutBtnText }]}>
+                  Explore products
+                </ThemedText>
+              </Pressable>
+            ) : null}
           </View>
         ) : (
           <View style={styles.itemsWrap}>
@@ -290,10 +306,44 @@ export default function CartScreen() {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
               const slug = item.slug?.trim();
               const canOpenProduct = Boolean(slug);
-              
-              const allProducts = [...(homeData?.bestsellers || []), ...(homeData?.recommendedProducts || [])];
-              const matchingProduct = allProducts.find(p => p.id === item.productId || p.slug === item.slug);
-              const imageUrl = matchingProduct?.image;
+
+              const allProducts = [
+                ...(homeData?.bestsellers || []),
+                ...(homeData?.recommendedProducts || []),
+                ...(homeData?.collections || []),
+              ];
+              const normalizedItemId = normalizeKey(item.productId);
+              const normalizedItemSlug = normalizeKey(item.slug);
+              const normalizedItemName = normalizeKey(item.name);
+
+              const matchingProduct = allProducts.find((p) => {
+                const pAny = p as any;
+                const productId = normalizeKey(pAny.productId || pAny.id);
+                const productSlug = normalizeKey(pAny.slug);
+                const productName = normalizeKey(pAny.name || pAny.title);
+                return (
+                  (normalizedItemId && productId === normalizedItemId) ||
+                  (normalizedItemSlug && productSlug === normalizedItemSlug) ||
+                  (normalizedItemName && productName === normalizedItemName)
+                );
+              });
+
+              const rankedMatch = (state?.ranked || []).find((p: any) => {
+                const productId = normalizeKey(p.productId || p.id);
+                const productSlug = normalizeKey(p.slug);
+                const productName = normalizeKey(p.name);
+                return (
+                  (normalizedItemId && productId === normalizedItemId) ||
+                  (normalizedItemSlug && productSlug === normalizedItemSlug) ||
+                  (normalizedItemName && productName === normalizedItemName)
+                );
+              });
+
+              const imageUrl =
+                (item as any).image ||
+                (item as any).imageUrl ||
+                matchingProduct?.image ||
+                rankedMatch?.image;
 
               return (
                 <View
@@ -394,93 +444,91 @@ export default function CartScreen() {
           />
         )}
 
-        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
-          <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
-          <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
+        {hasCartItems ? (
+          <View style={[styles.summaryCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
+            <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
+            <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
 
-          <View style={styles.row}>
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
-            <ThemedText style={[styles.rowValue, { color: text }]}>{money(subtotal)}</ThemedText>
-          </View>
-          <View style={styles.row}>
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Delivery</ThemedText>
-            <ThemedText style={[styles.rowValue, { color: text }]}>Included</ThemedText>
-          </View>
-          <View style={styles.row}>
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Private client adjustment</ThemedText>
-            <ThemedText style={[styles.savingsValue, { color: accent }]}>-{money(discount)}</ThemedText>
-          </View>
+            <View style={styles.row}>
+              <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
+              <ThemedText style={[styles.rowValue, { color: text }]}>{money(subtotal)}</ThemedText>
+            </View>
+            <View style={styles.row}>
+              <ThemedText style={[styles.rowLabel, { color: muted }]}>Delivery</ThemedText>
+              <ThemedText style={[styles.rowValue, { color: text }]}>Included</ThemedText>
+            </View>
+            <View style={styles.row}>
+              <ThemedText style={[styles.rowLabel, { color: muted }]}>Private client adjustment</ThemedText>
+              <ThemedText style={[styles.savingsValue, { color: accent }]}>-{money(discount)}</ThemedText>
+            </View>
 
-          <View
-            style={[
-              styles.savingsRow,
-              { backgroundColor: softSurface, borderColor: CART_COLORS.border },
-            ]}>
-            <Ionicons name="diamond-outline" size={14} color={accent} />
-            <ThemedText style={[styles.rowLabel, { color: muted }]}>Preferred pricing applied</ThemedText>
-            <ThemedText style={[styles.savingsValue, { color: accent }]}>{money(discount)}</ThemedText>
-          </View>
+            <View
+              style={[
+                styles.savingsRow,
+                { backgroundColor: softSurface, borderColor: CART_COLORS.border },
+              ]}>
+              <Ionicons name="diamond-outline" size={14} color={accent} />
+              <ThemedText style={[styles.rowLabel, { color: muted }]}>Preferred pricing applied</ThemedText>
+              <ThemedText style={[styles.savingsValue, { color: accent }]}>{money(discount)}</ThemedText>
+            </View>
 
-          {(state?.session.confidence ?? 1) < 0.5 && (
-            <ThemedText style={[styles.errorText, { color: muted }]}>
-              Review your selection before placing the order to ensure nothing essential has been removed.
+            {(state?.session.confidence ?? 1) < 0.5 && (
+              <ThemedText style={[styles.errorText, { color: muted }]}>
+                Review your selection before placing the order to ensure nothing essential has been removed.
+              </ThemedText>
+            )}
+
+            <View style={[styles.totalRow, { borderColor: CART_COLORS.border }]}>
+              <ThemedText style={[styles.totalLabel, { color: text }]}>Total</ThemedText>
+              <ThemedText style={[styles.totalValue, { color: text }]}>{money(total)}</ThemedText>
+            </View>
+            <ThemedText style={[styles.taxNote, { color: muted }]}>
+              Delivery timing and any taxes are illustrative in this demo.
             </ThemedText>
-          )}
-
-          <View style={[styles.totalRow, { borderColor: CART_COLORS.border }]}>
-            <ThemedText style={[styles.totalLabel, { color: text }]}>Total</ThemedText>
-            <ThemedText style={[styles.totalValue, { color: text }]}>{money(total)}</ThemedText>
           </View>
-          <ThemedText style={[styles.taxNote, { color: muted }]}>
-            Delivery timing and any taxes are illustrative in this demo.
-          </ThemedText>
-        </View>
+        ) : null}
       </ScrollView>
 
-      <View
-        style={[
-          styles.checkoutWrap,
-          { bottom: tabBarClearance },
-          { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
-          luxuryShadow,
-        ]}>
-        <View style={styles.checkoutMetaInline}>
-          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Total</ThemedText>
-          <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
-        </View>
-
-        <Pressable
-          onPress={handleOpenPayment}
-          disabled={!items.length || placingOrder || showPaymentModal}
+      {hasCartItems ? (
+        <View
           style={[
-            styles.billButtonInline,
-            {
-              borderColor: CART_COLORS.border,
-              backgroundColor:
-                !items.length || placingOrder ? CART_COLORS.checkoutBtnDisabledBg : CART_COLORS.checkoutBtnBg,
-            },
+            styles.checkoutWrap,
+            { bottom: tabBarClearance },
+            { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
+            luxuryShadow,
           ]}>
-          {placingOrder ? (
-            <ActivityIndicator size="small" color={CART_COLORS.checkoutBtnDisabledText} />
-          ) : (
-            <Ionicons
-              name="bag-check-outline"
-              size={16}
-              color={!items.length ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText}
-            />
-          )}
-          <ThemedText
+          <View style={styles.checkoutMetaInline}>
+            <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Total</ThemedText>
+            <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
+          </View>
+
+          <Pressable
+            onPress={handleOpenPayment}
+            disabled={placingOrder || showPaymentModal}
             style={[
-              styles.billText,
+              styles.billButtonInline,
               {
-                color:
-                  !items.length || placingOrder ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText,
+                borderColor: CART_COLORS.border,
+                backgroundColor: placingOrder ? CART_COLORS.checkoutBtnDisabledBg : CART_COLORS.checkoutBtnBg,
               },
             ]}>
-            {placingOrder ? 'Placing…' : 'Place order'}
-          </ThemedText>
-        </Pressable>
-      </View>
+            {placingOrder ? (
+              <ActivityIndicator size="small" color={CART_COLORS.checkoutBtnDisabledText} />
+            ) : (
+              <Ionicons name="bag-check-outline" size={16} color={CART_COLORS.checkoutBtnText} />
+            )}
+            <ThemedText
+              style={[
+                styles.billText,
+                {
+                  color: placingOrder ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText,
+                },
+              ]}>
+              {placingOrder ? 'Placing…' : 'Place order'}
+            </ThemedText>
+          </Pressable>
+        </View>
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -616,6 +664,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 20,
     textAlign: 'center',
+  },
+  emptyBrowseButton: {
+    marginTop: spacing.sm,
+    borderRadius: radius.pill,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  emptyBrowseText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
   },
   itemsWrap: {
     gap: spacing.md,
