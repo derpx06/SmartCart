@@ -24,3 +24,15 @@ export interface Order {
   date: string;
   items: OrderItem[];
 }
+
+export interface Model3D {
+  _id: string;
+  name: string;
+  url: string;
+  publicId: string;
+  format: string;
+  size: number;
+  productId?: string;
+  createdAt: string;
+  updatedAt: string;
+}

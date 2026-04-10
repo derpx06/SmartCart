@@ -46,7 +46,13 @@ import {
 } from '../controllers/speech.controller';
 import { authenticateOptional, authenticateToken } from '../middleware/authenticateToken';
 import { requireAdmin } from '../middleware/requireAdmin';
-import { upload } from '../config/cloudinary';
+import { upload, uploadRaw } from '../config/cloudinary';
+import {
+  getModels3D,
+  uploadModel3D,
+  updateModel3D,
+  deleteModel3D,
+} from '../controllers/model3D.controller';
 import multer from 'multer';
 import {
   adminLogin,
@@ -125,5 +131,11 @@ router.get('/admin/orders', authenticateToken, requireAdmin, getAdminOrders);
 router.get('/admin/orders/:id', authenticateToken, requireAdmin, getAdminOrderById);
 router.put('/admin/orders/:id', authenticateToken, requireAdmin, updateAdminOrder);
 router.patch('/admin/orders/:id/status', authenticateToken, requireAdmin, updateAdminOrderStatus);
+
+// 3D Model Routes (Admin)
+router.get('/admin/models3d', authenticateToken, requireAdmin, getModels3D);
+router.post('/admin/models3d/upload', authenticateToken, requireAdmin, uploadRaw.single('model'), uploadModel3D);
+router.put('/admin/models3d/:id', authenticateToken, requireAdmin, updateModel3D);
+router.delete('/admin/models3d/:id', authenticateToken, requireAdmin, deleteModel3D);
 
 export default router;

@@ -17,5 +17,15 @@ const storage = new CloudinaryStorage({
   } as any // type override for params interface
 });
 
+// For 3D models and other raw files
+const rawStorage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: {
+    folder: 'smartcart_models_3d',
+    resource_type: 'raw',
+  } as any
+});
+
 export const upload = multer({ storage });
+export const uploadRaw = multer({ storage: rawStorage });
 export default cloudinary;
