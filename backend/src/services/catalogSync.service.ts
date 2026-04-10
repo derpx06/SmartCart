@@ -36,8 +36,8 @@ function guessImagePaths(sku: any): string[] {
 function buildProductPayload(sku: any) {
   const sellingPrice = Number(sku.price?.sellingPrice ?? sku.price?.retailPrice ?? 0);
   const originalPrice = Number(sku.price?.retailPrice ?? sku.price?.regularPrice ?? sellingPrice);
-  const stockStatus = sku.availability === 'ON_HAND' ? 'IN_STOCK' : 'OUT_OF_STOCK';
-  const quantity = stockStatus === 'IN_STOCK' ? 25 : 0;
+  const stockStatus = 'IN_STOCK' as const;
+  const quantity = 99;
 
   return {
     name: sku.shortName || sku.name,
@@ -118,8 +118,8 @@ export async function syncSingleProductFromSkuLikeInput(input: {
     },
     images: input.imageUrl ? [input.imageUrl] : [],
     stock: {
-      status: input.inventory > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
-      quantity: input.inventory,
+      status: 'IN_STOCK',
+      quantity: Math.max(Number(input.inventory) || 0, 99),
     },
     ratings: {
       average: 4.6,

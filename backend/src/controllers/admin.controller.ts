@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../config/env';
+import Admin from '../models/Admin';
 import Order from '../models/Order';
 import Product from '../models/Product';
 import User from '../models/User';
@@ -24,14 +25,14 @@ export const adminLogin = async (req: Request, res: Response): Promise<void> => 
   const { email, password } = req.body ?? {};
 
   try {
-    const user = await User.findOne({ email });
-    if (!user || user.password !== password) {
+    const admin = await Admin.findOne({ email });
+    if (!admin || admin.password !== password) {
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
-    const token = jwt.sign({ userId: user.id, isAdmin: true }, env.jwtSecret, { expiresIn: '12h' });
-    res.json({ token, userId: user.id, name: user.name, role: 'admin' });
+    const token = jwt.sign({ userId: admin.id, isAdmin: true }, env.jwtSecret, { expiresIn: '12h' });
+    res.json({ token, userId: admin.id, name: admin.name, role: 'admin' });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }

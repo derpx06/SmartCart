@@ -48,7 +48,7 @@ function productSummary(req: Request, product: any) {
 function buildFeatures(product: any): string[] {
   return [
     product.attributes?.material ? `Crafted in ${titleCase(product.attributes.material)}` : '',
-    product.stock?.status === 'IN_STOCK' ? 'Ready to ship' : 'Limited availability',
+    'Ready to ship',
     product.category ? `${titleCase(product.category)} collection favorite` : '',
   ].filter(Boolean);
 }
@@ -108,9 +108,9 @@ export async function getProductDetail(req: Request, slug: string) {
     originalPrice: product.price?.original ? Number(product.price.original) : undefined,
     rating: Number(product.ratings?.average ?? 4.6),
     reviewCount: Number(product.ratings?.count ?? 24),
-    badge: product.stock?.status === 'IN_STOCK' ? 'In Stock' : 'Limited',
-    shippingLine: product.stock?.status === 'IN_STOCK' ? 'Free Premium Shipping' : 'Backorder Available',
-    shippingEta: product.stock?.status === 'IN_STOCK' ? 'Estimated delivery: 3-5 business days' : 'Estimated delivery: 7-10 business days',
+    badge: 'In Stock',
+    shippingLine: 'Free Premium Shipping',
+    shippingEta: 'Estimated delivery: 3-5 business days',
     description: product.description || 'Curated craftsmanship designed for elegant daily use.',
     features: buildFeatures(product),
     colors: [
@@ -203,6 +203,7 @@ export async function listOrdersForUser(req: Request) {
     date: new Date(order.createdAt).toISOString().slice(0, 10),
     items: order.items.map((item: any) => ({
       productId: item.productId?._id?.toString?.() || '',
+      slug: typeof item.productId?.slug === 'string' ? item.productId.slug : '',
       name: item.productId?.name || 'Unknown Product',
       quantity: Number(item.quantity ?? 0),
       price: Number(item.priceAtPurchase ?? item.productId?.price?.selling ?? 0),

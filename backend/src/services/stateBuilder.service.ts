@@ -41,11 +41,10 @@ export async function buildSmartCartState(req: Request): Promise<SmartCartState>
         0
     );
 
-    // 4. Build Inventory State
+    // 4. Build Inventory State — cart lines are treated as available (demo storefront; no stock gate on checkout)
     const inventory: SmartCartState['inventory'] = {};
-    products.forEach((p: any) => {
-        inventory[p._id.toString()] =
-            p.stock?.status === 'IN_STOCK' ? 'IN_STOCK' : 'OUT_OF_STOCK';
+    enrichedItems.forEach((item) => {
+        inventory[item.productId] = 'IN_STOCK';
     });
 
     // 5. Extract Session Signals

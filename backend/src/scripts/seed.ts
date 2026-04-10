@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import { connectDatabase } from '../config/database';
+import Admin from '../models/Admin';
 import Feed from '../models/Feed';
 import Sku from '../models/Sku';
 import User from '../models/User';
@@ -24,11 +25,19 @@ const runSeed = async (): Promise<void> => {
 
     console.log('Clearing existing data...');
     await User.deleteMany({});
+    await Admin.deleteMany({});
     await Feed.deleteMany({});
     await Sku.deleteMany({});
 
     console.log('Inserting User...');
     await User.create(userData);
+
+    console.log('Inserting Admin...');
+    await Admin.create({
+      email: 'admin@smartcart.com',
+      password: 'admin123',
+      name: 'System Admin',
+    });
 
     console.log('Inserting Feed...');
     await Feed.create(feedData);

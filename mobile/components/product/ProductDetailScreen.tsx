@@ -81,9 +81,11 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
     try {
       setSaving(true);
-      await api.addToCart(product.id, quantity);
-      await useSmartCartStore.getState().refresh();
-      router.push('/(tabs)/cart');
+      await addToCart(product.id, quantity);
+      Alert.alert('Added to cart', `${quantity} ${quantity === 1 ? 'item is' : 'items are'} in your cart.`, [
+        { text: 'Continue shopping', style: 'cancel' },
+        { text: 'View cart', onPress: () => router.push('/(tabs)/cart') },
+      ]);
     } catch (err: any) {
       Alert.alert('Cart update failed', err.message || 'Please try again.');
     } finally {

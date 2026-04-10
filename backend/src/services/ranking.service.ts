@@ -117,7 +117,6 @@ export function rankItems(candidates: any[], context: RankingContext): RankedIte
 
     for (const item of candidates) {
         const score = computeScore(item, context);
-        console.log(`Candidate: ${item.name}, Category: ${item.category}, Score: ${score.toFixed(3)}`);
 
         if (score < 0.2) continue;
 
