@@ -196,8 +196,8 @@ function MessageBubble({
       <View style={isUser ? styles.bubbleUserWrap : styles.bubbleAssistantWrap}>
         {!isUser && hasProducts ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRail}>
-            {msg.products?.map((p) => (
-              <ChatProductCard key={p.id} product={p} onPress={onPressProduct} />
+            {msg.products?.map((p, index) => (
+              <ChatProductCard key={`${p.id}-${index}`} product={p} onPress={onPressProduct} />
             ))}
           </ScrollView>
         ) : null}
