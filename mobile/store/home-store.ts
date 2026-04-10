@@ -76,7 +76,7 @@ type HomeStore = {
   refreshing: boolean;
   error: string | null;
   loadHome: (tag?: string) => Promise<void>;
-  refreshHome: (tag?: string) => Promise<void>;
+  refreshHome: (tag?: string, options?: { silent?: boolean }) => Promise<void>;
 };
 
 export const useHomeStore = create<HomeStore>((set) => ({
@@ -149,9 +149,10 @@ export const useHomeStore = create<HomeStore>((set) => ({
       });
     }
   },
-  refreshHome: async (tag?: string) => {
+  refreshHome: async (tag?: string, options?: { silent?: boolean }) => {
+    const silent = Boolean(options?.silent);
     try {
-      set({ refreshing: true, error: null });
+      set(silent ? { error: null } : { refreshing: true, error: null });
       const data = await api.getHome(tag);
       const rowResults = await Promise.all(
         HOME_ROW_ORDER.map(async ({ id }) => {
