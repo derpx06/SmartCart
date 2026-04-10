@@ -41,6 +41,8 @@ export const streamChat = async (req: Request, res: Response): Promise<void> => 
       intent: response.intent,
       needs: response.needs,
       products: response.products,
+      productCards: response.productCards,
+      action: response.action,
     })}\n\n`);
 
     for (const chunk of chunks) {

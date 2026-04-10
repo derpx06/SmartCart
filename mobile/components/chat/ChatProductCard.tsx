@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -32,6 +33,11 @@ export function ChatProductCard({ product, onPress }: ChatProductCardProps) {
       <ThemedText style={styles.price} numberOfLines={1}>
         ${Number(product.price || 0).toFixed(2)}
       </ThemedText>
+
+      <View style={styles.ctaRow}>
+        <ThemedText style={styles.ctaText}>View product</ThemedText>
+        <Ionicons name="arrow-forward" size={14} color="#1C1B1F" />
+      </View>
     </Pressable>
   );
 }
@@ -74,6 +80,23 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 12,
     fontWeight: '800',
+    color: '#1C1B1F',
+  },
+  ctaRow: {
+    marginTop: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 7,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(28, 27, 31, 0.08)',
+  },
+  ctaText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
     color: '#1C1B1F',
   },
 });

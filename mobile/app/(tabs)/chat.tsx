@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Alert,
   Animated,
   KeyboardAvoidingView,
   Platform,
@@ -18,7 +19,7 @@ import { ChatProductCard } from '@/components/chat/ChatProductCard';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
-import { api, type ChatProductSummary } from '@/lib/api';
+import { api, type ChatProductCard as StructuredChatProductCard, type ChatProductSummary } from '@/lib/api';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -28,10 +29,12 @@ interface Message {
   text: string;
   time: string;
   products?: ChatProductSummary[];
+  productCards?: StructuredChatProductCard[];
   intent?: string;
   needs?: string[];
   isStreaming?: boolean;
   isError?: boolean;
+  actionMessage?: string;
 }
 
 const SUGGESTIONS = [
@@ -133,6 +136,11 @@ function MessageBubble({
           <ThemedText style={[styles.bubbleText, { color: isUser ? CHAT_COLORS.userText : CHAT_COLORS.assistantText }]}>
             {msg.text}
           </ThemedText>
+          {msg.actionMessage ? (
+            <ThemedText style={[styles.bubbleActionHint, { color: CHAT_COLORS.assistantRole }]}>
+              {msg.actionMessage}
+            </ThemedText>
+          ) : null}
 
           {subtitle ? (
             <ThemedText style={[styles.bubbleSubtitle, { color: CHAT_COLORS.assistantTime }]} numberOfLines={2}>
@@ -233,7 +241,7 @@ export default function ChatScreen() {
         router.push(`/product/${product.slug}`);
         return;
       }
-      // slug is required by the product route; if missing, do nothing rather than navigating incorrectly
+      Alert.alert('Unavailable', 'This recommendation is missing a product slug and cannot be opened yet.');
     },
     [router]
   );
@@ -278,9 +286,20 @@ export default function ChatScreen() {
               m.id === assistantId
                 ? {
                     ...m,
-                    products: meta.products,
+                    products: meta.productCards?.length
+                      ? meta.productCards.map((c) => ({
+                          id: c.id,
+                          slug: c.slug,
+                          name: c.title,
+                          category: c.subtitle,
+                          price: c.price,
+                          image: c.imageUrl,
+                        }))
+                      : meta.products,
+                    productCards: meta.productCards,
                     intent: meta.intent,
                     needs: meta.needs,
+                    actionMessage: meta.action?.status === 'PENDING_CONFIRMATION' ? meta.action.message : undefined,
                   }
                 : m
             )
@@ -551,6 +570,12 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 11,
     lineHeight: 16,
+  },
+  bubbleActionHint: {
+    marginTop: 8,
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
   },
   bubbleMeta: {
     marginTop: 6,

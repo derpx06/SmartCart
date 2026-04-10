@@ -214,10 +214,22 @@ export const getProductRecommendations = async (req: Request, res: Response): Pr
     res.json(
       ranked.map((item) => {
         const p = candidateById.get(item.productId);
+        const slug = p?.slug || '';
+        const image = mediaUrl(req, p?.images?.[0] || '');
         return {
           ...item,
-          slug: p?.slug,
-          image: mediaUrl(req, p?.images?.[0] || ''),
+          slug,
+          image,
+          card: {
+            id: item.productId,
+            slug,
+            title: item.name,
+            subtitle: item.category,
+            price: item.price,
+            imageUrl: image,
+            ctaLabel: 'View product',
+            route: slug ? `/product/${slug}` : '',
+          },
         };
       })
     );

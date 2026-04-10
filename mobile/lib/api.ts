@@ -19,10 +19,30 @@ export type ChatProductSummary = {
   category: string;
 };
 
+export type ChatProductCard = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  price: number;
+  imageUrl: string;
+  ctaLabel: string;
+  route: string;
+};
+
 export type ChatResponse = {
   sessionId: string;
   message: string;
   products: ChatProductSummary[];
+  productCards?: ChatProductCard[];
+  action?: {
+    type: 'ADD_TO_CART';
+    status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED';
+    productId: string;
+    slug: string;
+    quantity: number;
+    message: string;
+  };
   intent?: string;
   needs?: string[];
 };
@@ -38,7 +58,21 @@ export type ChatHistoryMessage = {
 };
 
 export type StreamChatHandlers = {
-  onMeta?: (meta: { sessionId: string; intent?: string; needs?: string[]; products: ChatProductSummary[] }) => void;
+  onMeta?: (meta: {
+    sessionId: string;
+    intent?: string;
+    needs?: string[];
+    products: ChatProductSummary[];
+    productCards?: ChatProductCard[];
+    action?: {
+      type: 'ADD_TO_CART';
+      status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED';
+      productId: string;
+      slug: string;
+      quantity: number;
+      message: string;
+    };
+  }) => void;
   onChunk?: (chunk: string) => void;
   onDone?: () => void;
   onError?: (error: unknown) => void;
@@ -210,6 +244,8 @@ export const api = {
         intent: fallback.intent,
         needs: fallback.needs,
         products: fallback.products,
+        productCards: fallback.productCards,
+        action: fallback.action,
       });
       handlers.onChunk?.(fallback.message);
       handlers.onDone?.();
@@ -235,7 +271,21 @@ export const api = {
           if (!event) continue;
 
           if (event === 'meta' && data) {
-            const meta = JSON.parse(data) as { sessionId: string; intent?: string; needs?: string[]; products: ChatProductSummary[] };
+            const meta = JSON.parse(data) as {
+              sessionId: string;
+              intent?: string;
+              needs?: string[];
+              products: ChatProductSummary[];
+              productCards?: ChatProductCard[];
+              action?: {
+                type: 'ADD_TO_CART';
+                status: 'PENDING_CONFIRMATION' | 'CONFIRMED' | 'CANCELLED';
+                productId: string;
+                slug: string;
+                quantity: number;
+                message: string;
+              };
+            };
             resolvedSessionId = meta.sessionId;
             handlers.onMeta?.(meta);
             continue;
@@ -264,6 +314,8 @@ export const api = {
         intent: fallback.intent,
         needs: fallback.needs,
         products: fallback.products,
+        productCards: fallback.productCards,
+        action: fallback.action,
       });
       handlers.onChunk?.(fallback.message);
       handlers.onDone?.();
