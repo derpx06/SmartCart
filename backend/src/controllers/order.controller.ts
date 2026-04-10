@@ -39,7 +39,7 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
       userId,
       items: orderItems,
       totalAmount,
-      status: 'completed',
+      status: 'ordered',
     });
 
     await order.save();
@@ -109,10 +109,10 @@ export const getOrderTracking = async (req: Request, res: Response): Promise<voi
       orderId: order._id.toString(),
       status: order.status,
       checkpoints: [
-        { label: 'Order placed', complete: true },
-        { label: 'Processing', complete: true },
-        { label: 'Shipped', complete: order.status === 'shipped' || order.status === 'completed' },
-        { label: 'Delivered', complete: order.status === 'completed' },
+        { label: 'Ordered', complete: true },
+        { label: 'Processing', complete: order.status === 'on_the_way' || order.status === 'delivered' },
+        { label: 'On the way', complete: order.status === 'on_the_way' || order.status === 'delivered' },
+        { label: 'Delivered', complete: order.status === 'delivered' },
       ],
     });
   } catch {

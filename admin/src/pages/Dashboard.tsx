@@ -6,7 +6,7 @@ export default function Dashboard() {
   const { getInsights, orders } = useData();
   const insights = getInsights();
   
-  const pendingOrders = orders.filter(o => o.status === 'Pending').length;
+  const pendingOrders = orders.filter(o => o.status === 'Ordered').length;
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>

@@ -8,10 +8,10 @@ export default function Orders() {
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
-      case 'Pending': return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
-      case 'Shipped': return { bg: 'rgba(109, 64, 255, 0.1)', color: 'var(--accent-base)' };
+      case 'Ordered': return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
+      case 'On the way': return { bg: 'rgba(109, 64, 255, 0.1)', color: 'var(--accent-base)' };
       case 'Delivered': return { bg: 'rgba(0, 210, 133, 0.1)', color: 'var(--success)' };
-      case 'Cancelled': return { bg: 'rgba(255, 74, 90, 0.1)', color: 'var(--danger)' };
+      case 'Failed': return { bg: 'rgba(255, 74, 90, 0.1)', color: 'var(--danger)' };
       default: return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
     }
   };
