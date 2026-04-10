@@ -14,7 +14,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandStoryCard } from '@/components/luxury/BrandStoryCard';
-import { CategoryScroller } from '@/components/luxury/CategoryScroller';
 import { EditorialCollections } from '@/components/luxury/EditorialCollections';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
@@ -61,7 +60,8 @@ export function LuxuryHomeScreen() {
   const loadHome = useHomeStore((state) => state.loadHome);
   const refreshHome = useHomeStore((state) => state.refreshHome);
   const background = HOME_COLORS.background;
-  const [activeFilter, setActiveFilter] = useState(quickFilters[0]);
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     void loadHome();
@@ -75,6 +75,36 @@ export function LuxuryHomeScreen() {
     router.push(`/product/${product.slug || 'signature-enameled-cast-iron-dutch-oven'}`);
   };
 
+  const openSearchResults = (query: string, filter: string | null) => {
+    const trimmedQuery = query.trim();
+    const normalizedFilter = filter && filter !== 'All Product' ? filter : undefined;
+    const params: Record<string, string> = {};
+
+    if (trimmedQuery) {
+      params.q = trimmedQuery;
+    }
+    if (normalizedFilter) {
+      params.category = normalizedFilter;
+    }
+
+    router.push({
+      pathname: '/(tabs)/search',
+      params,
+    });
+  };
+
+  const handleSubmitSearch = () => {
+    const trimmed = searchQuery.trim();
+    if (!trimmed) return;
+    setActiveFilter(null);
+    openSearchResults(trimmed, null);
+  };
+
+  const handleSelectFilter = (filter: string) => {
+    setActiveFilter(filter);
+    openSearchResults(searchQuery, filter);
+  };
+
   const heroImage = homeData.heroSlides[0]?.image;
 
   return (
@@ -82,6 +112,8 @@ export function LuxuryHomeScreen() {
       <View style={[styles.root, { backgroundColor: background }]}>
         <ScrollView
           style={styles.scrollView}
+          keyboardShouldPersistTaps="always"
+          keyboardDismissMode="on-drag"
           contentContainerStyle={{
             paddingBottom: 110,
           }}
@@ -103,7 +135,11 @@ export function LuxuryHomeScreen() {
                 borderColor: HOME_COLORS.line,
               },
             ]}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoScroll}>
+            <ScrollView
+              horizontal
+              keyboardShouldPersistTaps="always"
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.promoScroll}>
               {promoMessages.map((message, index) => (
                 <View key={message} style={styles.promoItem}>
                   <View style={styles.promoIconWrap}>
@@ -158,18 +194,32 @@ export function LuxuryHomeScreen() {
           </View>
 
           <View style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-            <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
+            <Pressable onPress={handleSubmitSearch} style={styles.searchSubmitBtn}>
+              <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
+            </Pressable>
             <TextInput
-              value=""
-              editable={false}
+              value={searchQuery}
+              editable
+              autoCorrect={false}
+              autoCapitalize="none"
+              spellCheck={false}
+              returnKeyType="go"
               placeholder="Search anything..."
               placeholderTextColor={HOME_COLORS.mutedText}
+              onChangeText={setSearchQuery}
+              onSubmitEditing={handleSubmitSearch}
               style={[styles.searchInput, { color: HOME_COLORS.text }]}
             />
+            {searchQuery.length > 0 ? (
+              <Pressable onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                <Ionicons name="close" size={14} color={HOME_COLORS.text} />
+              </Pressable>
+            ) : null}
           </View>
 
           <ScrollView
             horizontal
+            keyboardShouldPersistTaps="always"
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.filterRow}>
             {quickFilters.map((filter) => {
@@ -177,7 +227,7 @@ export function LuxuryHomeScreen() {
               return (
                 <Pressable
                   key={filter}
-                  onPress={() => setActiveFilter(filter)}
+                  onPress={() => handleSelectFilter(filter)}
                   style={styles.filterItem}>
                   <Text
                     style={[
@@ -200,41 +250,39 @@ export function LuxuryHomeScreen() {
             })}
           </ScrollView>
 
-          <RevealSection style={[styles.sectionWrap, styles.firstSectionWrap]} delay={60}>
-            <CategoryScroller categories={homeData.categories} loading={loading} />
-          </RevealSection>
+          <>
+            <RevealSection style={[styles.sectionWrap, styles.firstSectionWrap]} delay={140}>
+              <EditorialCollections collections={homeData.collections} loading={loading} />
+            </RevealSection>
 
-          <RevealSection style={styles.sectionWrap} delay={140}>
-            <EditorialCollections collections={homeData.collections} loading={loading} />
-          </RevealSection>
+            <RevealSection style={styles.sectionWrap} delay={210}>
+              <ProductCarousel
+                title="Bestsellers"
+                caption="Most loved by modern hosts and home chefs."
+                products={homeData.bestsellers}
+                loading={loading}
+                onPressProduct={openProduct}
+              />
+            </RevealSection>
 
-          <RevealSection style={styles.sectionWrap} delay={210}>
-            <ProductCarousel
-              title="Bestsellers"
-              caption="Most loved by modern hosts and home chefs."
-              products={homeData.bestsellers}
-              loading={loading}
-              onPressProduct={openProduct}
-            />
-          </RevealSection>
+            <RevealSection style={styles.sectionWrap} delay={280}>
+              <SeasonalBanner loading={loading} />
+            </RevealSection>
 
-          <RevealSection style={styles.sectionWrap} delay={280}>
-            <SeasonalBanner loading={loading} />
-          </RevealSection>
+            <RevealSection style={styles.sectionWrap} delay={340}>
+              <ProductCarousel
+                title="For Your Kitchen"
+                caption="Personalized picks based on your taste and recent browsing."
+                products={homeData.recommendedProducts}
+                loading={loading}
+                onPressProduct={openProduct}
+              />
+            </RevealSection>
 
-          <RevealSection style={styles.sectionWrap} delay={340}>
-            <ProductCarousel
-              title="For Your Kitchen"
-              caption="Personalized picks based on your taste and recent browsing."
-              products={homeData.recommendedProducts}
-              loading={loading}
-              onPressProduct={openProduct}
-            />
-          </RevealSection>
-
-          <RevealSection style={styles.sectionWrap} delay={400}>
-            <BrandStoryCard loading={loading} />
-          </RevealSection>
+            <RevealSection style={styles.sectionWrap} delay={400}>
+              <BrandStoryCard loading={loading} />
+            </RevealSection>
+          </>
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -382,6 +430,11 @@ const styles = StyleSheet.create({
     height: 46,
     gap: spacing.xs,
   },
+  searchSubmitBtn: {
+    width: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   filterRow: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
@@ -405,6 +458,14 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: Fonts.sans,
     fontSize: 13,
+  },
+  searchClearBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(28, 27, 31, 0.1)',
   },
   scrollView: {
     flex: 1,

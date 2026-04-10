@@ -35,6 +35,10 @@ export default function TabLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="search"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="explore"
         options={{ href: null }}
       />
