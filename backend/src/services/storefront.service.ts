@@ -239,7 +239,23 @@ export async function getProductDetail(req: Request, slug: string) {
   const product = await Product.findOne({ slug }).lean();
 
   if (!product) {
-    return null;
+    const trimmed = String(slug || '').trim();
+    const isObjectId = /^[a-f0-9]{24}$/i.test(trimmed);
+    const isLegacyPlaceholder = /^(rec-|prod-)/i.test(trimmed);
+
+    let fallback = null;
+    if (isObjectId) {
+      fallback = await Product.findById(trimmed).lean();
+    } else if (isLegacyPlaceholder) {
+      fallback = await Product.findOne({}).sort({ createdAt: -1 }).lean();
+    }
+
+    if (!fallback) {
+      return null;
+    }
+
+    const relatedFallback = await loadRelatedProducts(fallback);
+    return serializeProductDetail(req, fallback, relatedFallback);
   }
 
   const relatedProducts = await loadRelatedProducts(product);

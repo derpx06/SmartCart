@@ -150,7 +150,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
     if (!product.embedding || product.embedding.length === 0) {
       try {
-        const embedding = await ensureProductEmbedding(product);
+        const embedding = await ensureProductEmbedding(product as any);
         if (embedding.length) {
           await Product.updateOne({ _id: product._id }, { $set: { embedding } });
           product.embedding = embedding;

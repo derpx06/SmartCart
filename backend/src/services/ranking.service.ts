@@ -61,11 +61,11 @@ function biasScore(item: any): number {
 
 function computeScore(item: any, context: RankingContext): number {
     let intent = intentMatchScore(item, context.semantic);
-    const semanticVector = context.semantic.vector;
+    const semanticVector = context.semantic?.vector;
 
     // 🔥 Added: Semantic Vector Match (The "ML" approach)
-    if (item.embedding?.length > 0 && semanticVector && semanticVector.length > 0) {
-        const similarity = cosineSimilarity(item.embedding, semanticVector) || 0;
+    if (item.embedding && item.embedding.length > 0 && Array.isArray(semanticVector) && semanticVector.length > 0) {
+        const similarity = cosineSimilarity(item.embedding, semanticVector as number[]) || 0;
         intent = (intent + similarity) / 2; // Average category match and vector match
     }
 

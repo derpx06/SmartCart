@@ -83,11 +83,17 @@ export default function RecipeDetailScreen() {
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.horizontalScrollArea}>
-                {requiredProducts.map((product) => (
-                  <AnimatedPressable
-                    key={product!.id}
-                    onPress={() => router.push(`/product/${product!.slug || product!.id}` as any)}
-                    style={styles.productCard}>
+                {requiredProducts.map((product) => {
+                  const slug =
+                    product?.slug ||
+                    (product?.id && !/^rec-|^prod-/i.test(product.id) ? product.id : null) ||
+                    'signature-enameled-cast-iron-dutch-oven';
+
+                  return (
+                    <AnimatedPressable
+                      key={product!.id}
+                      onPress={() => router.push(`/product/${slug}` as any)}
+                      style={styles.productCard}>
                     <View style={styles.productImageWrap}>
                       <Image source={{ uri: product!.image }} style={styles.productImage} contentFit="cover" />
                     </View>
@@ -97,8 +103,9 @@ export default function RecipeDetailScreen() {
                       </ThemedText>
                       <ThemedText style={styles.productPrice}>{product!.price}</ThemedText>
                     </View>
-                  </AnimatedPressable>
-                ))}
+                    </AnimatedPressable>
+                  );
+                })}
               </ScrollView>
             </View>
           )}

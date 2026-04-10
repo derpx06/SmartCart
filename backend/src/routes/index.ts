@@ -75,7 +75,7 @@ const speechUpload = multer({
 
 router.get('/health', healthCheck);
 router.get('/ready', readinessCheck);
-router.get('/smartcart/state', authenticateToken, getSmartCartState);
+router.get('/smartcart/state', authenticateOptional, getSmartCartState);
 router.post('/login', login);
 router.post('/register', register);
 router.get('/profile', authenticateToken, profile);
@@ -92,7 +92,7 @@ router.get('/products', getProducts);
 router.get('/products/slug/:slug', getProductBySlug);
 router.post('/products/:id/reviews', authenticateOptional, createProductReview);
 router.get('/products/:id', getProductById);
-router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
+router.get('/products/:id/recommendations', authenticateOptional, getProductRecommendations);
 router.get('/products/:id/recommendation-rows', authenticateOptional, getProductRecommendationRows);
 
 router.post('/chat/message', authenticateOptional, sendChatMessage);
@@ -103,25 +103,25 @@ router.post('/speech/synthesize', authenticateOptional, synthesizeAudio);
 router.post('/speech/synthesize/background', authenticateOptional, synthesizeAudioBackground);
 router.get('/speech/synthesize/background/:jobId', authenticateOptional, getSynthesizeAudioBackground);
 
-router.get('/cart', authenticateToken, getCart);
-router.post('/cart/add', authenticateToken, addToCart);
-router.put('/cart/update', authenticateToken, updateCart);
-router.delete('/cart/remove/:productId', authenticateToken, removeFromCart);
+router.get('/cart', authenticateOptional, getCart);
+router.post('/cart/add', authenticateOptional, addToCart);
+router.put('/cart/update', authenticateOptional, updateCart);
+router.delete('/cart/remove/:productId', authenticateOptional, removeFromCart);
 
-router.get('/orders', authenticateToken, getOrders);
-router.get('/orders/mobile', authenticateToken, getMobileOrders);
+router.get('/orders', authenticateOptional, getOrders);
+router.get('/orders/mobile', authenticateOptional, getMobileOrders);
 router.get('/orders/:id', authenticateToken, getOrderById);
 router.get('/orders/:id/tracking', authenticateToken, getOrderTracking);
-router.post('/orders/checkout', authenticateToken, checkout);
+router.post('/orders/checkout', authenticateOptional, checkout);
 
-router.get('/wishlist', authenticateToken, getWishlist);
-router.post('/wishlist/add', authenticateToken, addToWishlist);
-router.delete('/wishlist/remove/:productId', authenticateToken, removeFromWishlist);
+router.get('/wishlist', authenticateOptional, getWishlist);
+router.post('/wishlist/add', authenticateOptional, addToWishlist);
+router.delete('/wishlist/remove/:productId', authenticateOptional, removeFromWishlist);
 
-router.get('/buylater', authenticateToken, getBuyLater);
-router.post('/buylater/add', authenticateToken, addToBuyLater);
-router.delete('/buylater/remove/:productId', authenticateToken, removeFromBuyLater);
-router.post('/buylater/move-to-cart/:productId', authenticateToken, moveToCart);
+router.get('/buylater', authenticateOptional, getBuyLater);
+router.post('/buylater/add', authenticateOptional, addToBuyLater);
+router.delete('/buylater/remove/:productId', authenticateOptional, removeFromBuyLater);
+router.post('/buylater/move-to-cart/:productId', authenticateOptional, moveToCart);
 
 router.post('/admin/login', adminLogin);
 router.get('/admin/dashboard', authenticateToken, requireAdmin, getAdminDashboard);

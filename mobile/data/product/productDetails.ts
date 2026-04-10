@@ -43,7 +43,7 @@ export type ProductDetail = {
 };
 
 const dutchOven: ProductDetail = {
-  slug: 'signature-enameled-cast-iron-dutch-oven',
+  slug: 'chefs-choice-8-stainless-knife',
   brand: 'THE CULINARY ATELIER',
   name: 'Signature Enameled Cast Iron Dutch Oven',
   price: 320,

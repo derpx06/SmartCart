@@ -1,12 +1,14 @@
 import { Platform } from 'react-native';
 
 const webApiUrlFromEnv = process.env.EXPO_PUBLIC_API_URL?.trim();
+const fallbackApiUrl =
+  Platform.select({
+    android: 'http://10.211.149.94:3001',
+    ios: 'http://10.211.149.94:3001',
+    web: 'http://localhost:3001',
+    default: 'http://10.211.149.94:3001',
+  }) ?? 'http://10.211.149.94:3001';
 
 export const Config = {
-  API_URL: Platform.select({
-    android: 'http://10.0.2.2:3001',
-    ios: 'https://0b85-27-63-22-178.ngrok-free.app',
-    web: webApiUrlFromEnv || 'http://localhost:3001',
-    default: 'https://0b85-27-63-22-178.ngrok-free.app',
-  }),
+  API_URL: webApiUrlFromEnv || fallbackApiUrl,
 };

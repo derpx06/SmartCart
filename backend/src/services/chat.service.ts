@@ -541,11 +541,16 @@ export async function handleChatMessage(req: Request, sessionId: string, message
     }
   }
 
-  const responseMessage = askedForProducts && productSummaries.length
-    ? 'Here are product options for you. Pick one filter (budget, material, or use-case), and I will refine these cards.'
-    : askedForProducts && !productSummaries.length
-    ? 'I could not find direct matches right now, but I can still help. Share one filter (budget, material, or use-case), and I will narrow options.'
-    : await generateAssistantReply({
+  let responseMessage: string;
+  if (askedForProducts && productSummaries.length) {
+    responseMessage =
+      'Here are product options for you. Pick one filter (budget, material, or use-case), and I will refine these cards.';
+  } else if (askedForProducts && !productSummaries.length) {
+    responseMessage =
+      'I could not find direct matches right now, but I can still help. Share one filter (budget, material, or use-case), and I will narrow options.';
+  } else {
+    try {
+      responseMessage = await generateAssistantReply({
         userMessage: message,
         context: context
           ? {
@@ -566,6 +571,12 @@ export async function handleChatMessage(req: Request, sessionId: string, message
         })),
         recentMessages,
       });
+    } catch (error) {
+      console.error('LLM reply failed:', error);
+      responseMessage =
+        "I'm having trouble reaching the AI service right now, but I can still help with product suggestions. Tell me your budget or preferred material.";
+    }
+  }
 
   const action: ChatResponse['action'] | undefined = undefined;
   const finalResponseMessage = responseMessage;

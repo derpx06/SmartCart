@@ -133,7 +133,7 @@ export function buildIntelligenceAndBundles(args: {
     message: completionMessage(semantic.completionPercent || 0, semantic.primary_intent || 'general'),
   };
 
-  if (cartItems.length < 1) {
+  if (cartItems.length < 3) {
     return { intelligencePanel, kitIntelligence: [], smartBundles: [] };
   }
 
