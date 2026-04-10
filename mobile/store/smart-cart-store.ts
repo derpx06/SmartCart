@@ -4,6 +4,17 @@ import { Config } from '@/constants/Config';
 import { api } from '@/lib/api';
 import type { SmartCartState } from '@/types/smart-cart';
 
+function normalizeProductKey(value?: string) {
+  return (value || '').trim().toLowerCase();
+}
+
+function findCartItem(state: SmartCartState | null, productId: string) {
+  const targetKey = normalizeProductKey(productId);
+  if (!targetKey || !state?.cart?.items?.length) return null;
+
+  return state.cart.items.find((item) => normalizeProductKey(item.productId) === targetKey) ?? null;
+}
+
 type SmartCartStore = {
   state: SmartCartState | null;
   loading: boolean;
@@ -55,7 +66,19 @@ export const useSmartCartStore = create<SmartCartStore>((set, get) => ({
     await get().fetchCart({ silent: true });
   },
   addToCart: async (productId, quantity) => {
-    await api.addToCart(productId, quantity);
+    const requestedQuantity = Math.max(1, Math.floor(Number(quantity) || 1));
+
+    if (!get().state) {
+      await get().fetchCart({ silent: true });
+    }
+
+    const existing = findCartItem(get().state, productId);
+    if (existing) {
+      await api.updateCart(productId, existing.quantity + requestedQuantity);
+    } else {
+      await api.addToCart(productId, requestedQuantity);
+    }
+
     await get().fetchCart({ silent: true });
   },
   checkout: async () => {

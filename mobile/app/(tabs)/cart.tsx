@@ -90,6 +90,19 @@ export default function CartScreen() {
     }
   };
 
+  const handleAddRecommendation = async (productId: string) => {
+    try {
+      await addToCart(productId, 1);
+    } catch (err: any) {
+      const message = err?.message || 'Please try again.';
+      if (typeof message === 'string' && message.toLowerCase().includes('unauthorized')) {
+        Alert.alert('Session expired', 'Please sign in again to add items to your cart.');
+        return;
+      }
+      Alert.alert('Could not add item', message);
+    }
+  };
+
   if (loading) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
@@ -463,14 +476,14 @@ export default function CartScreen() {
         {state?.smartBundles && state.smartBundles.length > 0 && (
           <SmartBundleSection
             bundles={state.smartBundles}
-            onAdd={(pid) => addToCart(pid, 1)}
+            onAdd={handleAddRecommendation}
           />
         )}
 
         {(!state?.smartBundles || state.smartBundles.length === 0) && state?.ranked && state.ranked.length > 0 && (
           <RecommendationSection
             ranked={state.ranked}
-            onAdd={(pid) => addToCart(pid, 1)}
+            onAdd={handleAddRecommendation}
           />
         )}
 

@@ -26,6 +26,7 @@ import { useMobileAuthStore } from '@/store/auth-store';
 import { useProductStore } from '@/store/product-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
+import type { SmartCartState } from '@/types/smart-cart';
 import ARBtn from '@/src/features/ar/componenets/arBtn';
 
 type ProductDetailScreenProps = {
@@ -54,6 +55,24 @@ function normalizeRowKey(value: string) {
   return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
 }
 
+function normalizeProductKey(value?: string) {
+  return (value || '').trim().toLowerCase();
+}
+
+function getCartQuantityForProduct(state: SmartCartState | null, productId?: string, slug?: string) {
+  if (!state?.cart?.items?.length) return 0;
+
+  const productKey = normalizeProductKey(productId);
+  const slugKey = normalizeProductKey(slug);
+  const match = state.cart.items.find((item) => {
+    const itemProductKey = normalizeProductKey(item.productId);
+    const itemSlugKey = normalizeProductKey(item.slug);
+    return (productKey && itemProductKey === productKey) || (slugKey && itemSlugKey === slugKey);
+  });
+
+  return match?.quantity ?? 0;
+}
+
 export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -64,6 +83,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [selectedSize, setSelectedSize] = useState(product.selectedSize);
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
+  const [addingRelatedId, setAddingRelatedId] = useState<string | null>(null);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -71,6 +91,8 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [reviewBody, setReviewBody] = useState('');
 
   const { rows: recommendationRows, loading: recsLoading } = useProductRecommendationRows(product.id);
+  const cartState = useSmartCartStore((s) => s.state);
+  const fetchCartState = useSmartCartStore((s) => s.fetchCart);
   const addToCart = useSmartCartStore((s) => s.addToCart);
   const submitReview = useProductStore((s) => s.submitReview);
   const reviewSubmitting = useProductStore((s) => s.reviewSubmitting);
@@ -85,12 +107,25 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
     Boolean(product.id) && s.syncingIds.includes(product.id),
   );
 
+  const existingCartQuantity = useMemo(
+    () => getCartQuantityForProduct(cartState, product.id, product.slug),
+    [cartState, product.id, product.slug],
+  );
+
   const handleAddRelated = async (productId: string) => {
     try {
+      setAddingRelatedId(productId);
       await addToCart(productId, 1);
       Alert.alert('Selection updated', 'A thoughtfully paired item has been added.');
     } catch (err: any) {
-      Alert.alert('Update failed', err.message || 'Please try again.');
+      const message = err?.message || 'Please try again.';
+      if (typeof message === 'string' && message.toLowerCase().includes('unauthorized')) {
+        Alert.alert('Session expired', 'Please sign in again to add items to your cart.');
+        return;
+      }
+      Alert.alert('Update failed', message);
+    } finally {
+      setAddingRelatedId((current) => (current === productId ? null : current));
     }
   };
 
@@ -138,6 +173,11 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
     if (wishlistLoaded) return;
     void fetchWishlist({ silent: true });
   }, [wishlistLoaded, fetchWishlist]);
+
+  useEffect(() => {
+    if (cartState) return;
+    void fetchCartState({ silent: true });
+  }, [cartState, fetchCartState]);
 
   useEffect(() => {
     if (!product?.id) return;
@@ -204,15 +244,31 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
       return;
     }
 
+    const amountToAdd = Math.max(1, Math.floor(quantity));
+    const wasAlreadyInCart = existingCartQuantity > 0;
+
     try {
       setSaving(true);
-      await addToCart(product.id, quantity);
-      Alert.alert('Added to cart', `${quantity} ${quantity === 1 ? 'item is' : 'items are'} in your cart.`, [
+      await addToCart(product.id, amountToAdd);
+      const updatedQuantity = getCartQuantityForProduct(useSmartCartStore.getState().state, product.id, product.slug);
+      const totalInCart = updatedQuantity || existingCartQuantity + amountToAdd;
+      Alert.alert(
+        wasAlreadyInCart ? 'Cart updated' : 'Added to cart',
+        wasAlreadyInCart
+          ? `${amountToAdd} more ${amountToAdd === 1 ? 'item has' : 'items have'} been added. In cart: ${totalInCart}.`
+          : `${amountToAdd} ${amountToAdd === 1 ? 'item is' : 'items are'} in your cart.`,
+        [
         { text: 'Continue shopping', style: 'cancel' },
         { text: 'View cart', onPress: () => router.push('/(tabs)/cart') },
-      ]);
+        ],
+      );
     } catch (err: any) {
-      Alert.alert('Cart update failed', err.message || 'Please try again.');
+      const message = err?.message || 'Please try again.';
+      if (typeof message === 'string' && message.toLowerCase().includes('unauthorized')) {
+        Alert.alert('Session expired', 'Please sign in again to add items to your cart.');
+        return;
+      }
+      Alert.alert('Cart update failed', message);
     } finally {
       setSaving(false);
     }
@@ -665,10 +721,20 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                           </ThemedText>
                         </Pressable>
                         <Pressable
-                          onPress={() => handleAddRelated(related.productId)}
-                          style={[styles.miniAddBtn, { backgroundColor: palette.text }]}
+                          onPress={() => {
+                            void handleAddRelated(related.productId);
+                          }}
+                          disabled={addingRelatedId === related.productId}
+                          style={[
+                            styles.miniAddBtn,
+                            { backgroundColor: palette.text, opacity: addingRelatedId === related.productId ? 0.7 : 1 },
+                          ]}
                         >
-                          <Ionicons name="add" size={16} color={palette.elevated} />
+                          {addingRelatedId === related.productId ? (
+                            <ActivityIndicator size="small" color={palette.elevated} />
+                          ) : (
+                            <Ionicons name="add" size={16} color={palette.elevated} />
+                          )}
                         </Pressable>
                       </View>
                     ))}
@@ -843,7 +909,9 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               <ThemedText style={[styles.totalLabel, { color: palette.mutedText }]}>Total</ThemedText>
               <ThemedText style={[styles.totalValue, { color: palette.text }]}>{money(total)}</ThemedText>
             </View>
-            <ThemedText style={[styles.totalLabel, { color: palette.mutedText }]}>Qty {quantity}</ThemedText>
+            <ThemedText style={[styles.totalLabel, { color: palette.mutedText }]}>
+              {existingCartQuantity > 0 ? `In cart ${existingCartQuantity} | Add ${quantity}` : `Qty ${quantity}`}
+            </ThemedText>
           </View>
 
           <View style={styles.bottomRow}>
@@ -874,7 +942,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               ]}>
               <Ionicons name="bag-add-outline" size={16} color={palette.elevated} />
               <ThemedText style={[styles.addButtonText, { color: palette.elevated }]}>
-                {saving ? 'Adding...' : available ? 'Add to cart' : 'Out of stock'}
+                {saving ? 'Updating...' : available ? (existingCartQuantity > 0 ? 'Increase quantity' : 'Add to cart') : 'Out of stock'}
               </ThemedText>
             </Pressable>
           </View>
