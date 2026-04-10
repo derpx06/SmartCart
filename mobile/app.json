@@ -9,7 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.muneerabass.mobile",
+      "appleTeamId": "U2G3J7555N"
     },
     "android": {
       "adaptiveIcon": {
