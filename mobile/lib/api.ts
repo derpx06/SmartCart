@@ -6,6 +6,15 @@ import type { RankedItem } from '@/types/smart-cart';
 
 let authToken: string | null = null;
 
+export type AuthPayload = {
+  token: string;
+  userId: string;
+  name: string;
+  email?: string;
+  role?: string;
+  phone?: string;
+};
+
 type RequestOptions = RequestInit & {
   skipAuth?: boolean;
 };
@@ -146,14 +155,14 @@ export const api = {
     return authToken;
   },
   login(email: string, password: string) {
-    return request<{ token: string; userId: string; name: string }>('/login', {
+    return request<AuthPayload>('/login', {
       method: 'POST',
       skipAuth: true,
       body: JSON.stringify({ email, password }),
     });
   },
   register(name: string, email: string, password: string) {
-    return request<{ token: string; userId: string; name: string }>('/register', {
+    return request<AuthPayload>('/register', {
       method: 'POST',
       skipAuth: true,
       body: JSON.stringify({ name, email, password }),

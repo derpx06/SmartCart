@@ -4,12 +4,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  LayoutAnimation,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -62,16 +65,22 @@ export function LuxuryHomeScreen() {
   const loadHome = useHomeStore((state) => state.loadHome);
   const refreshHome = useHomeStore((state) => state.refreshHome);
   const background = HOME_COLORS.background;
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<string | null>(quickFilters[0] ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasUnreadNotifications] = useState(true);
 
   useEffect(() => {
+    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+      UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
     void loadHome();
   }, [loadHome]);
 
+  const normalizeFilter = (filter: string | null) =>
+    filter && filter !== 'All Product' ? filter : undefined;
+
   const onRefresh = async () => {
-    await refreshHome(activeFilter || undefined);
+    await refreshHome(normalizeFilter(activeFilter));
   };
 
   const openProduct = (product: ProductItem) => {
@@ -99,13 +108,14 @@ export function LuxuryHomeScreen() {
   const handleSubmitSearch = () => {
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
-    setActiveFilter(null);
+    setActiveFilter(quickFilters[0] ?? null);
     openSearchResults(trimmed, null);
   };
 
   const handleSelectFilter = (filter: string) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setActiveFilter(filter);
-    void loadHome(filter);
+    void loadHome(normalizeFilter(filter));
   };
 
   const heroImage = homeData.heroSlides[0]?.image;
@@ -133,17 +143,22 @@ export function LuxuryHomeScreen() {
             <View>
               <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
               <ThemedText type="title" style={styles.homeHeaderTitle}>
-                SmartCart
+                Williams Sonoma
               </ThemedText>
             </View>
             <View style={styles.homeHeaderActions}>
-              <Pressable style={styles.headerIconButton} accessibilityRole="button" accessibilityLabel="Profile">
+              <Pressable
+                style={styles.headerIconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Profile"
+                onPress={() => router.push('/(tabs)/profile')}>
                 <Ionicons name="person-outline" size={18} color={HOME_COLORS.text} />
               </Pressable>
               <Pressable
                 style={styles.headerIconButton}
                 accessibilityRole="button"
-                accessibilityLabel="Notifications">
+                accessibilityLabel="Notifications"
+                onPress={() => router.push('/(tabs)/notifications')}>
                 <Ionicons name="notifications-outline" size={18} color={HOME_COLORS.text} />
                 {hasUnreadNotifications ? <View style={styles.notificationDot} /> : null}
               </Pressable>
@@ -338,8 +353,8 @@ const styles = StyleSheet.create({
   },
   homeHeaderTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 30,
-    lineHeight: 34,
+    fontSize: 26,
+    lineHeight: 30,
     color: HOME_COLORS.text,
     fontWeight: '700',
   },

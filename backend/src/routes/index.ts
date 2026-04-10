@@ -38,9 +38,16 @@ import {
 } from '../controllers/buyLater.controller';
 import { healthCheck } from '../controllers/health.controller';
 import { uploadImage } from '../controllers/upload.controller';
+import {
+  getSynthesizeAudioBackground,
+  synthesizeAudio,
+  synthesizeAudioBackground,
+  transcribeAudio,
+} from '../controllers/speech.controller';
 import { authenticateOptional, authenticateToken } from '../middleware/authenticateToken';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { upload } from '../config/cloudinary';
+import multer from 'multer';
 import {
   adminLogin,
   createAdminProduct,
@@ -56,6 +63,10 @@ import {
 } from '../controllers/admin.controller';
 
 const router = Router();
+const speechUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 },
+});
 
 router.get('/health', healthCheck);
 router.get('/smartcart/state', authenticateToken, getSmartCartState);
@@ -78,6 +89,10 @@ router.get('/products/:id/recommendations', authenticateToken, getProductRecomme
 router.post('/chat/message', authenticateOptional, sendChatMessage);
 router.post('/chat/stream', authenticateOptional, streamChat);
 router.get('/chat/history/:sessionId', authenticateOptional, chatHistory);
+router.post('/speech/transcribe', authenticateOptional, speechUpload.single('audio'), transcribeAudio);
+router.post('/speech/synthesize', authenticateOptional, synthesizeAudio);
+router.post('/speech/synthesize/background', authenticateOptional, synthesizeAudioBackground);
+router.get('/speech/synthesize/background/:jobId', authenticateOptional, getSynthesizeAudioBackground);
 
 router.get('/cart', authenticateToken, getCart);
 router.post('/cart/add', authenticateToken, addToCart);

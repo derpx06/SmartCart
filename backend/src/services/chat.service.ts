@@ -277,6 +277,10 @@ function userAskedForProducts(text: string): boolean {
     'options',
     'pick',
     'gift',
+    'build',
+    'starter',
+    'kit',
+    'setup',
   ];
   // Also catch direct quantity + budget shopping asks like "3 under 100"
   const numericBudgetPattern = /\b(\d+)\b.*\bunder\b.*\b(\$?\d+)\b/i;
@@ -476,12 +480,16 @@ export async function handleChatMessage(req: Request, sessionId: string, message
   }
 
   const requestedAddToCart = userAskedToAddToCart(message);
-  const includeProducts = userAskedForProducts(message) || requestedAddToCart;
+  const askedForProducts = userAskedForProducts(message);
+  const includeProducts = askedForProducts || requestedAddToCart;
   let products = includeProducts ? await rankProducts(message, 6) : [];
   if (includeProducts && products.length > 0 && products.length < 2) {
     const supplemental = await rankProducts('popular in stock products', 6);
     const seen = new Set(products.map((p: any) => String(p._id)));
     products = [...products, ...supplemental.filter((p: any) => !seen.has(String(p._id)))].slice(0, 6);
+  }
+  if (askedForProducts && products.length === 0) {
+    products = await rankProducts('popular in stock products', 6);
   }
   const productSummaries = includeProducts ? products.map((product) => productSummary(req, product)) : [];
   const recentMessages = await getRecentConversation(sessionId, 8);
@@ -533,8 +541,10 @@ export async function handleChatMessage(req: Request, sessionId: string, message
     }
   }
 
-  const responseMessage = includeProducts && productSummaries.length
-    ? 'Here are some options for you. Pick one filter (budget, material, or use-case), and I will refine the cards.'
+  const responseMessage = askedForProducts && productSummaries.length
+    ? 'Here are product options for you. Pick one filter (budget, material, or use-case), and I will refine these cards.'
+    : askedForProducts && !productSummaries.length
+    ? 'I could not find direct matches right now, but I can still help. Share one filter (budget, material, or use-case), and I will narrow options.'
     : await generateAssistantReply({
         userMessage: message,
         context: context
