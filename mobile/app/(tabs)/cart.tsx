@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
@@ -29,6 +29,9 @@ export default function CartScreen() {
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
   const addToCart = useSmartCartStore((store) => store.addToCart);
   const checkout = useSmartCartStore((store) => store.checkout);
+  const scrollRef = useRef<ScrollView>(null);
+  const [billSectionY, setBillSectionY] = useState(0);
+  const insets = useSafeAreaInsets();
   const luxuryPalette = useLuxuryPalette();
   const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
@@ -48,6 +51,11 @@ export default function CartScreen() {
   };
 
   const handleCheckout = async () => {
+    if (!(state?.cart.items?.length ?? 0)) {
+      Alert.alert('Your cart is empty', 'Add products to proceed with payment.');
+      return;
+    }
+
     try {
       await checkout();
       await refresh();
@@ -69,10 +77,22 @@ export default function CartScreen() {
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
+  const footerOffset = Math.max(insets.bottom, 10);
+
+  const handleJumpToBill = () => {
+    scrollRef.current?.scrollTo({
+      y: Math.max(billSectionY - spacing.md, 0),
+      animated: true,
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: 212 + footerOffset }]}
+        showsVerticalScrollIndicator={false}
+        bounces>
         <View pointerEvents="none" style={styles.atmosphereLayer}>
           <View style={[styles.orbOne, { backgroundColor: luxuryPalette.orbOne }]} />
           <View style={[styles.orbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
@@ -211,7 +231,9 @@ export default function CartScreen() {
           />
         )}
 
-        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+        <View
+          onLayout={(event) => setBillSectionY(event.nativeEvent.layout.y)}
+          style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
           <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
           <ThemedText style={[styles.summaryTitle, { color: text }]}>Payment overview</ThemedText>
 
@@ -257,15 +279,22 @@ export default function CartScreen() {
       <View
         style={[
           styles.checkoutWrap,
+          { bottom: footerOffset },
           { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
         ]}>
         <View style={styles.checkoutMeta}>
-          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Secure payment</ThemedText>
+          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Total</ThemedText>
           <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
         </View>
+
+        <Pressable onPress={handleJumpToBill} style={[styles.billButton, { borderColor: luxuryPalette.line }]}>
+          <Ionicons name="receipt-outline" size={16} color={text} />
+          <ThemedText style={[styles.billText, { color: text }]}>Go to Bill</ThemedText>
+        </Pressable>
+
         <Pressable onPress={handleCheckout} style={[styles.checkoutButton, { backgroundColor: text }, luxuryShadow]}>
           <ThemedText lightColor={background} darkColor={background} style={styles.checkoutText}>
-            Proceed to payment
+            Pay Now
           </ThemedText>
           <Ionicons name="arrow-forward" size={18} color={background} />
         </Pressable>
@@ -533,16 +562,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 14,
     borderWidth: 1,
     borderRadius: radius.xl,
     padding: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'stretch',
     gap: 12,
   },
   checkoutMeta: {
-    flex: 1,
+    alignItems: 'center',
     gap: 2,
   },
   checkoutCaption: {
@@ -555,6 +582,23 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.serif,
     fontSize: 24,
     fontWeight: '700',
+  },
+  billButton: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingHorizontal: 18,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  billText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '700',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
   },
   checkoutButton: {
     flexDirection: 'row',
