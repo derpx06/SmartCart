@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import ProductDetails from './pages/ProductDetails';
 import Orders from './pages/Orders';
 import OrderDetails from './pages/OrderDetails';
+import ThreeDModels from './pages/ThreeDModels';
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -25,6 +26,7 @@ function App() {
         <Route path="products/new" element={<ProductDetails />} />
         <Route path="orders" element={<Orders />} />
         <Route path="orders/:id" element={<OrderDetails />} />
+        <Route path="models3d" element={<ThreeDModels />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

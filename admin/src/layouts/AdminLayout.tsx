@@ -1,7 +1,7 @@
 
 import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { LayoutDashboard, Package, ShoppingCart, LogOut } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, LogOut, Box } from 'lucide-react';
 
 export default function AdminLayout() {
   const { logout } = useAuth();
@@ -31,6 +31,14 @@ export default function AdminLayout() {
             style={{ justifyContent: 'flex-start' }}
           >
             <Package size={18} /> Products
+          </NavLink>
+
+          <NavLink 
+            to="/models3d" 
+            className={({isActive}) => isActive ? 'btn btn-primary' : 'btn btn-outline'}
+            style={{ justifyContent: 'flex-start' }}
+          >
+            <Box size={18} /> 3D Assets
           </NavLink>
 
           <NavLink 
