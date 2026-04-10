@@ -2,16 +2,29 @@ import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  TextInput,
+  View,
+} from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
-import { api } from '@/lib/api';
-import { useSmartCartStore } from '@/store/smart-cart-store';
 import { useProductRecommendations } from '@/hooks/use-product-recommendations';
+import { api } from '@/lib/api';
+import { useMobileAuthStore } from '@/store/auth-store';
+import { useProductStore } from '@/store/product-store';
+import { useSmartCartStore } from '@/store/smart-cart-store';
 import ARBtn from '@/src/features/ar/componenets/arBtn';
 
 type ProductDetailScreenProps = {
@@ -48,9 +61,16 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [saving, setSaving] = useState(false);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
+  const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
 
   const { ranked, loading: recsLoading } = useProductRecommendations(product.id);
   const addToCart = useSmartCartStore((s) => s.addToCart);
+  const submitReview = useProductStore((s) => s.submitReview);
+  const reviewSubmitting = useProductStore((s) => s.reviewSubmitting);
+  const reviewerName = useMobileAuthStore((s) => s.name);
 
   const handleAddRelated = async (productId: string) => {
     try {
@@ -63,6 +83,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
   const selectedColor = product.colors.find((color) => color.id === selectedColorId);
   const selectedColorName = selectedColor?.name ?? product.colors[0]?.name ?? '';
+  const reviews = product.reviews ?? [];
 
   const savingPercent = useMemo(() => {
     if (!product.originalPrice || product.originalPrice <= product.price) {
@@ -101,6 +122,51 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   }, [product.id, product.slug, available, stockCap]);
 
   const total = quantity * product.price;
+
+  const resetReviewComposer = () => {
+    setReviewRating(5);
+    setReviewTitle('');
+    setReviewBody('');
+  };
+
+  const closeReviewComposer = () => {
+    if (reviewSubmitting) {
+      return;
+    }
+
+    setIsReviewComposerOpen(false);
+  };
+
+  const handleSubmitReview = async () => {
+    if (!product.id) {
+      Alert.alert('Unavailable', 'This product is not synced with the backend yet.');
+      return;
+    }
+
+    if (!reviewTitle.trim()) {
+      Alert.alert('Add a title', 'Give your review a short headline.');
+      return;
+    }
+
+    if (reviewBody.trim().length < 12) {
+      Alert.alert('Add more detail', 'Please share a few more words about your experience.');
+      return;
+    }
+
+    try {
+      await submitReview({
+        rating: reviewRating,
+        title: reviewTitle.trim(),
+        body: reviewBody.trim(),
+        authorName: reviewerName ?? undefined,
+      });
+      setIsReviewComposerOpen(false);
+      resetReviewComposer();
+      Alert.alert('Review posted', 'Thanks for sharing your experience.');
+    } catch (err: any) {
+      Alert.alert('Review failed', err.message || 'Please try again.');
+    }
+  };
 
   const handleAddToCart = async () => {
     if (!product.id) {
@@ -421,38 +487,59 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
           <View style={styles.sectionWrap}>
             <View style={styles.rowHeader}>
               <ThemedText style={[styles.sectionHeading, styles.sectionHeadingNoMargin, { color: palette.text }]}>Reviews</ThemedText>
-              <ThemedText style={[styles.linkText, { color: palette.mutedText }]}>Write review</ThemedText>
+              <Pressable onPress={() => setIsReviewComposerOpen(true)} disabled={reviewSubmitting}>
+                <ThemedText style={[styles.linkText, { color: palette.mutedText, opacity: reviewSubmitting ? 0.5 : 1 }]}>
+                  {reviewSubmitting ? 'Posting...' : 'Write review'}
+                </ThemedText>
+              </Pressable>
             </View>
 
-            {product.reviews.map((review) => (
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <View
+                  key={review.id}
+                  style={[
+                    styles.reviewCard,
+                    {
+                      backgroundColor: palette.elevated,
+                      borderColor: palette.line,
+                    },
+                  ]}
+                >
+                  <View style={styles.reviewTopRow}>
+                    <View style={styles.starsWrap}>
+                      {starArray.map((num) => (
+                        <Ionicons key={num} name={getStarIconName(num, review.rating)} size={13} color={palette.gold} />
+                      ))}
+                    </View>
+                    {review.verified ? (
+                      <ThemedText style={[styles.verifiedTag, { color: palette.mutedText }]}>Verified buyer</ThemedText>
+                    ) : null}
+                  </View>
+
+                  <ThemedText style={[styles.reviewTitle, { color: palette.text }]}>{review.title}</ThemedText>
+                  <ThemedText style={[styles.reviewBody, { color: palette.mutedText }]}>{review.body}</ThemedText>
+                  <ThemedText style={[styles.reviewAuthor, { color: palette.mutedText }]}>
+                    {review.author} - {review.date}
+                  </ThemedText>
+                </View>
+              ))
+            ) : (
               <View
-                key={review.id}
                 style={[
-                  styles.reviewCard,
+                  styles.emptyReviewCard,
                   {
                     backgroundColor: palette.elevated,
                     borderColor: palette.line,
                   },
                 ]}
               >
-                <View style={styles.reviewTopRow}>
-                  <View style={styles.starsWrap}>
-                    {starArray.map((num) => (
-                      <Ionicons key={num} name={getStarIconName(num, review.rating)} size={13} color={palette.gold} />
-                    ))}
-                  </View>
-                  {review.verified ? (
-                    <ThemedText style={[styles.verifiedTag, { color: palette.mutedText }]}>Verified buyer</ThemedText>
-                  ) : null}
-                </View>
-
-                <ThemedText style={[styles.reviewTitle, { color: palette.text }]}>{review.title}</ThemedText>
-                <ThemedText style={[styles.reviewBody, { color: palette.mutedText }]}>{review.body}</ThemedText>
-                <ThemedText style={[styles.reviewAuthor, { color: palette.mutedText }]}>
-                  {review.author} - {review.date}
+                <ThemedText style={[styles.emptyReviewTitle, { color: palette.text }]}>No reviews yet</ThemedText>
+                <ThemedText style={[styles.emptyReviewBody, { color: palette.mutedText }]}>
+                  Be the first to tell other shoppers what stood out for you.
                 </ThemedText>
               </View>
-            ))}
+            )}
           </View>
 
           <View style={styles.sectionWrap}>
@@ -533,6 +620,128 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               </Pressable>
             </View>
           </View>
+        </Modal>
+
+        <Modal
+          visible={isReviewComposerOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={closeReviewComposer}
+        >
+          <KeyboardAvoidingView
+            style={styles.reviewModalBackdrop}
+            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          >
+            <Pressable style={styles.reviewModalDismissLayer} onPress={closeReviewComposer} />
+
+            <View style={[styles.reviewModalCard, { backgroundColor: palette.surface, borderColor: palette.line }]}>
+              <View style={styles.reviewModalHeader}>
+                <View style={styles.reviewModalHeaderCopy}>
+                  <ThemedText style={[styles.reviewModalTitle, { color: palette.text }]}>Write a review</ThemedText>
+                  <ThemedText style={[styles.reviewModalSubtitle, { color: palette.mutedText }]}>
+                    Share how this piece looked, felt, and performed in your space.
+                  </ThemedText>
+                </View>
+                <Pressable
+                  onPress={closeReviewComposer}
+                  disabled={reviewSubmitting}
+                  style={[styles.reviewModalCloseButton, { borderColor: palette.line, backgroundColor: palette.elevated }]}
+                >
+                  <Ionicons name="close" size={18} color={palette.text} />
+                </Pressable>
+              </View>
+
+              <View style={styles.reviewRatingBlock}>
+                <ThemedText style={[styles.reviewFieldLabel, { color: palette.mutedText }]}>Your rating</ThemedText>
+                <View style={styles.reviewStarRow}>
+                  {starArray.map((num) => {
+                    const active = num <= reviewRating;
+
+                    return (
+                      <Pressable
+                        key={num}
+                        onPress={() => setReviewRating(num)}
+                        style={[
+                          styles.reviewStarButton,
+                          {
+                            backgroundColor: active ? palette.champagne : palette.elevated,
+                            borderColor: active ? palette.gold : palette.line,
+                          },
+                        ]}
+                      >
+                        <Ionicons name={active ? 'star' : 'star-outline'} size={18} color={palette.gold} />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.reviewFieldBlock}>
+                <ThemedText style={[styles.reviewFieldLabel, { color: palette.mutedText }]}>Title</ThemedText>
+                <TextInput
+                  value={reviewTitle}
+                  onChangeText={setReviewTitle}
+                  editable={!reviewSubmitting}
+                  placeholder="Sum up your experience"
+                  placeholderTextColor={palette.mutedText}
+                  style={[
+                    styles.reviewInput,
+                    {
+                      backgroundColor: palette.elevated,
+                      borderColor: palette.line,
+                      color: palette.text,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.reviewFieldBlock}>
+                <ThemedText style={[styles.reviewFieldLabel, { color: palette.mutedText }]}>Details</ThemedText>
+                <TextInput
+                  value={reviewBody}
+                  onChangeText={setReviewBody}
+                  editable={!reviewSubmitting}
+                  multiline
+                  textAlignVertical="top"
+                  placeholder="What did you love, notice, or wish were different?"
+                  placeholderTextColor={palette.mutedText}
+                  style={[
+                    styles.reviewInput,
+                    styles.reviewBodyInput,
+                    {
+                      backgroundColor: palette.elevated,
+                      borderColor: palette.line,
+                      color: palette.text,
+                    },
+                  ]}
+                />
+              </View>
+
+              <View style={styles.reviewActionRow}>
+                <Pressable
+                  onPress={closeReviewComposer}
+                  disabled={reviewSubmitting}
+                  style={[styles.reviewSecondaryButton, { borderColor: palette.line, backgroundColor: palette.elevated }]}
+                >
+                  <ThemedText style={[styles.reviewSecondaryButtonText, { color: palette.text }]}>Cancel</ThemedText>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    void handleSubmitReview();
+                  }}
+                  disabled={reviewSubmitting}
+                  style={[
+                    styles.reviewPrimaryButton,
+                    { backgroundColor: palette.text, opacity: reviewSubmitting ? 0.6 : 1 },
+                  ]}
+                >
+                  <ThemedText style={[styles.reviewPrimaryButtonText, { color: palette.elevated }]}>
+                    {reviewSubmitting ? 'Posting...' : 'Post review'}
+                  </ThemedText>
+                </Pressable>
+              </View>
+            </View>
+          </KeyboardAvoidingView>
         </Modal>
 
         <View
@@ -1024,6 +1233,137 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 12,
     fontWeight: '600',
+  },
+  emptyReviewCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    padding: spacing.md,
+    gap: 6,
+  },
+  emptyReviewTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  emptyReviewBody: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 22,
+  },
+  reviewModalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(9, 8, 7, 0.44)',
+  },
+  reviewModalDismissLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  reviewModalCard: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderWidth: 1,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.xl,
+    gap: spacing.md,
+  },
+  reviewModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  reviewModalHeaderCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  reviewModalTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 25,
+    fontWeight: '700',
+  },
+  reviewModalSubtitle: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+  },
+  reviewModalCloseButton: {
+    width: 38,
+    height: 38,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewRatingBlock: {
+    gap: 8,
+  },
+  reviewFieldBlock: {
+    gap: 8,
+  },
+  reviewFieldLabel: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.9,
+    textTransform: 'uppercase',
+  },
+  reviewStarRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  reviewStarButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewInput: {
+    minHeight: 52,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+  },
+  reviewBodyInput: {
+    minHeight: 132,
+  },
+  reviewActionRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  reviewSecondaryButton: {
+    flex: 1,
+    height: 50,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewSecondaryButtonText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  reviewPrimaryButton: {
+    flex: 1.4,
+    height: 50,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reviewPrimaryButtonText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
   relatedRail: {
     paddingHorizontal: spacing.lg,

@@ -34,6 +34,19 @@ function titleCase(value: string): string {
     .join(' ');
 }
 
+function formatReviewDate(value?: Date | string | null): string {
+  const date = value ? new Date(value) : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(date);
+}
+
 function productSummary(req: Request, product: any) {
   return {
     id: product._id.toString(),
@@ -51,20 +64,122 @@ function productAvailableForSale(product: {
   if (product?.stock?.status === 'OUT_OF_STOCK') {
     return false;
   }
-  const q = product?.stock?.quantity;
-  if (q === undefined || q === null) {
+  const quantity = product?.stock?.quantity;
+  if (quantity === undefined || quantity === null) {
     return true;
   }
-  return Number(q) > 0;
+  return Number(quantity) > 0;
 }
 
 function buildFeatures(product: any): string[] {
-  const ok = productAvailableForSale(product);
+  const available = productAvailableForSale(product);
   return [
     product.attributes?.material ? `Crafted in ${titleCase(product.attributes.material)}` : '',
-    ok ? 'Ready to ship' : 'Currently unavailable',
+    available ? 'Ready to ship' : 'Currently unavailable',
     product.category ? `${titleCase(product.category)} collection favorite` : '',
   ].filter(Boolean);
+}
+
+function buildFallbackReviews(product: any) {
+  return [
+    {
+      id: `${product._id.toString()}-review-1`,
+      title: 'Beautiful finish and excellent build.',
+      body: 'The quality is immediately obvious. It feels substantial and looks refined in person.',
+      author: 'A. Customer',
+      date: 'Apr 2, 2026',
+      rating: 5,
+      verified: true,
+    },
+    {
+      id: `${product._id.toString()}-review-2`,
+      title: 'Exactly what I wanted.',
+      body: 'Shipping was smooth and the product matched the photos closely.',
+      author: 'M. Host',
+      date: 'Mar 18, 2026',
+      rating: 4,
+      verified: true,
+    },
+  ];
+}
+
+function buildProductReviews(product: any) {
+  const storedReviews = Array.isArray(product.reviews)
+    ? [...product.reviews]
+        .sort((left: any, right: any) => {
+          const leftTime = new Date(left?.createdAt ?? 0).getTime();
+          const rightTime = new Date(right?.createdAt ?? 0).getTime();
+          return rightTime - leftTime;
+        })
+        .map((review: any) => ({
+          id: review._id?.toString?.() || '',
+          title: review.title,
+          body: review.body,
+          author: review.author,
+          date: formatReviewDate(review.createdAt),
+          rating: Number(review.rating ?? 0),
+          verified: Boolean(review.verified),
+        }))
+    : [];
+
+  return storedReviews.length > 0 ? storedReviews : buildFallbackReviews(product);
+}
+
+async function loadRelatedProducts(product: any) {
+  return Product.find({ _id: { $ne: product._id }, category: product.category }).limit(3).lean();
+}
+
+function serializeProductDetail(req: Request, product: any, relatedProducts: any[]) {
+  const inStock = productAvailableForSale(product);
+  const stockQty = Number(product.stock?.quantity ?? 0);
+
+  return {
+    slug: product.slug,
+    id: product._id.toString(),
+    brand: titleCase(product.brand || 'SmartCart Atelier'),
+    name: product.name,
+    price: Number(product.price?.selling ?? 0),
+    originalPrice: product.price?.original ? Number(product.price.original) : undefined,
+    rating: Number(product.ratings?.average ?? 4.6),
+    reviewCount: Number(product.ratings?.count ?? 24),
+    badge: inStock ? (stockQty > 0 ? `In stock - ${stockQty} left` : 'In stock') : 'Out of stock',
+    inStock,
+    stockQuantity: stockQty,
+    shippingLine: inStock ? 'Free Premium Shipping' : 'Unavailable - check back soon',
+    shippingEta: inStock
+      ? 'Estimated delivery: 3-5 business days'
+      : 'This item cannot be shipped until restocked',
+    description: product.description || 'Curated craftsmanship designed for elegant daily use.',
+    features: buildFeatures(product),
+    colors: [
+      { id: 'signature', name: titleCase(product.attributes?.color || 'Signature'), hex: '#8d6e63' },
+      { id: 'ivory', name: 'Ivory', hex: '#e8dfd5' },
+      { id: 'midnight', name: 'Midnight', hex: '#1f2937' },
+    ],
+    selectedColorId: 'signature',
+    sizes: ['Standard', 'Large', 'Collector'],
+    selectedSize: 'Standard',
+    images: (product.images || []).map((image: string) => mediaUrl(req, image)),
+    related: relatedProducts.map((related: any) => ({
+      id: related._id.toString(),
+      slug: related.slug,
+      name: related.name,
+      price: money(Number(related.price?.selling ?? 0)),
+      image: mediaUrl(req, related.images?.[0] || ''),
+    })),
+    reviews: buildProductReviews(product),
+  };
+}
+
+async function getProductDetailById(req: Request, productId: string) {
+  const product = await Product.findById(productId).lean();
+
+  if (!product) {
+    return null;
+  }
+
+  const relatedProducts = await loadRelatedProducts(product);
+  return serializeProductDetail(req, product, relatedProducts);
 }
 
 export async function getHomeContent(req: Request) {
@@ -82,9 +197,8 @@ export async function getHomeContent(req: Request) {
     };
   }
 
-  // Fetch all for categories mapping (or use a separate bare query for categories if huge)
   const allProducts = await Product.find().sort({ createdAt: -1 }).lean();
-  const filteredProducts = tag && tag !== 'All Product' 
+  const filteredProducts = tag && tag !== 'All Product'
     ? await Product.find(filterQuery).sort({ createdAt: -1 }).lean()
     : allProducts;
 
@@ -127,68 +241,60 @@ export async function getProductDetail(req: Request, slug: string) {
     return null;
   }
 
-  const relatedProducts = await Product.find({ _id: { $ne: product._id }, category: product.category })
-    .limit(3)
-    .lean();
+  const relatedProducts = await loadRelatedProducts(product);
+  return serializeProductDetail(req, product, relatedProducts);
+}
 
-  const inStock = productAvailableForSale(product);
-  const stockQty = Number(product.stock?.quantity ?? 0);
+export async function submitProductReview(
+  req: Request,
+  productId: string,
+  input: { rating: number; title: string; body: string; authorName?: string }
+) {
+  await ensureCatalogSeededFromSkus();
 
-  return {
-    slug: product.slug,
-    id: product._id.toString(),
-    brand: titleCase(product.brand || 'SmartCart Atelier'),
-    name: product.name,
-    price: Number(product.price?.selling ?? 0),
-    originalPrice: product.price?.original ? Number(product.price.original) : undefined,
-    rating: Number(product.ratings?.average ?? 4.6),
-    reviewCount: Number(product.ratings?.count ?? 24),
-    badge: inStock ? (stockQty > 0 ? `In stock · ${stockQty} left` : 'In stock') : 'Out of stock',
-    inStock,
-    stockQuantity: stockQty,
-    shippingLine: inStock ? 'Free Premium Shipping' : 'Unavailable — check back soon',
-    shippingEta: inStock
-      ? 'Estimated delivery: 3-5 business days'
-      : 'This item cannot be shipped until restocked',
-    description: product.description || 'Curated craftsmanship designed for elegant daily use.',
-    features: buildFeatures(product),
-    colors: [
-      { id: 'signature', name: titleCase(product.attributes?.color || 'Signature'), hex: '#8d6e63' },
-      { id: 'ivory', name: 'Ivory', hex: '#e8dfd5' },
-      { id: 'midnight', name: 'Midnight', hex: '#1f2937' },
-    ],
-    selectedColorId: 'signature',
-    sizes: ['Standard', 'Large', 'Collector'],
-    selectedSize: 'Standard',
-    images: (product.images || []).map((image: string) => mediaUrl(req, image)),
-    related: relatedProducts.map((related: any) => ({
-      id: related._id.toString(),
-      slug: related.slug,
-      name: related.name,
-      price: money(Number(related.price?.selling ?? 0)),
-      image: mediaUrl(req, related.images?.[0] || ''),
-    })),
-    reviews: [
-      {
-        id: `${product._id.toString()}-review-1`,
-        title: 'Beautiful finish and excellent build.',
-        body: 'The quality is immediately obvious. It feels substantial and looks refined in person.',
-        author: 'A. Customer',
-        date: 'Apr 2, 2026',
-        rating: 5,
-        verified: true,
-      },
-      {
-        id: `${product._id.toString()}-review-2`,
-        title: 'Exactly what I wanted.',
-        body: 'Shipping was smooth and the product matched the photos closely.',
-        author: 'M. Host',
-        date: 'Mar 18, 2026',
-        rating: 4,
-        verified: true,
-      },
-    ],
-  };
+  const product = await Product.findById(productId);
+  if (!product) {
+    return null;
+  }
+
+  const rating = Math.min(5, Math.max(1, Math.round(Number(input.rating))));
+  const userId = req.user?.userId ?? 'user_001';
+  const user = await User.findOne({ id: userId }).lean();
+  const author = user?.name?.trim() || input.authorName?.trim() || 'SmartCart Guest';
+  const verified = Boolean(
+    await Order.exists({
+      userId,
+      status: { $ne: 'failed' },
+      'items.productId': product._id,
+    })
+  );
+
+  const currentAverage = Number(product.ratings?.average ?? 0);
+  const currentCount = Number(product.ratings?.count ?? 0);
+  const nextCount = currentCount > 0 ? currentCount + 1 : 1;
+  const nextAverage =
+    currentCount > 0 ? Number((((currentAverage * currentCount) + rating) / nextCount).toFixed(1)) : rating;
+
+  if (!product.reviews) {
+    product.set('reviews', []);
+  }
+
+  (product.reviews as any).unshift({
+    userId,
+    author,
+    title: input.title.trim(),
+    body: input.body.trim(),
+    rating,
+    verified,
+  } as any);
+  product.ratings = {
+    average: nextAverage,
+    count: nextCount,
+  } as any;
+
+  await product.save();
+
+  return getProductDetailById(req, product._id.toString());
 }
 
 export async function getRecipeContent() {
@@ -252,13 +358,10 @@ export async function listOrdersForUser(req: Request) {
 
 export async function listAllOrders() {
   await ensureCatalogSeededFromSkus();
-  
+
   const orders = await Order.find({}).populate('items.productId').sort({ createdAt: -1 }).lean();
-  
-  // We need to get all users to map names, or just fetch them dynamically
-  // For efficiency, fetch all users once
   const users = await User.find({}).lean();
-  const userMap = new Map(users.map(u => [u.id, u.name]));
+  const userMap = new Map(users.map((user: any) => [user.id, user.name]));
 
   return orders.map((order: any) => ({
     id: order._id.toString(),

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import { useRef } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 let Viro: any = null;
@@ -19,21 +19,9 @@ function RecipeARPlacementScene() {
     ViroARPlaneSelector,
     Viro3DObject,
     ViroAmbientLight,
-    ViroBox,
     ViroText,
-    ViroMaterials,
   } = Viro;
   const planeSelectorRef = useRef<any>(null);
-
-  ViroMaterials.createMaterials({
-    arDebugBox: {
-      diffuseColor: '#ff5a36',
-    },
-    arPlaneSurface: {
-      lightingModel: 'Constant',
-      diffuseColor: '#ff8a3d88',
-    },
-  });
 
   return (
     <ViroARScene
@@ -57,15 +45,10 @@ function RecipeARPlacementScene() {
         alignment="Horizontal"
         minHeight={0.15}
         minWidth={0.15}
-        material="arPlaneSurface"
+        pauseUpdates={false}
         hideOverlayOnSelection={false}
         useActualShape
       >
-        <ViroBox
-          position={[0, 0.05, 0]}
-          scale={[0.1, 0.1, 0.1]}
-          materials={['arDebugBox']}
-        />
         <ViroText
           text="Tap plane to place model"
           position={[0, 0.16, 0]}
@@ -75,19 +58,19 @@ function RecipeARPlacementScene() {
           style={{ fontSize: 20, color: '#ffffff', textAlign: 'center' }}
         />
         <Viro3DObject
-          source={require('../../../res/model.glb')}
+          source={require('../../../res/pan_of_borshch.glb')}
           type="GLB"
           position={[0, 0.1, 0]}
-          scale={[0.12, 0.12, 0.12]}
+          scale={[0.2, 0.2, 0.2]}
           rotation={[0, 0, 0]}
           onError={(event: any) => {
-            console.warn('[ViroAR] model.glb failed to load', event?.nativeEvent);
+            console.warn('[ViroAR] pan_of_borshch.glb failed to load', event?.nativeEvent);
           }}
           onLoadStart={() => {
-            console.log('[ViroAR] model.glb load start');
+            console.log('[ViroAR] pan_of_borshch.glb load start');
           }}
           onLoadEnd={() => {
-            console.log('[ViroAR] model.glb load end');
+            console.log('[ViroAR] pan_of_borshch.glb load end');
           }}
         />
       </ViroARPlaneSelector>
@@ -117,7 +100,7 @@ export default function ARScene() {
       <View pointerEvents="none" style={styles.overlay}>
         <Text style={styles.overlayTitle}>AR Placement</Text>
         <Text style={styles.overlayBody}>
-          Move the phone over a table or floor. Tap the highlighted plane to place the orange box and `model.glb`.
+          Move the phone over a table or floor. Tap any highlighted plane to place or move `pan_of_borshch.glb`.
         </Text>
       </View>
     </View>

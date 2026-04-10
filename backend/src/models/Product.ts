@@ -1,5 +1,40 @@
 import { Schema, model } from 'mongoose';
 
+const reviewSchema = new Schema(
+  {
+    userId: {
+      type: String,
+      trim: true
+    },
+    author: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    body: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    rating: {
+      type: Number,
+      required: true,
+      min: 1,
+      max: 5
+    },
+    verified: {
+      type: Boolean,
+      default: false
+    }
+  },
+  { timestamps: true }
+);
+
 const productSchema = new Schema(
   {
     name: {
@@ -69,6 +104,8 @@ const productSchema = new Schema(
       average: { type: Number, default: 0 },
       count: { type: Number, default: 0 }
     },
+
+    reviews: [reviewSchema],
 
     tags: [
       {

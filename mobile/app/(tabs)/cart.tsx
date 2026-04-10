@@ -282,7 +282,7 @@ export default function CartScreen() {
           </View>
         ) : (
           <View style={styles.itemsWrap}>
-            {items.map((item) => {
+            {items.map((item, index) => {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
               const slug = item.slug?.trim();
               const canOpenProduct = Boolean(slug);
@@ -293,7 +293,7 @@ export default function CartScreen() {
 
               return (
                 <View
-                  key={item.productId}
+                  key={`${item.productId}-${item.slug ?? 'noslug'}-${index}`}
                   style={[
                     styles.itemCard,
                     { backgroundColor: card, borderColor: CART_COLORS.border },
