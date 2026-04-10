@@ -4,6 +4,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import User from '../models/User';
 import { ensureCatalogSeededFromSkus } from './catalogSync.service';
+import { bumpCatalogCacheVersion } from './cache.service';
 
 function mediaUrl(req: Request, path: string): string {
   if (!path) {
@@ -296,6 +297,7 @@ export async function submitProductReview(
   } as any;
 
   await product.save();
+  await bumpCatalogCacheVersion();
 
   return getProductDetailById(req, product._id.toString());
 }
@@ -359,14 +361,20 @@ export async function listOrdersForUser(req: Request) {
   }));
 }
 
-export async function listAllOrders() {
+export async function listAllOrders(options?: { page?: number; limit?: number }) {
   await ensureCatalogSeededFromSkus();
+  const page = Math.max(1, Number(options?.page) || 1);
+  const limit = Math.min(100, Math.max(1, Number(options?.limit) || 25));
+  const skip = (page - 1) * limit;
 
-  const orders = await Order.find({}).populate('items.productId').sort({ createdAt: -1 }).lean();
-  const users = await User.find({}).lean();
+  const [orders, total, users] = await Promise.all([
+    Order.find({}).populate('items.productId').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    Order.countDocuments(),
+    User.find({}).lean(),
+  ]);
   const userMap = new Map(users.map((user: any) => [user.id, user.name]));
 
-  return orders.map((order: any) => ({
+  const data = orders.map((order: any) => ({
     id: order._id.toString(),
     customerName: userMap.get(order.userId) || 'Demo User',
     total: Number(order.totalAmount ?? 0),
@@ -387,4 +395,14 @@ export async function listAllOrders() {
       price: Number(item.priceAtPurchase ?? item.productId?.price?.selling ?? 0),
     })),
   }));
+
+  return {
+    data,
+    pagination: {
+      page,
+      limit,
+      total,
+      hasNext: page * limit < total,
+    },
+  };
 }

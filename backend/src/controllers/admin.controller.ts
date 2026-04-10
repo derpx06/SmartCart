@@ -8,6 +8,7 @@ import Product from '../models/Product';
 import User from '../models/User';
 import { ensureCatalogSeededFromSkus, syncSingleProductFromSkuLikeInput } from '../services/catalogSync.service';
 import { vectorizeAndSyncProduct } from '../services/productEmbedding.service';
+import { bumpCatalogCacheVersion } from '../services/cache.service';
 import { listAllOrders, listOrdersForUser } from '../services/storefront.service';
 
 function toAdminProduct(product: any) {
@@ -60,9 +61,23 @@ export const getAdminDashboard = async (req: Request, res: Response): Promise<vo
 
 export const getAdminProducts = async (_req: Request, res: Response): Promise<void> => {
   try {
+    const page = Math.max(1, Number(_req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(_req.query.limit) || 25));
+    const skip = (page - 1) * limit;
     await ensureCatalogSeededFromSkus();
-    const products = await Product.find().sort({ createdAt: -1 }).lean();
-    res.json(products.map(toAdminProduct));
+    const [products, total] = await Promise.all([
+      Product.find().sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+      Product.countDocuments(),
+    ]);
+    res.json({
+      data: products.map(toAdminProduct),
+      pagination: {
+        page,
+        limit,
+        total,
+        hasNext: page * limit < total,
+      },
+    });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
@@ -95,6 +110,7 @@ export const getAdminProductById = async (req: Request, res: Response): Promise<
 export const createAdminProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     const product = await syncSingleProductFromSkuLikeInput(req.body);
+    await bumpCatalogCacheVersion();
     res.status(201).json(toAdminProduct(product));
   } catch {
     res.status(500).json({ error: 'Server error' });
@@ -139,6 +155,7 @@ export const updateAdminProduct = async (req: Request, res: Response): Promise<v
       // Skip embedding updates if local embedding fails.
     }
 
+    await bumpCatalogCacheVersion();
     res.json(toAdminProduct(product));
   } catch {
     res.status(500).json({ error: 'Server error' });
@@ -148,6 +165,7 @@ export const updateAdminProduct = async (req: Request, res: Response): Promise<v
 export const deleteAdminProduct = async (req: Request, res: Response): Promise<void> => {
   try {
     await Product.findByIdAndDelete(req.params.id);
+    await bumpCatalogCacheVersion();
     res.status(204).send();
   } catch {
     res.status(500).json({ error: 'Server error' });
@@ -156,7 +174,9 @@ export const deleteAdminProduct = async (req: Request, res: Response): Promise<v
 
 export const getAdminOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json(await listAllOrders());
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 25));
+    res.json(await listAllOrders({ page, limit }));
   } catch {
     res.status(500).json({ error: 'Server error' });
   }

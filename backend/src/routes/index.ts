@@ -36,7 +36,7 @@ import {
   moveToCart,
   removeFromBuyLater,
 } from '../controllers/buyLater.controller';
-import { healthCheck } from '../controllers/health.controller';
+import { healthCheck, readinessCheck } from '../controllers/health.controller';
 import { uploadImage } from '../controllers/upload.controller';
 import {
   getSynthesizeAudioBackground,
@@ -75,6 +75,7 @@ const speechUpload = multer({
 });
 
 router.get('/health', healthCheck);
+router.get('/ready', readinessCheck);
 router.get('/smartcart/state', authenticateToken, getSmartCartState);
 router.post('/login', login);
 router.post('/register', register);

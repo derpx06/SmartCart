@@ -3,9 +3,13 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 export const env = {
+  nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 3001),
   mongoUri: process.env.MONGO_URI ?? '',
   jwtSecret: process.env.JWT_SECRET ?? 'super-secret-key',
+  rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS ?? 15 * 60 * 1000),
+  rateLimitMax: Number(process.env.RATE_LIMIT_MAX ?? 100),
+  authRateLimitMax: Number(process.env.AUTH_RATE_LIMIT_MAX ?? 10),
   groqApiKey: process.env.GROQ_API_KEY ?? '',
   groqModel: process.env.GROQ_MODEL ?? 'openai/gpt-oss-20b',
   groqSttModel: process.env.GROQ_STT_MODEL ?? 'whisper-large-v3-turbo',

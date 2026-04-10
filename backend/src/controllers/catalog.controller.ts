@@ -7,6 +7,7 @@ import { getRelatedProducts } from '../services/relationship.service';
 import { rankItems } from '../services/ranking.service';
 import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
 import { ensureProductEmbedding } from '../services/productEmbedding.service';
+import { getCatalogCacheVersion } from '../services/cache.service';
 import redis from "../config/redis";
 
 function mediaUrl(req: Request, path: string): string {
@@ -19,7 +20,8 @@ function mediaUrl(req: Request, path: string): string {
 
 export const getFeed = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const cacheKey = "feed";
+    const cacheVersion = await getCatalogCacheVersion();
+    const cacheKey = `${cacheVersion}:feed`;
 
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -41,7 +43,8 @@ export const getFeed = async (_req: Request, res: Response): Promise<void> => {
 
 export const getSkus = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const cacheKey = "skus";
+    const cacheVersion = await getCatalogCacheVersion();
+    const cacheKey = `${cacheVersion}:skus`;
 
     const cached = await redis.get(cacheKey);
     if (cached) {
@@ -82,7 +85,8 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
       query.name = { $regex: search, $options: "i" }; // basic search
     }
 
-    const cacheKey = `products:${page}:${limit}:${category || "all"}:${minPrice || 0}:${maxPrice || 0}:${search || ""}`;
+    const cacheVersion = await getCatalogCacheVersion();
+    const cacheKey = `${cacheVersion}:products:${page}:${limit}:${category || "all"}:${minPrice || 0}:${maxPrice || 0}:${search || ""}`;
     const cachedProducts = await redis.get(cacheKey);
     if (cachedProducts) {
       res.json(JSON.parse(cachedProducts));
@@ -125,7 +129,8 @@ export const getProducts = async (req: Request, res: Response): Promise<void> =>
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const cacheKey = `product:${req.params.id}`;
+    const cacheVersion = await getCatalogCacheVersion();
+    const cacheKey = `${cacheVersion}:product:${req.params.id}`;
 
     const cached = await redis.get(cacheKey);
     if (cached) {
