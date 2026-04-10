@@ -144,7 +144,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: '#FFFFFF' },
+  safeArea: { flex: 1, backgroundColor: '#FFFFFF',paddingBottom: 60
+
+   },
   container: { paddingHorizontal: 20, paddingTop: 18, paddingBottom: 32 },
   heroCard: {
     borderRadius: 18,
