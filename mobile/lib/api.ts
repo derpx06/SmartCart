@@ -78,6 +78,13 @@ export type StreamChatHandlers = {
   onError?: (error: unknown) => void;
 };
 
+export type CreateProductReviewInput = {
+  rating: number;
+  title: string;
+  body: string;
+  authorName?: string;
+};
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
 
@@ -165,6 +172,12 @@ export const api = {
   getProductBySlug(slug: string) {
     return request<ProductDetail>(`/products/slug/${slug}`);
   },
+  submitProductReview(productId: string, payload: CreateProductReviewInput) {
+    return request<ProductDetail>(`/products/${productId}/reviews`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   addToCart(productId: string, quantity: number) {
     return request('/cart/add', {
       method: 'POST',
@@ -184,14 +197,14 @@ export const api = {
     });
   },
   getOrders() {
-    return request<Array<{
+    return request<{
       id: string;
       customerName: string;
       total: number;
       status: string;
       date: string;
       items: { name: string; quantity: number; slug?: string; productId?: string }[];
-    }>>('/orders/mobile');
+    }[]>('/orders/mobile');
   },
   getRecipes() {
     return request<TabDemoContent>('/recipes');

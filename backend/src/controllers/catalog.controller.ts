@@ -238,3 +238,51 @@ export const getProductRecommendations = async (req: Request, res: Response): Pr
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+export const addReview = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { id } = req.params;
+    const { title, body, rating, author } = req.body;
+    
+    // Auth user if possible
+    const userId = (req as any).user?.userId || 'anonymous';
+    
+    // Find product
+    const product = await Product.findById(id);
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    // Add review
+    const newReview = {
+      userId,
+      author: author || 'Anonymous User',
+      title,
+      body,
+      rating: Number(rating) || 5,
+      verified: !!(req as any).user
+    };
+
+    product.reviews.push(newReview as any);
+    
+    // Recalculate average
+    const currentCount = product.ratings?.count || 0;
+    const currentAvg = product.ratings?.average || 0;
+    
+    const newCount = currentCount + 1;
+    const newAvg = ((currentAvg * currentCount) + newReview.rating) / newCount;
+
+    product.ratings = {
+      average: newAvg,
+      count: newCount
+    };
+
+    await product.save();
+
+    res.json({ success: true, message: 'Review added successfully' });
+  } catch (error) {
+    console.error('Failed to add review:', error);
+    res.status(500).json({ error: 'Failed to add review' });
+  }
+};
