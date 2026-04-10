@@ -458,6 +458,13 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                 })}
               </View>
             </View>
+
+            <View style={[styles.cardFooterHint, { borderTopColor: palette.line }]}>
+              <Ionicons name="leaf-outline" size={14} color={palette.mutedText} />
+              <ThemedText style={[styles.cardFooterHintText, { color: palette.mutedText }]}>
+                Made to last with premium materials and artisan finishing.
+              </ThemedText>
+            </View>
           </View>
 
           <View style={styles.sectionWrap}>
@@ -1007,7 +1014,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     borderWidth: 1,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: 22,
     ...luxuryShadow,
   },
   brand: {
@@ -1020,16 +1027,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: Fonts.serif,
-    fontSize: 30,
-    lineHeight: 40,
-    fontWeight: '700',
+    fontSize: 29,
+    lineHeight: 37,
+    fontWeight: '600',
   },
   metaRibbon: {
     marginTop: spacing.sm,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.xs,
   },
   ratingChip: {
     borderRadius: radius.pill,
@@ -1070,7 +1077,7 @@ const styles = StyleSheet.create({
   },
   stockText: {
     fontFamily: Fonts.sans,
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '700',
     flexShrink: 1,
     maxWidth: 148,
@@ -1085,9 +1092,9 @@ const styles = StyleSheet.create({
   },
   price: {
     fontFamily: Fonts.serif,
-    fontSize: 32,
-    lineHeight: 40,
-    fontWeight: '700',
+    fontSize: 31,
+    lineHeight: 38,
+    fontWeight: '600',
   },
   originalPrice: {
     fontFamily: Fonts.serif,
@@ -1113,7 +1120,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     fontFamily: Fonts.sans,
     fontSize: 14,
-    lineHeight: 24,
+    lineHeight: 23,
   },
   arButtonRow: {
     marginTop: spacing.md,
@@ -1123,7 +1130,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 12,
     gap: 10,
   },
   trustItem: {
@@ -1195,8 +1202,22 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
+  cardFooterHint: {
+    marginTop: spacing.md,
+    paddingTop: spacing.sm,
+    borderTopWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  cardFooterHintText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    lineHeight: 18,
+    flex: 1,
+  },
   sectionWrap: {
-    marginTop: spacing.lg,
+    marginTop: 22,
     paddingHorizontal: spacing.lg,
   },
   shippingCard: {
@@ -1231,8 +1252,8 @@ const styles = StyleSheet.create({
   },
   sectionHeading: {
     fontFamily: Fonts.serif,
-    fontSize: 23,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '600',
     marginBottom: spacing.sm,
   },
   sectionHeadingNoMargin: {
@@ -1242,6 +1263,8 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     overflow: 'hidden',
+    ...luxuryShadow,
+    shadowOpacity: 0.05,
   },
   featureRow: {
     flexDirection: 'row',
@@ -1283,6 +1306,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
     marginBottom: spacing.sm,
+    ...luxuryShadow,
+    shadowOpacity: 0.04,
   },
   reviewTopRow: {
     flexDirection: 'row',
@@ -1325,6 +1350,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: spacing.md,
     gap: 6,
+    ...luxuryShadow,
+    shadowOpacity: 0.04,
   },
   emptyReviewTitle: {
     fontFamily: Fonts.serif,
@@ -1506,6 +1533,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     padding: 11,
     gap: 9,
+    ...luxuryShadow,
+    shadowOpacity: 0.05,
   },
   relatedImagePlaceholder: {
     width: '100%',
@@ -1560,8 +1589,10 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     borderTopWidth: 1,
-    paddingTop: 10,
+    paddingTop: 12,
     paddingHorizontal: spacing.lg,
+    ...luxuryShadow,
+    shadowOpacity: 0.08,
   },
   bottomSummaryRow: {
     flexDirection: 'row',
@@ -1579,8 +1610,8 @@ const styles = StyleSheet.create({
   totalValue: {
     marginTop: 1,
     fontFamily: Fonts.serif,
-    fontSize: 21,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '600',
   },
   bottomRow: {
     flexDirection: 'row',
@@ -1616,6 +1647,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexDirection: 'row',
     gap: 8,
+    ...luxuryShadow,
+    shadowOpacity: 0.12,
   },
   addButtonText: {
     fontFamily: Fonts.sans,

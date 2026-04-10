@@ -5,7 +5,6 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
-import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
@@ -29,7 +28,44 @@ const PRODUCT_COLORS = {
   featureText: '#FFFFFF',
   wishlistBg: '#FFFFFF',
   star: '#1C1B1F',
+  imageOverlay: 'rgba(28, 27, 31, 0.06)',
 };
+
+function normalizeRowKey(value: string) {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]+/g, ' ');
+}
+
+function getRowPresentation(title: string, caption?: string) {
+  const key = normalizeRowKey(title);
+  let icon: keyof typeof Ionicons.glyphMap = 'sparkles-outline';
+  let badge: string | null = null;
+  let fallbackCaption = '';
+
+  if (key.includes('bestseller')) {
+    icon = 'trophy-outline';
+    badge = 'Most loved';
+    fallbackCaption = 'Customer favorites that are moving quickly right now.';
+  } else if (key.includes('kitchen')) {
+    icon = 'restaurant-outline';
+    badge = 'Curated';
+    fallbackCaption = 'Pieces that pair with how you cook, prep, and host.';
+  } else if (key.includes('premium')) {
+    icon = 'diamond-outline';
+    badge = 'Premium';
+    fallbackCaption = 'Elevated essentials chosen for standout quality.';
+  } else if (key.includes('fast delivery')) {
+    icon = 'flash-outline';
+    badge = 'Quick ship';
+    fallbackCaption = 'In-stock picks that can head out on a faster timeline.';
+  } else if (key.includes('complete setup') || key.includes('complete your setup')) {
+    icon = 'layers-outline';
+    badge = 'Room-ready';
+    fallbackCaption = 'Coordinated add-ons to finish the look.';
+  }
+
+  const effectiveCaption = caption?.trim() || fallbackCaption;
+  return { icon, badge, effectiveCaption };
+}
 
 export function ProductCarousel({
   title,
@@ -44,6 +80,8 @@ export function ProductCarousel({
   const fetchWishlist = useWishlistStore((state) => state.fetchWishlist);
   const toggleWishlistItem = useWishlistStore((state) => state.toggleWishlistItem);
 
+  const { icon: rowIcon, badge: rowBadge, effectiveCaption } = getRowPresentation(title, caption);
+
   useEffect(() => {
     if (wishlistLoaded) return;
     void fetchWishlist({ silent: true });
@@ -51,7 +89,37 @@ export function ProductCarousel({
 
   return (
     <View>
-      <SectionTitle title={title} caption={caption} />
+      <View
+        style={[
+          styles.rowHeaderCard,
+          {
+            backgroundColor: PRODUCT_COLORS.cardBg,
+            borderColor: PRODUCT_COLORS.line,
+          },
+        ]}>
+        <View style={styles.rowHeadingTop}>
+          <View
+            style={[
+              styles.rowIconWrap,
+              { backgroundColor: PRODUCT_COLORS.softSurface, borderColor: PRODUCT_COLORS.line },
+            ]}>
+            <Ionicons name={rowIcon} size={15} color={PRODUCT_COLORS.text} />
+          </View>
+          {rowBadge ? (
+            <View
+              style={[
+                styles.rowBadge,
+                { backgroundColor: PRODUCT_COLORS.softSurface, borderColor: PRODUCT_COLORS.line },
+              ]}>
+              <Text style={[styles.rowBadgeText, { color: PRODUCT_COLORS.text }]}>{rowBadge}</Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={[styles.rowTitle, { color: PRODUCT_COLORS.text }]}>{title}</Text>
+        {effectiveCaption ? (
+          <Text style={[styles.rowSubtitle, { color: PRODUCT_COLORS.muted }]}>{effectiveCaption}</Text>
+        ) : null}
+      </View>
 
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.skeletonRow}>
@@ -65,7 +133,7 @@ export function ProductCarousel({
                   borderColor: PRODUCT_COLORS.line,
                 },
               ]}>
-              <SkeletonBlock height={145} borderRadius={radius.md} />
+              <SkeletonBlock height={126} borderRadius={radius.md} />
               <SkeletonBlock height={16} width="80%" style={styles.skeletonLine} />
               <SkeletonBlock height={16} width="42%" style={styles.skeletonLine} />
             </View>
@@ -85,61 +153,67 @@ export function ProductCarousel({
                 key={product.id}
                 containerStyle={styles.cardWrap}
                 onPress={() => onPressProduct?.(product)}>
-              <View
-                style={[
-                  styles.card,
-                  {
-                    backgroundColor: PRODUCT_COLORS.cardBg,
-                    borderColor: PRODUCT_COLORS.line,
-                  },
-                  
-                ]}>
-                <View style={styles.imageWrap}>
-                  <Image
-                    source={{ uri: product.image }}
-                    style={styles.image}
-                    contentFit="cover"
-                    transition={450}
-                  />
-                  <View style={[styles.featureChip, { backgroundColor: PRODUCT_COLORS.featureBg }]}>
-                    <Text style={[styles.featureText, { color: PRODUCT_COLORS.featureText }]}>NEW</Text>
-                  </View>
-                  <Pressable
-                    style={[
-                      styles.wishlistChip,
-                      {
-                        backgroundColor: PRODUCT_COLORS.wishlistBg,
-                        borderColor: PRODUCT_COLORS.line,
-                      },
-                      syncing ? styles.wishlistChipDisabled : null,
-                    ]}
-                    onPress={(event) => {
-                      event.stopPropagation();
-                      void toggleWishlistItem(product.id);
-                    }}
-                    disabled={syncing}
-                    accessibilityRole="button"
-                    accessibilityLabel={wishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}>
-                    <Ionicons
-                      name={wishlisted ? 'heart' : 'heart-outline'}
-                      size={16}
-                      color={wishlisted ? '#D14862' : PRODUCT_COLORS.text}
+                <View
+                  style={[
+                    styles.card,
+                    {
+                      backgroundColor: PRODUCT_COLORS.cardBg,
+                      borderColor: PRODUCT_COLORS.line,
+                    },
+                  ]}>
+                  <View style={[styles.imageWrap, { backgroundColor: PRODUCT_COLORS.softSurface }]}>
+                    <Image
+                      source={{ uri: product.image }}
+                      style={styles.image}
+                      contentFit="cover"
+                      transition={450}
                     />
-                  </Pressable>
-                </View>
-                <View style={styles.content}>
-                  <Text style={[styles.name, { color: PRODUCT_COLORS.text }]} numberOfLines={2}>
-                    {product.name}
-                  </Text>
-                  <Text style={[styles.price, { color: PRODUCT_COLORS.text }]}>{product.price}</Text>
-                  <View style={[styles.ratingRow, { backgroundColor: PRODUCT_COLORS.softSurface, borderColor: PRODUCT_COLORS.line }]}>
-                    <Ionicons name="star" size={13} color={PRODUCT_COLORS.star} />
-                    <Text style={[styles.rating, { color: PRODUCT_COLORS.muted }]}>
-                      {product.rating.toFixed(1)}
+                    <View style={[styles.imageOverlay, { backgroundColor: PRODUCT_COLORS.imageOverlay }]} />
+                    <View style={[styles.featureChip, { backgroundColor: PRODUCT_COLORS.featureBg }]}>
+                      <Text style={[styles.featureText, { color: PRODUCT_COLORS.featureText }]}>NEW</Text>
+                    </View>
+                    <Pressable
+                      style={[
+                        styles.wishlistChip,
+                        {
+                          backgroundColor: PRODUCT_COLORS.wishlistBg,
+                          borderColor: PRODUCT_COLORS.line,
+                        },
+                        syncing ? styles.wishlistChipDisabled : null,
+                      ]}
+                      onPress={(event) => {
+                        event.stopPropagation();
+                        void toggleWishlistItem(product.id);
+                      }}
+                      disabled={syncing}
+                      accessibilityRole="button"
+                      accessibilityLabel={
+                        wishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`
+                      }>
+                      <Ionicons
+                        name={wishlisted ? 'heart' : 'heart-outline'}
+                        size={16}
+                        color={wishlisted ? '#D14862' : PRODUCT_COLORS.text}
+                      />
+                    </Pressable>
+                  </View>
+                  <View style={styles.content}>
+                    <Text style={[styles.name, { color: PRODUCT_COLORS.text }]} numberOfLines={2}>
+                      {product.name}
                     </Text>
+                    <Text style={[styles.price, { color: PRODUCT_COLORS.text }]}>{product.price}</Text>
+                    <View
+                      style={[
+                        styles.ratingRow,
+                        { backgroundColor: PRODUCT_COLORS.softSurface, borderColor: PRODUCT_COLORS.line },
+                      ]}>
+                      <Ionicons name="star" size={12} color={PRODUCT_COLORS.star} />
+                      <Text style={[styles.rating, { color: PRODUCT_COLORS.muted }]}>
+                        {product.rating.toFixed(1)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
               </AnimatedPressable>
             );
           })}
@@ -150,13 +224,61 @@ export function ProductCarousel({
 }
 
 const styles = StyleSheet.create({
+  rowHeaderCard: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginBottom: spacing.sm,
+    gap: 6,
+  },
+  rowHeadingTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  rowIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  rowBadge: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  rowBadgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.65,
+  },
+  rowTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 24,
+    lineHeight: 30,
+    fontWeight: '600',
+  },
+  rowSubtitle: {
+    marginTop: 2,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 20,
+  },
   skeletonRow: {
+    paddingLeft: 0,
     paddingRight: spacing.xl,
+    gap: spacing.md,
   },
   skeletonCard: {
-    width: 188,
+    width: 174,
     marginRight: spacing.md,
-    padding: spacing.sm,
+    padding: 11,
     borderRadius: radius.lg,
     backgroundColor: 'transparent',
     borderWidth: 1,
@@ -166,37 +288,46 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   scrollContent: {
+    paddingLeft: 0,
     paddingRight: spacing.xl,
+    gap: spacing.md,
   },
   cardWrap: {
-    width: 188,
+    width: 174,
     marginRight: spacing.md,
   },
   card: {
     borderRadius: radius.lg,
     backgroundColor: 'transparent',
-    padding: spacing.sm,
+    padding: 11,
     borderWidth: 1,
     borderColor: 'transparent',
+    gap: 9,
+    ...luxuryShadow,
+    shadowOpacity: 0.05,
+    elevation: 2,
   },
   imageWrap: {
-    height: 145,
+    height: 126,
     borderRadius: radius.md,
     overflow: 'hidden',
     position: 'relative',
+  },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
   },
   featureChip: {
     position: 'absolute',
     left: spacing.xs,
     top: spacing.xs,
     borderRadius: radius.pill,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
   },
   featureText: {
     fontFamily: Fonts.sans,
-    fontSize: 10,
-    letterSpacing: 0.8,
+    fontSize: 9,
+    letterSpacing: 0.9,
     fontWeight: '700',
   },
   image: {
@@ -207,47 +338,50 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: spacing.xs,
     right: spacing.xs,
-    width: 30,
-    height: 30,
-    borderRadius: 30,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'transparent',
     borderWidth: 1,
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+    ...luxuryShadow,
+    shadowOpacity: 0.12,
+    elevation: 3,
   },
   wishlistChipDisabled: {
     opacity: 0.6,
   },
   content: {
-    marginTop: spacing.sm,
-    gap: 8,
+    gap: 6,
   },
   name: {
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    lineHeight: 20,
-    minHeight: 40,
+    fontFamily: Fonts.serif,
+    fontSize: 15,
+    lineHeight: 19,
+    minHeight: 38,
+    fontWeight: '600',
   },
   price: {
     fontFamily: Fonts.sans,
     fontWeight: '700',
-    fontSize: 17,
+    fontSize: 13,
     letterSpacing: 0.2,
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     alignSelf: 'flex-start',
     borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderWidth: 1,
   },
   rating: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
   },
 });
