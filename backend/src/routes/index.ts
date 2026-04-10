@@ -7,6 +7,7 @@ import {
   getProducts,
   getSkus,
   getProductRecommendations,
+  getProductRecommendationRows,
 } from '../controllers/catalog.controller';
 import {
   createProductReview,
@@ -16,6 +17,7 @@ import {
   getRecipeModules,
   getRegistryModules,
 } from '../controllers/content.controller';
+import { getHomeRowById } from '../controllers/homeRows.controller';
 import { sendChatMessage, streamChat, chatHistory } from '../controllers/chat.controller';
 import {
   addToCart,
@@ -38,6 +40,7 @@ import {
 } from '../controllers/buyLater.controller';
 import { healthCheck, readinessCheck } from '../controllers/health.controller';
 import { uploadImage } from '../controllers/upload.controller';
+import { recordProductView } from '../controllers/events.controller';
 import {
   getSynthesizeAudioBackground,
   synthesizeAudio,
@@ -83,6 +86,8 @@ router.get('/profile', authenticateToken, profile);
 router.post('/upload', authenticateToken, upload.single('image'), uploadImage);
 
 router.get('/home', getHome);
+router.get('/home/rows/:rowId', authenticateOptional, getHomeRowById);
+router.post('/events/view', authenticateOptional, recordProductView);
 router.get('/feed', getFeed);
 router.get('/skus', getSkus);
 router.get('/recipes', getRecipeModules);
@@ -92,6 +97,7 @@ router.get('/products/slug/:slug', getProductBySlug);
 router.post('/products/:id/reviews', authenticateOptional, createProductReview);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
+router.get('/products/:id/recommendation-rows', authenticateOptional, getProductRecommendationRows);
 
 router.post('/chat/message', authenticateOptional, sendChatMessage);
 router.post('/chat/stream', authenticateOptional, streamChat);

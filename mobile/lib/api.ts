@@ -5,6 +5,32 @@ import type { CategoryItem, CollectionItem, HeroSlide, ProductItem } from '@/dat
 import type { RankedItem } from '@/types/smart-cart';
 
 let authToken: string | null = null;
+let deviceId: string | null = null;
+
+async function getDeviceId(): Promise<string> {
+  if (deviceId) return deviceId;
+  // Best-effort persistence via expo-secure-store if available.
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const mod = require('expo-secure-store') as any;
+    const secure = mod?.default ?? mod;
+    if (secure?.getItemAsync && secure?.setItemAsync) {
+      const existing = await secure.getItemAsync('mobile.device.id.v1');
+      if (existing) {
+        deviceId = existing;
+        return existing;
+      }
+      const generated = `dev_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+      await secure.setItemAsync('mobile.device.id.v1', generated);
+      deviceId = generated;
+      return generated;
+    }
+  } catch {
+    // ignore
+  }
+  deviceId = `dev_${Math.random().toString(36).slice(2)}_${Date.now()}`;
+  return deviceId;
+}
 
 export type AuthPayload = {
   token: string;
@@ -127,6 +153,12 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set('Authorization', `Bearer ${authToken}`);
   }
 
+  // Device id enables personalization when unauthenticated.
+  if (!headers.has('x-device-id')) {
+    const id = await getDeviceId();
+    headers.set('x-device-id', id);
+  }
+
   let response: Response;
   try {
     response = await fetch(`${Config.API_URL}${path}`, {
@@ -211,8 +243,34 @@ export const api = {
       recommendedProducts: ProductItem[];
     }>(`/home${query}`);
   },
+  getHomeRow(rowId: string, limit = 10) {
+    const safeId = encodeURIComponent(String(rowId || '').trim());
+    const safeLimit = Math.max(3, Math.min(20, Number(limit || 10)));
+    return request<{
+      id: string;
+      title: string;
+      subtitle?: string;
+      items: {
+        id: string;
+        slug?: string;
+        name: string;
+        price: string;
+        rating: number;
+        image: string;
+        ctaLabel?: string;
+      }[];
+      meta?: Record<string, any>;
+    }>(`/home/rows/${safeId}?limit=${safeLimit}`);
+  },
   getProductBySlug(slug: string) {
     return request<ProductDetail>(`/products/slug/${slug}`);
+  },
+  recordView(productId: string) {
+    return request<{ ok: boolean }>('/events/view', {
+      method: 'POST',
+      skipAuth: false,
+      body: JSON.stringify({ productId }),
+    });
   },
   submitProductReview(productId: string, payload: CreateProductReviewInput) {
     return request<ProductDetail>(`/products/${productId}/reviews`, {
@@ -270,6 +328,16 @@ export const api = {
   },
   getProductRecommendations(productId: string) {
     return request<RankedItem[]>(`/products/${productId}/recommendations`);
+  },
+  getProductRecommendationRows(productId: string) {
+    return request<{
+      rows: {
+        id: string;
+        title: string;
+        subtitle?: string;
+        items: RankedItem[];
+      }[];
+    }>(`/products/${productId}/recommendation-rows`);
   },
   sendChatMessage(message: string, sessionId?: string) {
     return request<ChatResponse>('/chat/message', {
