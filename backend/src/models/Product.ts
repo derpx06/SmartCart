@@ -114,6 +114,13 @@ const productSchema = new Schema(
       }
     ],
 
+    model3D: {
+      url: { type: String },
+      publicId: { type: String },
+      format: { type: String },
+      size: { type: Number },
+    },
+
     embedding: [
       {
         type: Number

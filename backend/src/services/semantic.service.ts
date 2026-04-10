@@ -14,6 +14,11 @@ const INTENT_SEEDS: Record<string, string[]> = {
         'kitchen tools and pantry basics',
         'daily cooking essentials'
     ],
+    dining_setup: [
+        'dining table and chairs setup',
+        'table setting and dining essentials',
+        'dining room setup'
+    ],
     baking: [
         'baking tools and mixers',
         'bakeware and dessert prep',
@@ -57,6 +62,7 @@ function detectIntentFromCartText(state: SmartCartState): string | null {
     const checks: Array<{ intent: string; keys: string[] }> = [
         { intent: 'bed_setup', keys: ['bed', 'bedding', 'bedsheet', 'pillow', 'blanket', 'mattress', 'duvet'] },
         { intent: 'kitchen_setup', keys: ['kitchen', 'pan', 'pot', 'cook', 'spatula', 'knife', 'board'] },
+        { intent: 'dining_setup', keys: ['dining', 'table', 'chair', 'cutlery', 'placemat'] },
         { intent: 'baking', keys: ['bake', 'whisk', 'oven', 'flour', 'sugar', 'tray', 'muffin'] },
         { intent: 'cooking', keys: ['cook', 'ingredient', 'oil', 'spice', 'stove', 'prep'] },
         { intent: 'home_setup', keys: ['decor', 'storage', 'shelf', 'lighting', 'furniture'] },

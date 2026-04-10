@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 
 import { adminApi } from '../lib/api';
-import type { Model3D, Order, Product } from '../types/admin';
+import type { Order, Product } from '../types/admin';
 import { useAuthStore } from './auth-store';
 
 type Insights = {
@@ -16,7 +16,6 @@ type Insights = {
 type AdminDataState = {
   products: Product[];
   orders: Order[];
-  models3D: Model3D[];
   isLoading: boolean;
   error: string | null;
   clearData: () => void;
@@ -26,7 +25,8 @@ type AdminDataState = {
   removeProduct: (id: string) => Promise<void>;
   updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;
-  removeModel3D: (id: string) => Promise<void>;
+  uploadProductModel3D: (productId: string, file: File) => Promise<void>;
+  deleteProductModel3D: (productId: string) => Promise<void>;
   getInsights: () => Insights;
 };
 
@@ -37,11 +37,10 @@ function getErrorMessage(error: unknown, fallback: string) {
 export const useAdminDataStore = create<AdminDataState>((set, get) => ({
   products: [],
   orders: [],
-  models3D: [],
   isLoading: false,
   error: null,
   clearData: () => {
-    set({ products: [], orders: [], models3D: [], isLoading: false, error: null });
+    set({ products: [], orders: [], isLoading: false, error: null });
   },
   refreshData: async () => {
     if (!useAuthStore.getState().isAuthenticated) {
@@ -51,10 +50,9 @@ export const useAdminDataStore = create<AdminDataState>((set, get) => ({
 
     try {
       set({ isLoading: true, error: null });
-      const [productRes, orderRes, model3DData] = await Promise.all([
+      const [productRes, orderRes] = await Promise.all([
         adminApi.getProducts() as Promise<{ data: Product[] } | Product[]>,
         adminApi.getOrders() as Promise<{ data: Order[] } | Order[]>,
-        adminApi.getModels3D() as Promise<Model3D[]>,
       ]);
       // API returns paginated { data: [...] } or plain arrays — handle both
       const productData = Array.isArray(productRes) ? productRes : (productRes?.data ?? []);
@@ -62,7 +60,6 @@ export const useAdminDataStore = create<AdminDataState>((set, get) => ({
       set({
         products: Array.isArray(productData) ? productData : [],
         orders: Array.isArray(orderData) ? orderData : [],
-        models3D: Array.isArray(model3DData) ? model3DData : [],
         isLoading: false,
         error: null,
       });
@@ -95,8 +92,15 @@ export const useAdminDataStore = create<AdminDataState>((set, get) => ({
     await adminApi.updateOrderStatus(id, status);
     await get().refreshData();
   },
-  removeModel3D: async (id) => {
-    await adminApi.deleteModel3D(id);
+  uploadProductModel3D: async (productId, file) => {
+    const formData = new FormData();
+    formData.append('model', file);
+    formData.append('name', file.name.replace(/\.[^/.]+$/, ''));
+    await adminApi.uploadProductModel3D(productId, formData);
+    await get().refreshData();
+  },
+  deleteProductModel3D: async (productId) => {
+    await adminApi.deleteProductModel3D(productId);
     await get().refreshData();
   },
   getInsights: () => {

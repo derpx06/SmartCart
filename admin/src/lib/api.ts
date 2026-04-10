@@ -91,17 +91,13 @@ export const adminApi = {
       body: JSON.stringify({ status }),
     });
   },
-  getModels3D() {
-    return request('/admin/models3d');
-  },
-  uploadModel3D(formData: FormData) {
-    // For FormData, we let the browser set the boundary and content-type automatically.
+  uploadProductModel3D(productId: string, formData: FormData) {
     const token = getToken();
     const headers = new Headers();
     if (token) {
       headers.set('Authorization', `Bearer ${token}`);
     }
-    return fetch(`${API_URL}/admin/models3d/upload`, {
+    return fetch(`${API_URL}/admin/products/${productId}/model3d`, {
       method: 'POST',
       headers,
       body: formData,
@@ -110,8 +106,8 @@ export const adminApi = {
       return res.json();
     });
   },
-  deleteModel3D(id: string) {
-    return request(`/admin/models3d/${id}`, {
+  deleteProductModel3D(productId: string) {
+    return request(`/admin/products/${productId}/model3d`, {
       method: 'DELETE',
     });
   },

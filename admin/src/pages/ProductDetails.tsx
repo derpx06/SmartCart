@@ -1,7 +1,9 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, type FormEvent } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useData, type Product } from '../contexts/DataContext';
-import { ArrowLeft, Save, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Save, Image as ImageIcon, Box, Trash2, Upload } from 'lucide-react';
+
+const ModelViewer = 'model-viewer' as any;
 
 const emptyProductForm: Omit<Product, 'id'> = {
   name: '',
@@ -16,22 +18,74 @@ const emptyProductForm: Omit<Product, 'id'> = {
 function ProductDetailsForm({
   initialValue,
   isNew,
+  productId,
   onSubmit,
 }: {
-  initialValue: Omit<Product, 'id'>;
+  initialValue: Omit<Product, 'id'> & { model3D?: Product['model3D'] };
   isNew: boolean;
+  productId?: string;
   onSubmit: (value: Omit<Product, 'id'>) => Promise<void>;
 }) {
   const [formData, setFormData] = useState<Omit<Product, 'id'>>(initialValue);
+  const { uploadProductModel3D, deleteProductModel3D } = useData();
+  const [model3D, setModel3D] = useState(initialValue.model3D ?? null);
+  const [modelUploading, setModelUploading] = useState(false);
+  const modelFileRef = useRef<HTMLInputElement>(null);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     await onSubmit(formData);
   };
 
+  const handleModelUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !productId) return;
+
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (ext !== 'glb' && ext !== 'gltf') {
+      alert('Please upload .glb or .gltf files only.');
+      return;
+    }
+
+    try {
+      setModelUploading(true);
+      await uploadProductModel3D(productId, file);
+      // After upload, the store refreshes. We need to get the updated product.
+      // For now set a placeholder — it will update on next render from store.
+      setModel3D({ url: URL.createObjectURL(file), publicId: '', format: ext, size: file.size });
+    } catch (error) {
+      console.error('Model upload failed:', error);
+      alert('Failed to upload 3D model.');
+    } finally {
+      setModelUploading(false);
+      if (modelFileRef.current) modelFileRef.current.value = '';
+    }
+  };
+
+  const handleModelDelete = async () => {
+    if (!productId) return;
+    if (!window.confirm('Remove the 3D model from this product?')) return;
+
+    try {
+      await deleteProductModel3D(productId);
+      setModel3D(null);
+    } catch (error) {
+      console.error('Model delete failed:', error);
+    }
+  };
+
+  const formatSize = (bytes: number) => {
+    if (!bytes) return '';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  };
+
   return (
     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
-      <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
+      <div style={{ flex: '1 1 300px', maxWidth: '400px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        {/* Image Previews */}
         <div className="glass-card" style={{ padding: '12px', textAlign: 'center' }}>
           <h3 style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>Image Previews</h3>
           {formData.images && formData.images.length > 0 ? (
@@ -64,6 +118,103 @@ function ProductDetailsForm({
             </div>
           )}
         </div>
+
+        {/* 3D Model Section */}
+        {!isNew && productId && (
+          <div className="glass-card" style={{ padding: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+              <Box size={18} style={{ color: 'var(--accent-base)' }} />
+              <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>3D Model</h3>
+            </div>
+
+            {model3D?.url ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div style={{ 
+                  width: '100%', 
+                  aspectRatio: '1', 
+                  borderRadius: 'var(--radius-md)', 
+                  overflow: 'hidden',
+                  background: 'rgba(0,0,0,0.3)',
+                }}>
+                  <ModelViewer
+                    src={model3D.url}
+                    alt="3D Model Preview"
+                    auto-rotate
+                    camera-controls
+                    shadow-intensity="1"
+                    style={{ width: '100%', height: '100%', backgroundColor: 'transparent' }}
+                    loading="lazy"
+                  />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                    {model3D.format?.toUpperCase()} {model3D.size ? `• ${formatSize(model3D.size)}` : ''}
+                  </span>
+                  <button 
+                    type="button"
+                    onClick={handleModelDelete}
+                    className="btn btn-danger"
+                    style={{ padding: '6px 12px', fontSize: '12px' }}
+                  >
+                    <Trash2 size={14} /> Remove
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                width: '100%',
+                aspectRatio: '4/3',
+                background: 'rgba(255,255,255,0.03)',
+                border: '2px dashed rgba(255,255,255,0.1)',
+                borderRadius: 'var(--radius-md)',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '12px',
+                cursor: modelUploading ? 'wait' : 'pointer',
+                transition: 'border-color 0.2s',
+              }}
+              onClick={() => !modelUploading && modelFileRef.current?.click()}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(109, 64, 255, 0.4)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)')}
+              >
+                {modelUploading ? (
+                  <>
+                    <div style={{ width: '24px', height: '24px', border: '2px solid var(--accent-base)', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Uploading...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload size={32} style={{ color: 'var(--text-secondary)', opacity: 0.5 }} />
+                    <span style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>Upload .glb or .gltf</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-secondary)', opacity: 0.6 }}>Click to browse</span>
+                  </>
+                )}
+              </div>
+            )}
+
+            <input
+              type="file"
+              ref={modelFileRef}
+              style={{ display: 'none' }}
+              accept=".glb,.gltf"
+              onChange={handleModelUpload}
+            />
+          </div>
+        )}
+
+        {isNew && (
+          <div className="glass-card" style={{ padding: '16px', opacity: 0.6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <Box size={18} style={{ color: 'var(--text-secondary)' }} />
+              <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>3D Model</h3>
+            </div>
+            <p style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+              Save the product first to upload a 3D model.
+            </p>
+          </div>
+        )}
       </div>
 
       <div style={{ flex: '2 1 500px' }}>
@@ -236,7 +387,7 @@ export default function ProductDetails() {
         </button>
         <div>
           <h1 style={{ color: 'white' }}>{isNew ? 'New Product' : 'Edit Product'}</h1>
-          <p className="text-muted">Manage product details and media.</p>
+          <p className="text-muted">Manage product details, media, and 3D assets.</p>
         </div>
       </div>
 
@@ -255,10 +406,12 @@ export default function ProductDetails() {
                   description: existingProduct.description,
                   images: existingProduct.images || [],
                   tags: existingProduct.tags || [],
+                  model3D: existingProduct.model3D,
                 }
               : emptyProductForm
           }
           isNew={isNew}
+          productId={id}
           onSubmit={handleSubmit}
         />
       )}
