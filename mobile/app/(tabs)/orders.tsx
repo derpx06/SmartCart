@@ -12,12 +12,33 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useOrdersStore } from '@/store/orders-store';
 import type { MobileOrder } from '@/store/orders-store';
+
+const ORDERS_MONO = {
+  white: '#FFFFFF',
+  soft: '#E9E9E7',
+  ink: '#1C1B1F',
+};
+
+const ORDERS_COLORS = {
+  screenBg: ORDERS_MONO.white,
+  cardBg: ORDERS_MONO.white,
+  softSurface: ORDERS_MONO.soft,
+  text: ORDERS_MONO.ink,
+  muted: 'rgba(28, 27, 31, 0.68)',
+  border: 'rgba(28, 27, 31, 0.14)',
+  orbOne: 'rgba(28, 27, 31, 0.08)',
+  orbTwo: 'rgba(233, 233, 231, 0.72)',
+  danger: '#c52b2b',
+  statusStrongBg: 'rgba(28, 27, 31, 0.16)',
+  statusNormalBg: 'rgba(28, 27, 31, 0.1)',
+  statusSoftBg: 'rgba(28, 27, 31, 0.06)',
+  statusText: ORDERS_MONO.ink,
+};
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
@@ -40,10 +61,7 @@ function formatOrderDate(isoDate: string) {
   });
 }
 
-function statusPresentation(
-  status: string,
-  isDark: boolean,
-): {
+function statusPresentation(status: string): {
   label: string;
   pillBg: string;
   pillText: string;
@@ -53,31 +71,31 @@ function statusPresentation(
   if (normalized.includes('deliver') || normalized.includes('complete')) {
     return {
       label: status,
-      pillBg: isDark ? 'rgba(127, 212, 168, 0.16)' : 'rgba(76, 164, 122, 0.18)',
-      pillText: isDark ? '#9FD9B8' : '#2E7D5A',
+      pillBg: ORDERS_COLORS.statusStrongBg,
+      pillText: ORDERS_COLORS.statusText,
       icon: 'checkmark-circle',
     };
   }
   if (normalized.includes('ship')) {
     return {
       label: status,
-      pillBg: isDark ? 'rgba(201, 162, 109, 0.22)' : 'rgba(181, 138, 83, 0.2)',
-      pillText: isDark ? '#E4C9A0' : '#8B6914',
+      pillBg: ORDERS_COLORS.statusNormalBg,
+      pillText: ORDERS_COLORS.statusText,
       icon: 'airplane',
     };
   }
   if (normalized.includes('cancel')) {
     return {
       label: status,
-      pillBg: isDark ? 'rgba(255, 139, 139, 0.14)' : 'rgba(197, 43, 43, 0.12)',
-      pillText: isDark ? '#FFABAB' : '#B71C1C',
+      pillBg: ORDERS_COLORS.statusSoftBg,
+      pillText: ORDERS_COLORS.statusText,
       icon: 'close-circle-outline',
     };
   }
   return {
     label: status,
-    pillBg: isDark ? 'rgba(201, 162, 109, 0.14)' : 'rgba(181, 138, 83, 0.15)',
-    pillText: isDark ? '#D4C4B0' : '#6B5F53',
+    pillBg: ORDERS_COLORS.statusSoftBg,
+    pillText: ORDERS_COLORS.statusText,
     icon: 'time-outline',
   };
 }
@@ -89,7 +107,6 @@ function OrderCard({
   text,
   muted,
   softSurface,
-  isDark,
 }: {
   order: MobileOrder;
   card: string;
@@ -97,10 +114,9 @@ function OrderCard({
   text: string;
   muted: string;
   softSurface: string;
-  isDark: boolean;
 }) {
   const router = useRouter();
-  const status = statusPresentation(order.status, isDark);
+  const status = statusPresentation(order.status);
 
   const openProduct = (slug: string | undefined) => {
     const s = slug?.trim();
@@ -183,12 +199,11 @@ export default function OrdersScreen() {
   const error = useOrdersStore((state) => state.error);
   const fetchOrders = useOrdersStore((state) => state.fetchOrders);
   const insets = useSafeAreaInsets();
-  const luxuryPalette = useLuxuryPalette();
-  const background = useThemeColor({}, 'background');
-  const card = useThemeColor({}, 'card');
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
-  const danger = useThemeColor({ light: '#c52b2b', dark: '#ff8b8b' }, 'text');
+  const background = ORDERS_COLORS.screenBg;
+  const card = ORDERS_COLORS.cardBg;
+  const text = ORDERS_COLORS.text;
+  const mutedText = ORDERS_COLORS.muted;
+  const danger = ORDERS_COLORS.danger;
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -212,7 +227,7 @@ export default function OrdersScreen() {
       <SafeAreaView
         style={[styles.safeArea, { backgroundColor: background, justifyContent: 'center', alignItems: 'center' }]}
         edges={['top', 'left', 'right']}>
-        <ActivityIndicator size="large" color={luxuryPalette.gold} />
+        <ActivityIndicator size="large" color={text} />
         <ThemedText style={[styles.loadingCaption, { color: mutedText }]}>Loading your orders…</ThemedText>
       </SafeAreaView>
     );
@@ -227,19 +242,19 @@ export default function OrdersScreen() {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            tintColor={luxuryPalette.gold}
-            colors={[luxuryPalette.gold]}
+            tintColor={text}
+            colors={[text]}
           />
         }
         bounces>
         <View pointerEvents="none" style={styles.atmosphereLayer}>
-          <View style={[styles.orbOne, { backgroundColor: luxuryPalette.orbOne }]} />
-          <View style={[styles.orbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
+          <View style={[styles.orbOne, { backgroundColor: ORDERS_COLORS.orbOne }]} />
+          <View style={[styles.orbTwo, { backgroundColor: ORDERS_COLORS.orbTwo }]} />
         </View>
 
         <View style={styles.topRow}>
           <View style={styles.topCopy}>
-            <ThemedText style={[styles.kicker, { color: luxuryPalette.gold }]}>Account</ThemedText>
+            <ThemedText style={[styles.kicker, { color: text }]}>Account</ThemedText>
             <ThemedText style={[styles.pageTitle, { color: text }]}>Orders</ThemedText>
             <ThemedText style={[styles.topSub, { color: mutedText }]}>
               {orders.length === 0 && !error
@@ -250,7 +265,7 @@ export default function OrdersScreen() {
           <View
             style={[
               styles.iconBadge,
-              { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+              { borderColor: ORDERS_COLORS.border, backgroundColor: ORDERS_COLORS.cardBg },
             ]}>
             <Ionicons name="cube-outline" size={18} color={text} />
           </View>
@@ -265,15 +280,15 @@ export default function OrdersScreen() {
             </View>
             <Pressable
               onPress={() => void fetchOrders()}
-              style={[styles.retryButton, { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.surface }]}>
+              style={[styles.retryButton, { borderColor: ORDERS_COLORS.border, backgroundColor: ORDERS_COLORS.softSurface }]}>
               <ThemedText style={[styles.retryText, { color: text }]}>Try again</ThemedText>
             </Pressable>
           </View>
         ) : null}
 
         {!error && orders.length === 0 ? (
-          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
-            <View style={[styles.emptyIconWrap, { backgroundColor: luxuryPalette.surface }]}>
+          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: ORDERS_COLORS.border }]}>
+            <View style={[styles.emptyIconWrap, { backgroundColor: ORDERS_COLORS.softSurface }]}>
               <Ionicons name="receipt-outline" size={32} color={mutedText} />
             </View>
             <ThemedText style={[styles.emptyTitle, { color: text }]}>No orders yet</ThemedText>
@@ -291,11 +306,10 @@ export default function OrdersScreen() {
                 key={order.id}
                 order={order}
                 card={card}
-                line={luxuryPalette.line}
+                line={ORDERS_COLORS.border}
                 text={text}
                 muted={mutedText}
-                softSurface={luxuryPalette.surface}
-                isDark={luxuryPalette.isDark}
+                softSurface={ORDERS_COLORS.softSurface}
               />
             ))}
           </View>
