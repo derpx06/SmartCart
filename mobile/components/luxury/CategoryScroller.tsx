@@ -3,7 +3,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { radius, spacing } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CategoryItem } from '@/data/luxuryHomeData';
@@ -14,9 +14,14 @@ type CategoryScrollerProps = {
   loading?: boolean;
 };
 
-export function CategoryScroller({ categories, loading = false }: CategoryScrollerProps) {
-  const palette = useLuxuryPalette();
+const CATEGORY_COLORS = {
+  cardBg: '#FFFFFF',
+  cardBorder: 'rgba(28, 27, 31, 0.14)',
+  imageTint: 'rgba(28, 27, 31, 0.34)',
+  label: '#FFFFFF',
+};
 
+export function CategoryScroller({ categories, loading = false }: CategoryScrollerProps) {
   return (
     <View>
       <SectionTitle title="Shop by Category" caption="Find pieces for every room in your home." />
@@ -34,10 +39,10 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
           contentContainerStyle={styles.scrollContent}>
           {categories.map((category) => (
             <AnimatedPressable key={category.id} containerStyle={styles.cardWrap}>
-              <View style={[styles.card, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+              <View style={[styles.card, { backgroundColor: CATEGORY_COLORS.cardBg, borderColor: CATEGORY_COLORS.cardBorder }]}>
                 <Image source={{ uri: category.image }} style={styles.image} contentFit="cover" transition={450} />
-                <View style={[styles.tint, { backgroundColor: palette.categoryTint }]} />
-                <Text style={[styles.label, { color: palette.categoryLabel }]}>{category.title}</Text>
+                <View style={[styles.tint, { backgroundColor: CATEGORY_COLORS.imageTint }]} />
+                <Text style={[styles.label, { color: CATEGORY_COLORS.label }]}>{category.title}</Text>
               </View>
             </AnimatedPressable>
           ))}

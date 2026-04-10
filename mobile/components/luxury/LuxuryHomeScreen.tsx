@@ -19,10 +19,9 @@ import { EditorialCollections } from '@/components/luxury/EditorialCollections';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useHomeStore } from '@/store/home-store';
 
 const promoMessages = [
@@ -33,6 +32,27 @@ const promoMessages = [
 
 const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'];
 
+const HOME_MONO = {
+  white: '#FFFFFF',
+  soft: '#E9E9E7',
+  ink: '#1C1B1F',
+};
+
+const HOME_COLORS = {
+  background: HOME_MONO.white,
+  surface: HOME_MONO.soft,
+  elevated: HOME_MONO.white,
+  text: HOME_MONO.ink,
+  mutedText: 'rgba(28, 27, 31, 0.68)',
+  line: 'rgba(28, 27, 31, 0.14)',
+  overlayTop: 'rgba(28, 27, 31, 0.16)',
+  overlayBottom: 'rgba(28, 27, 31, 0.62)',
+  panelBg: 'rgba(28, 27, 31, 0.38)',
+  panelBorder: 'rgba(255, 255, 255, 0.34)',
+  chipBg: 'rgba(255, 255, 255, 0.9)',
+  skeleton: 'rgba(28, 27, 31, 0.12)',
+};
+
 export function LuxuryHomeScreen() {
   const router = useRouter();
   const loading = useHomeStore((state) => state.loading);
@@ -40,8 +60,7 @@ export function LuxuryHomeScreen() {
   const homeData = useHomeStore((state) => state.homeData);
   const loadHome = useHomeStore((state) => state.loadHome);
   const refreshHome = useHomeStore((state) => state.refreshHome);
-  const background = useThemeColor({}, 'background');
-  const palette = useLuxuryPalette();
+  const background = HOME_COLORS.background;
   const [activeFilter, setActiveFilter] = useState(quickFilters[0]);
 
   useEffect(() => {
@@ -71,8 +90,8 @@ export function LuxuryHomeScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor={palette.text}
-              colors={[palette.text]}
+              tintColor={HOME_COLORS.text}
+              colors={[HOME_COLORS.text]}
             />
           }>
           <View
@@ -80,25 +99,30 @@ export function LuxuryHomeScreen() {
               styles.promoRow,
               {
                 marginTop: spacing.sm,
-                backgroundColor: palette.champagne,
-                borderColor: palette.line,
+                backgroundColor: HOME_COLORS.surface,
+                borderColor: HOME_COLORS.line,
               },
             ]}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoScroll}>
-              {promoMessages.map((message) => (
+              {promoMessages.map((message, index) => (
                 <View key={message} style={styles.promoItem}>
-                  <Text style={[styles.promoText, { color: palette.text }]} numberOfLines={1}>
+                  <View style={styles.promoIconWrap}>
+                    <Ionicons name="sparkles-outline" size={11} color={HOME_COLORS.text} />
+                  </View>
+                  <Text style={[styles.promoText, { color: HOME_COLORS.text }]} numberOfLines={1}>
                     {message}
                   </Text>
-                  <View style={[styles.promoDot, { backgroundColor: palette.mutedText }]} />
+                  {index < promoMessages.length - 1 ? (
+                    <View style={[styles.promoDot, { backgroundColor: HOME_COLORS.mutedText }]} />
+                  ) : null}
                 </View>
               ))}
             </ScrollView>
           </View>
 
-          <View style={[styles.heroCard, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+          <View style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
             {loading ? (
-              <View style={[styles.heroSkeleton, { backgroundColor: palette.skeleton }]} />
+              <View style={[styles.heroSkeleton, { backgroundColor: HOME_COLORS.skeleton }]} />
             ) : (
               <Image
                 source={{
@@ -111,18 +135,36 @@ export function LuxuryHomeScreen() {
                 transition={650}
               />
             )}
-            <View style={[styles.heroShade, { backgroundColor: palette.overlay }]} />
-            <Text style={styles.heroCopy}>Find Furniture You&apos;ll Love - Delivered to Your Door.</Text>
+            <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
+            <View style={[styles.heroShadeBottom, { backgroundColor: HOME_COLORS.overlayBottom }]} />
+
+            <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
+              <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
+              <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
+            </View>
+
+            <View
+              style={[
+                styles.heroCopyWrap,
+                { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
+              ]}>
+              <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
+              <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
+              <View style={styles.heroCtaRow}>
+                <Text style={styles.heroCtaText}>Shop featured picks</Text>
+                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+              </View>
+            </View>
           </View>
 
-          <View style={[styles.searchWrap, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
-            <Ionicons name="search" size={16} color={palette.mutedText} />
+          <View style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
+            <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
             <TextInput
               value=""
               editable={false}
               placeholder="Search anything..."
-              placeholderTextColor={palette.mutedText}
-              style={[styles.searchInput, { color: palette.text }]}
+              placeholderTextColor={HOME_COLORS.mutedText}
+              style={[styles.searchInput, { color: HOME_COLORS.text }]}
             />
           </View>
 
@@ -141,7 +183,7 @@ export function LuxuryHomeScreen() {
                     style={[
                       styles.filterText,
                       {
-                        color: isActive ? palette.text : palette.mutedText,
+                        color: isActive ? HOME_COLORS.text : HOME_COLORS.mutedText,
                         fontWeight: isActive ? '700' : '500',
                       },
                     ]}>
@@ -150,7 +192,7 @@ export function LuxuryHomeScreen() {
                   <View
                     style={[
                       styles.filterUnderline,
-                      { backgroundColor: isActive ? palette.text : 'transparent' },
+                      { backgroundColor: isActive ? HOME_COLORS.text : 'transparent' },
                     ]}
                   />
                 </Pressable>
@@ -211,17 +253,27 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     borderWidth: 1,
     overflow: 'hidden',
-    height: 38,
+    minHeight: 42,
     justifyContent: 'center',
   },
   promoScroll: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
     alignItems: 'center',
   },
   promoItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: spacing.md,
+  },
+  promoIconWrap: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 6,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
   },
   promoText: {
     fontFamily: Fonts.sans,
@@ -238,7 +290,7 @@ const styles = StyleSheet.create({
   heroCard: {
     marginTop: spacing.md,
     marginHorizontal: spacing.lg,
-    height: 310,
+    height: 336,
     borderRadius: radius.xl,
     overflow: 'hidden',
     borderWidth: 1,
@@ -251,19 +303,72 @@ const styles = StyleSheet.create({
   heroSkeleton: {
     flex: 1,
   },
-  heroShade: {
+  heroShadeTop: {
     ...StyleSheet.absoluteFillObject,
-    top: '42%',
+    top: 0,
+    bottom: '46%',
   },
-  heroCopy: {
+  heroShadeBottom: {
+    ...StyleSheet.absoluteFillObject,
+    top: '34%',
+  },
+  heroBadge: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: spacing.lg,
-    color: '#FFF9F3',
+    top: spacing.md,
+    left: spacing.md,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroBadgeText: {
     fontFamily: Fonts.sans,
-    fontSize: 35,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
+  },
+  heroCopyWrap: {
+    position: 'absolute',
+    left: spacing.md,
+    right: spacing.md,
+    bottom: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    gap: 8,
+  },
+  heroTitle: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.serif,
+    fontSize: 38,
     lineHeight: 42,
+    fontWeight: '700',
+  },
+  heroSubTitle: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+    maxWidth: '94%',
+  },
+  heroCtaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.3)',
+    paddingTop: spacing.xs,
+    marginTop: 2,
+  },
+  heroCtaText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
     fontWeight: '700',
   },
   searchWrap: {

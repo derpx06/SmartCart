@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { Fonts } from '@/constants/theme';
 
@@ -11,9 +11,18 @@ type BrandStoryCardProps = {
   loading?: boolean;
 };
 
-export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
-  const palette = useLuxuryPalette();
+const STORY_COLORS = {
+  cardBg: '#FFFFFF',
+  border: 'rgba(28, 27, 31, 0.14)',
+  imageOverlay: 'rgba(28, 27, 31, 0.42)',
+  kickerBg: '#FFFFFF',
+  kickerText: '#1C1B1F',
+  text: '#1C1B1F',
+  muted: 'rgba(28, 27, 31, 0.68)',
+  ctaBorder: 'rgba(28, 27, 31, 0.14)',
+};
 
+export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
   if (loading) {
     return <SkeletonBlock height={180} borderRadius={radius.xl} />;
   }
@@ -24,8 +33,8 @@ export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
         style={[
           styles.card,
           {
-            backgroundColor: palette.elevated,
-            borderColor: palette.line,
+            backgroundColor: STORY_COLORS.cardBg,
+            borderColor: STORY_COLORS.border,
           },
           luxuryShadow,
         ]}>
@@ -37,19 +46,19 @@ export function BrandStoryCard({ loading = false }: BrandStoryCardProps) {
           contentFit="cover"
           transition={500}
         />
-        <View style={[styles.imageOverlay, { backgroundColor: palette.collectionOverlay }]} />
-        <View style={[styles.kickerWrap, { backgroundColor: palette.heroCtaBg }]}>
-          <Text style={[styles.kicker, { color: palette.chipText }]}>OUR PHILOSOPHY</Text>
+        <View style={[styles.imageOverlay, { backgroundColor: STORY_COLORS.imageOverlay }]} />
+        <View style={[styles.kickerWrap, { backgroundColor: STORY_COLORS.kickerBg }]}>
+          <Text style={[styles.kicker, { color: STORY_COLORS.kickerText }]}>OUR PHILOSOPHY</Text>
         </View>
         <View style={styles.copyWrap}>
-          <Text style={[styles.title, { color: palette.text }]}>Crafted For A Lifetime</Text>
-          <Text style={[styles.copy, { color: palette.mutedText }]}>
+          <Text style={[styles.title, { color: STORY_COLORS.text }]}>Crafted For A Lifetime</Text>
+          <Text style={[styles.copy, { color: STORY_COLORS.muted }]}>
             Every material is selected for performance, touch, and longevity. Our pieces are built to
             age beautifully in modern homes.
           </Text>
-          <View style={[styles.ctaRow, { borderTopColor: palette.line }]}>
-            <Text style={[styles.ctaText, { color: palette.text }]}>Discover our craftsmanship</Text>
-            <Text style={[styles.ctaArrow, { color: palette.gold }]}>{'->'}</Text>
+          <View style={[styles.ctaRow, { borderTopColor: STORY_COLORS.ctaBorder }]}>
+            <Text style={[styles.ctaText, { color: STORY_COLORS.text }]}>Discover our craftsmanship</Text>
+            <Text style={[styles.ctaArrow, { color: STORY_COLORS.text }]}>{'->'}</Text>
           </View>
         </View>
       </View>

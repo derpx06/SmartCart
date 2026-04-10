@@ -3,7 +3,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { CollectionItem } from '@/data/luxuryHomeData';
@@ -14,9 +14,16 @@ type EditorialCollectionsProps = {
   loading?: boolean;
 };
 
-export function EditorialCollections({ collections, loading = false }: EditorialCollectionsProps) {
-  const palette = useLuxuryPalette();
+const COLLECTION_COLORS = {
+  cardBg: '#FFFFFF',
+  cardBorder: 'rgba(28, 27, 31, 0.14)',
+  leadOverlay: 'rgba(28, 27, 31, 0.46)',
+  secondaryOverlay: 'rgba(28, 27, 31, 0.5)',
+  titleOnImage: '#FFFFFF',
+  subtitleOnImage: 'rgba(255, 255, 255, 0.9)',
+};
 
+export function EditorialCollections({ collections, loading = false }: EditorialCollectionsProps) {
   if (loading) {
     return (
       <View>
@@ -40,12 +47,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
 
       {lead ? (
         <AnimatedPressable containerStyle={styles.leadWrap}>
-          <View style={[styles.leadCard, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
+          <View style={[styles.leadCard, { backgroundColor: COLLECTION_COLORS.cardBg, borderColor: COLLECTION_COLORS.cardBorder }, luxuryShadow]}>
             <Image source={{ uri: lead.image }} style={styles.leadImage} contentFit="cover" transition={700} />
-            <View style={[styles.overlay, { backgroundColor: palette.collectionOverlay }]} />
+            <View style={[styles.overlay, { backgroundColor: COLLECTION_COLORS.leadOverlay }]} />
             <View style={styles.copyWrap}>
-              <Text style={[styles.leadTitle, { color: palette.heroTitle }]}>{lead.title}</Text>
-              <Text style={[styles.subtitle, { color: palette.heroSubtitle }]}>{lead.subtitle}</Text>
+              <Text style={[styles.leadTitle, { color: COLLECTION_COLORS.titleOnImage }]}>{lead.title}</Text>
+              <Text style={[styles.subtitle, { color: COLLECTION_COLORS.subtitleOnImage }]}>{lead.subtitle}</Text>
             </View>
           </View>
         </AnimatedPressable>
@@ -54,12 +61,12 @@ export function EditorialCollections({ collections, loading = false }: Editorial
       <View style={styles.secondaryRow}>
         {secondary.slice(0, 2).map((item) => (
           <AnimatedPressable key={item.id} containerStyle={styles.secondaryWrap}>
-            <View style={[styles.secondaryCard, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
+            <View style={[styles.secondaryCard, { backgroundColor: COLLECTION_COLORS.cardBg, borderColor: COLLECTION_COLORS.cardBorder }, luxuryShadow]}>
               <Image source={{ uri: item.image }} style={styles.secondaryImage} contentFit="cover" transition={550} />
-              <View style={[styles.secondaryTint, { backgroundColor: palette.collectionSecondaryOverlay }]} />
+              <View style={[styles.secondaryTint, { backgroundColor: COLLECTION_COLORS.secondaryOverlay }]} />
               <View style={styles.secondaryCopy}>
-                <Text style={[styles.secondaryTitle, { color: palette.heroTitle }]}>{item.title}</Text>
-                <Text style={[styles.secondarySubtitle, { color: palette.heroSubtitle }]} numberOfLines={2}>
+                <Text style={[styles.secondaryTitle, { color: COLLECTION_COLORS.titleOnImage }]}>{item.title}</Text>
+                <Text style={[styles.secondarySubtitle, { color: COLLECTION_COLORS.subtitleOnImage }]} numberOfLines={2}>
                   {item.subtitle}
                 </Text>
               </View>

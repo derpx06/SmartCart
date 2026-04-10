@@ -4,7 +4,7 @@ import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
@@ -18,6 +18,18 @@ type ProductCarouselProps = {
   onPressProduct?: (product: ProductItem) => void;
 };
 
+const PRODUCT_COLORS = {
+  cardBg: '#FFFFFF',
+  line: 'rgba(28, 27, 31, 0.14)',
+  text: '#1C1B1F',
+  muted: 'rgba(28, 27, 31, 0.68)',
+  softSurface: '#E9E9E7',
+  featureBg: '#1C1B1F',
+  featureText: '#FFFFFF',
+  wishlistBg: '#FFFFFF',
+  star: '#1C1B1F',
+};
+
 export function ProductCarousel({
   title,
   caption,
@@ -25,8 +37,6 @@ export function ProductCarousel({
   loading = false,
   onPressProduct,
 }: ProductCarouselProps) {
-  const palette = useLuxuryPalette();
-
   return (
     <View>
       <SectionTitle title={title} caption={caption} />
@@ -39,8 +49,8 @@ export function ProductCarousel({
               style={[
                 styles.skeletonCard,
                 {
-                  backgroundColor: palette.elevated,
-                  borderColor: palette.line,
+                  backgroundColor: PRODUCT_COLORS.cardBg,
+                  borderColor: PRODUCT_COLORS.line,
                 },
               ]}>
               <SkeletonBlock height={145} borderRadius={radius.md} />
@@ -63,8 +73,8 @@ export function ProductCarousel({
                 style={[
                   styles.card,
                   {
-                    backgroundColor: palette.elevated,
-                    borderColor: palette.line,
+                    backgroundColor: PRODUCT_COLORS.cardBg,
+                    borderColor: PRODUCT_COLORS.line,
                   },
                   luxuryShadow,
                 ]}>
@@ -75,28 +85,28 @@ export function ProductCarousel({
                     contentFit="cover"
                     transition={450}
                   />
-                  <View style={[styles.featureChip, { backgroundColor: palette.gold }]}>
-                    <Text style={[styles.featureText, { color: palette.chipText }]}>NEW</Text>
+                  <View style={[styles.featureChip, { backgroundColor: PRODUCT_COLORS.featureBg }]}>
+                    <Text style={[styles.featureText, { color: PRODUCT_COLORS.featureText }]}>NEW</Text>
                   </View>
                   <View
                     style={[
                       styles.wishlistChip,
                       {
-                        backgroundColor: palette.wishlistChip,
-                        borderColor: palette.line,
+                        backgroundColor: PRODUCT_COLORS.wishlistBg,
+                        borderColor: PRODUCT_COLORS.line,
                       },
                     ]}>
-                    <Ionicons name="heart-outline" size={16} color={palette.text} />
+                    <Ionicons name="heart-outline" size={16} color={PRODUCT_COLORS.text} />
                   </View>
                 </View>
                 <View style={styles.content}>
-                  <Text style={[styles.name, { color: palette.text }]} numberOfLines={2}>
+                  <Text style={[styles.name, { color: PRODUCT_COLORS.text }]} numberOfLines={2}>
                     {product.name}
                   </Text>
-                  <Text style={[styles.price, { color: palette.text }]}>{product.price}</Text>
-                  <View style={[styles.ratingRow, { backgroundColor: palette.surface, borderColor: palette.line }]}>
-                    <Ionicons name="star" size={13} color={palette.gold} />
-                    <Text style={[styles.rating, { color: palette.mutedText }]}>
+                  <Text style={[styles.price, { color: PRODUCT_COLORS.text }]}>{product.price}</Text>
+                  <View style={[styles.ratingRow, { backgroundColor: PRODUCT_COLORS.softSurface, borderColor: PRODUCT_COLORS.line }]}>
+                    <Ionicons name="star" size={13} color={PRODUCT_COLORS.star} />
+                    <Text style={[styles.rating, { color: PRODUCT_COLORS.muted }]}>
                       {product.rating.toFixed(1)}
                     </Text>
                   </View>

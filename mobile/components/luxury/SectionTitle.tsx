@@ -1,7 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { spacing } from '@/components/luxury/design';
 import { Fonts } from '@/constants/theme';
 
 type SectionTitleProps = {
@@ -9,13 +9,16 @@ type SectionTitleProps = {
   caption?: string;
 };
 
-export function SectionTitle({ title, caption }: SectionTitleProps) {
-  const palette = useLuxuryPalette();
+const SECTION_COLORS = {
+  text: '#1C1B1F',
+  muted: 'rgba(28, 27, 31, 0.68)',
+};
 
+export function SectionTitle({ title, caption }: SectionTitleProps) {
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: palette.text }]}>{title}</Text>
-      {caption ? <Text style={[styles.caption, { color: palette.mutedText }]}>{caption}</Text> : null}
+      <Text style={[styles.title, { color: SECTION_COLORS.text }]}>{title}</Text>
+      {caption ? <Text style={[styles.caption, { color: SECTION_COLORS.muted }]}>{caption}</Text> : null}
     </View>
   );
 }
