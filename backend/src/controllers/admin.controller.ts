@@ -217,3 +217,58 @@ export const updateAdminOrderStatus = async (req: Request, res: Response): Promi
     res.status(500).json({ error: 'Server error' });
   }
 };
+
+import mongoose from 'mongoose';
+
+export const updateAdminOrder = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { total, items, status } = req.body ?? {};
+
+    const formattedItems = [];
+    for (const item of (items || [])) {
+      let pid = item.productId;
+      if (!pid || !mongoose.Types.ObjectId.isValid(pid)) {
+        const existing = await Product.findOne({ name: { $regex: new RegExp(`^${item.name}$`, 'i') } });
+        if (existing) {
+          pid = existing._id.toString();
+        } else {
+          const dummyProd = await Product.create({
+             name: item.name || 'Custom Order Item',
+             slug: `custom-item-${Date.now()}-${Math.floor(Math.random()*1000)}`,
+             category: 'decor',
+             price: { selling: Number(item.price) || 0 },
+             stock: { status: 'OUT_OF_STOCK', quantity: 0 }
+          });
+          pid = dummyProd._id.toString();
+        }
+      }
+      formattedItems.push({
+        productId: pid,
+        quantity: Number(item.quantity) || 1,
+        priceAtPurchase: Number(item.price) || 0,
+      });
+    }
+
+    const rawStatus = String(status ?? '').toLowerCase().replace(/ /g, '_');
+    const finalStatus = rawStatus === 'ordered' || rawStatus === 'on_the_way' || rawStatus === 'failed' || rawStatus === 'delivered'
+      ? rawStatus
+      : undefined;
+
+    const updatePayload: any = {};
+    if (total !== undefined) updatePayload.totalAmount = Number(total);
+    if (items !== undefined) updatePayload.items = formattedItems;
+    if (finalStatus) updatePayload.status = finalStatus;
+
+    const order = await Order.findByIdAndUpdate(req.params.id, updatePayload, { new: true }).lean();
+
+    if (!order) {
+      res.status(404).json({ error: 'Order not found' });
+      return;
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error('Order update error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};

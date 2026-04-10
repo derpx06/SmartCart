@@ -20,6 +20,7 @@ type AdminDataState = {
   addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
   updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
+  updateOrder: (id: string, updates: Partial<Order>) => Promise<void>;
   updateOrderStatus: (id: string, status: Order['status']) => Promise<void>;
   getInsights: () => Insights;
 };
@@ -73,6 +74,10 @@ export const useAdminDataStore = create<AdminDataState>((set, get) => ({
   },
   removeProduct: async (id) => {
     await adminApi.deleteProduct(id);
+    await get().refreshData();
+  },
+  updateOrder: async (id, updates) => {
+    await adminApi.updateOrder(id, updates);
     await get().refreshData();
   },
   updateOrderStatus: async (id, status) => {

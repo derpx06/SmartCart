@@ -214,12 +214,12 @@ export async function listOrdersForUser(req: Request) {
     customerName: user?.name || 'Demo User',
     total: Number(order.totalAmount ?? 0),
     status:
-      order.status === 'pending'
-        ? 'Pending'
-        : order.status === 'shipped'
-          ? 'Shipped'
-          : order.status === 'cancelled'
-            ? 'Cancelled'
+      order.status === 'ordered'
+        ? 'Ordered'
+        : order.status === 'on_the_way'
+          ? 'On the way'
+          : order.status === 'failed'
+            ? 'Failed'
             : 'Delivered',
     date: new Date(order.createdAt).toISOString().slice(0, 10),
     items: order.items.map((item: any) => ({
@@ -247,12 +247,12 @@ export async function listAllOrders() {
     customerName: userMap.get(order.userId) || 'Demo User',
     total: Number(order.totalAmount ?? 0),
     status:
-      order.status === 'pending'
-        ? 'Pending'
-        : order.status === 'shipped'
-          ? 'Shipped'
-          : order.status === 'cancelled'
-            ? 'Cancelled'
+      order.status === 'ordered'
+        ? 'Ordered'
+        : order.status === 'on_the_way'
+          ? 'On the way'
+          : order.status === 'failed'
+            ? 'Failed'
             : 'Delivered',
     date: new Date(order.createdAt).toISOString().slice(0, 10),
     items: order.items.map((item: any) => ({

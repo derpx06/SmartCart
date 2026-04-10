@@ -51,6 +51,7 @@ import {
   getAdminProducts,
   updateAdminOrderStatus,
   updateAdminProduct,
+  updateAdminOrder,
 } from '../controllers/admin.controller';
 
 const router = Router();
@@ -105,6 +106,7 @@ router.put('/admin/products/:id', authenticateToken, requireAdmin, updateAdminPr
 router.delete('/admin/products/:id', authenticateToken, requireAdmin, deleteAdminProduct);
 router.get('/admin/orders', authenticateToken, requireAdmin, getAdminOrders);
 router.get('/admin/orders/:id', authenticateToken, requireAdmin, getAdminOrderById);
+router.put('/admin/orders/:id', authenticateToken, requireAdmin, updateAdminOrder);
 router.patch('/admin/orders/:id/status', authenticateToken, requireAdmin, updateAdminOrderStatus);
 
 export default router;

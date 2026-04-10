@@ -81,13 +81,21 @@ function ProductDetailsForm({
 
             <div>
               <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Category</label>
-              <input
-                type="text"
+              <select
                 required
                 className="input-field"
                 value={formData.category}
                 onChange={e => setFormData({ ...formData, category: e.target.value })}
-              />
+                style={{ appearance: 'none', backgroundColor: 'var(--bg-base)' }}
+              >
+                <option value="" disabled>Select Category</option>
+                <option value="cookware">Cookware</option>
+                <option value="bakeware">Bakeware</option>
+                <option value="furniture">Furniture</option>
+                <option value="kitchen tools">Kitchen Tools</option>
+                <option value="dining">Dining</option>
+                <option value="decor">Decor</option>
+              </select>
             </div>
 
             <div style={{ display: 'flex', gap: '16px' }}>

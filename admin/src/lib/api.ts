@@ -79,6 +79,12 @@ export const adminApi = {
   getOrder(id: string) {
     return request(`/admin/orders/${id}`);
   },
+  updateOrder(id: string, payload: Partial<any>) {
+    return request(`/admin/orders/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+  },
   updateOrderStatus(id: string, status: string) {
     return request(`/admin/orders/${id}/status`, {
       method: 'PATCH',

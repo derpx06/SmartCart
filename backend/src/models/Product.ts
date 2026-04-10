@@ -26,7 +26,8 @@ const productSchema = new Schema(
     category: {
       type: String,
       required: true,
-      index: true
+      index: true,
+      enum: ['cookware', 'bakeware', 'furniture', 'kitchen tools', 'dining', 'decor']
     },
 
     subCategory: {
