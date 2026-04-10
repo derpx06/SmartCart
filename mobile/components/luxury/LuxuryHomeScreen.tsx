@@ -35,6 +35,120 @@ const promoMessages = [
 ];
 
 const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'];
+type HeroDisplaySlide = {
+  id: string;
+  title: string;
+  subtitle: string;
+  ctaLabel: string;
+  image: string;
+};
+
+const FILTER_HERO_SLIDES: Record<string, HeroDisplaySlide[]> = {
+  'All Product': [
+    {
+      id: 'all-1',
+      title: "Find Furniture You'll Love.",
+      subtitle: 'Delivered to your door with curated picks for every room.',
+      ctaLabel: 'Shop featured picks',
+      image:
+        'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'all-2',
+      title: 'Timeless Pieces For Every Space.',
+      subtitle: 'Elevated essentials made for hosting, lounging, and daily living.',
+      ctaLabel: 'Browse home edit',
+      image:
+        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'all-3',
+      title: 'Designed To Feel Like Home.',
+      subtitle: 'Warm textures and refined finishes to complete your signature style.',
+      ctaLabel: 'Explore new arrivals',
+      image:
+        'https://images.unsplash.com/photo-1493666438817-866a91353ca9?auto=format&fit=crop&w=1400&q=80',
+    },
+  ],
+  'Living Room': [
+    {
+      id: 'living-1',
+      title: 'Curated Comfort For Living Rooms.',
+      subtitle: 'Layered seating, soft lighting, and statement accents that feel effortless.',
+      ctaLabel: 'Shop living room',
+      image:
+        'https://images.unsplash.com/photo-1505691938895-1758d7feb511?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'living-2',
+      title: 'Host In Style, Every Evening.',
+      subtitle: 'Sophisticated furniture for conversations, coffee, and calm weekends.',
+      ctaLabel: 'View lounge picks',
+      image:
+        'https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'living-3',
+      title: 'Statement Sofas. Soft Details.',
+      subtitle: 'Bring depth and character to your main space with premium textures.',
+      ctaLabel: 'Refresh your space',
+      image:
+        'https://images.unsplash.com/photo-1616593969747-4797dc75033e?auto=format&fit=crop&w=1400&q=80',
+    },
+  ],
+  Bedroom: [
+    {
+      id: 'bedroom-1',
+      title: 'Bedroom Calm, Perfected.',
+      subtitle: 'Luxury linens, natural woods, and soft silhouettes for restful nights.',
+      ctaLabel: 'Shop bedroom',
+      image:
+        'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'bedroom-2',
+      title: 'Wake Up In A Better Space.',
+      subtitle: 'Thoughtful essentials that make mornings lighter and evenings slower.',
+      ctaLabel: 'Discover sleep edit',
+      image:
+        'https://images.unsplash.com/photo-1554995207-c18c203602cb?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'bedroom-3',
+      title: 'Soft Layers, Strong Character.',
+      subtitle: 'From bedding to decor, build a room that feels personal and serene.',
+      ctaLabel: 'See bedroom trends',
+      image:
+        'https://images.unsplash.com/photo-1616594039964-3ad06f1b8fd1?auto=format&fit=crop&w=1400&q=80',
+    },
+  ],
+  Kitchen: [
+    {
+      id: 'kitchen-1',
+      title: 'Cook Beautifully, Every Day.',
+      subtitle: 'Pro-grade cookware and tools crafted for your everyday rituals.',
+      ctaLabel: 'Shop kitchen',
+      image:
+        'https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'kitchen-2',
+      title: 'Make Every Meal Feel Special.',
+      subtitle: 'Performance essentials designed for prep, serve, and savor.',
+      ctaLabel: 'Explore cookware',
+      image:
+        'https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&w=1400&q=80',
+    },
+    {
+      id: 'kitchen-3',
+      title: 'Where Craft Meets Everyday Use.',
+      subtitle: 'Elevate your countertop with timeless forms and lasting materials.',
+      ctaLabel: 'Discover kitchen edit',
+      image:
+        'https://images.unsplash.com/photo-1528715471579-d1bcf0ba5e83?auto=format&fit=crop&w=1400&q=80',
+    },
+  ],
+};
 
 const HOME_MONO = {
   white: '#FFFFFF',
@@ -50,7 +164,7 @@ const HOME_COLORS = {
   mutedText: 'rgba(28, 27, 31, 0.68)',
   line: 'rgba(28, 27, 31, 0.14)',
   overlayTop: 'rgba(28, 27, 31, 0.16)',
-  overlayBottom: 'transparent',
+  overlayBottom: 'rgba(28, 27, 31, 0.58)',
   panelBg: 'transparent',
   panelBorder: 'transparent',
   chipBg: 'rgba(255, 255, 255, 0.9)',
@@ -107,10 +221,12 @@ export function LuxuryHomeScreen() {
   const fetchWishlist = useWishlistStore((state) => state.fetchWishlist);
   const background = HOME_COLORS.background;
   const [activeFilter, setActiveFilter] = useState<string | null>(quickFilters[0] ?? null);
+  const [activeHeroSlideIndex, setActiveHeroSlideIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasUnreadNotifications] = useState(true);
   const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
   const filterContentAnim = useRef(new Animated.Value(1)).current;
+  const heroFadeAnim = useRef(new Animated.Value(1)).current;
   const filterUnderlineX = useRef(new Animated.Value(0)).current;
   const filterUnderlineWidth = useRef(new Animated.Value(0)).current;
   const [filterLayouts, setFilterLayouts] = useState<Record<string, { x: number; width: number }>>({});
@@ -205,7 +321,35 @@ export function LuxuryHomeScreen() {
     ]).start();
   }, [activeFilter, filterLayouts, filterUnderlineWidth, filterUnderlineX]);
 
-  const heroImage = homeData.heroSlides[0]?.image;
+  const activeHeroSlides = FILTER_HERO_SLIDES[activeFilter ?? 'All Product'] ?? FILTER_HERO_SLIDES['All Product'];
+  const activeHeroSlide = activeHeroSlides[activeHeroSlideIndex] ?? activeHeroSlides[0];
+
+  useEffect(() => {
+    setActiveHeroSlideIndex(0);
+    heroFadeAnim.setValue(1);
+  }, [activeFilter, heroFadeAnim]);
+
+  useEffect(() => {
+    if (activeHeroSlides.length <= 1) return;
+    const interval = setInterval(() => {
+      Animated.timing(heroFadeAnim, {
+        toValue: 0.2,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => {
+        setActiveHeroSlideIndex((prev) => (prev + 1) % activeHeroSlides.length);
+        Animated.timing(heroFadeAnim, {
+          toValue: 1,
+          duration: 260,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }).start();
+      });
+    }, 4800);
+
+    return () => clearInterval(interval);
+  }, [activeHeroSlides, heroFadeAnim]);
 
   return (
     <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
@@ -319,34 +463,50 @@ export function LuxuryHomeScreen() {
 
                 <View
                   style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-                  <Image
-                    source={{
-                      uri:
-                        heroImage ||
-                        'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
-                    }}
-                    style={styles.heroImage}
-                    contentFit="cover"
-                    transition={0}
-                  />
-                  <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
+                  <Animated.View style={[styles.heroSlideLayer, { opacity: heroFadeAnim }]}>
+                    <Image
+                      source={{
+                        uri:
+                          activeHeroSlide?.image ||
+                          'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
+                      }}
+                      style={styles.heroImage}
+                      contentFit="cover"
+                      transition={0}
+                    />
+                    <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
+                    <View style={[styles.heroShadeBottom, { backgroundColor: HOME_COLORS.overlayBottom }]} />
 
-                  <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
-                    <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
-                    <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
-                  </View>
-
-                  <View
-                    style={[
-                      styles.heroCopyWrap,
-                      { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
-                    ]}>
-                    <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
-                    <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
-                    <View style={styles.heroCtaRow}>
-                      <Text style={styles.heroCtaText}>Shop featured picks</Text>
-                      <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                    <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
+                      <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
+                      <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
                     </View>
+
+                    <View
+                      style={[
+                        styles.heroCopyWrap,
+                        { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
+                      ]}>
+                      <Text style={styles.heroTitle}>{activeHeroSlide?.title ?? "Find Furniture You'll Love."}</Text>
+                      <Text style={styles.heroSubTitle}>
+                        {activeHeroSlide?.subtitle ?? 'Delivered to your door with curated picks for every room.'}
+                      </Text>
+                      <View style={styles.heroCtaRow}>
+                        <Text style={styles.heroCtaText}>{activeHeroSlide?.ctaLabel ?? 'Shop featured picks'}</Text>
+                        <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                      </View>
+                    </View>
+                  </Animated.View>
+                  <View style={styles.heroPaginationRow}>
+                    {activeHeroSlides.map((slide, index) => (
+                      <View
+                        key={slide.id}
+                        style={[
+                          styles.heroPaginationDot,
+                          index === activeHeroSlideIndex && styles.heroPaginationDotActive,
+                        ]}
+                      />
+                    ))}
                   </View>
                 </View>
 
@@ -623,6 +783,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     ...luxuryShadow,
   },
+  heroSlideLayer: {
+    flex: 1,
+  },
   heroImage: {
     width: '100%',
     height: '100%',
@@ -630,11 +793,11 @@ const styles = StyleSheet.create({
   heroShadeTop: {
     ...StyleSheet.absoluteFillObject,
     top: 0,
-    bottom: '46%',
+    bottom: '42%',
   },
   heroShadeBottom: {
     ...StyleSheet.absoluteFillObject,
-    top: '34%',
+    top: '38%',
   },
   heroBadge: {
     position: 'absolute',
@@ -670,6 +833,9 @@ const styles = StyleSheet.create({
     fontSize: 38,
     lineHeight: 42,
     fontWeight: '700',
+    textShadowColor: 'rgba(0, 0, 0, 0.55)',
+    textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 6,
   },
   heroSubTitle: {
     color: 'rgba(255, 255, 255, 0.9)',
@@ -677,6 +843,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 19,
     maxWidth: '94%',
+    textShadowColor: 'rgba(0, 0, 0, 0.5)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
   heroCtaRow: {
     flexDirection: 'row',
@@ -694,6 +863,25 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.7,
     fontWeight: '700',
+  },
+  heroPaginationRow: {
+    position: 'absolute',
+    right: spacing.md,
+    bottom: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  heroPaginationDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255, 255, 255, 0.45)',
+  },
+  heroPaginationDotActive: {
+    width: 16,
+    borderRadius: 4,
+    backgroundColor: '#FFFFFF',
   },
   searchWrap: {
     marginTop: spacing.md,
