@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -25,10 +26,12 @@ function initials(name: string) {
 }
 
 export default function CartScreen() {
-  const { state, loading, error, refresh } = useSmartCartState();
+  const { state, loading, error } = useSmartCartState();
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
   const addToCart = useSmartCartStore((store) => store.addToCart);
-  const checkout = useSmartCartStore((store) => store.checkout);
+  const scrollRef = useRef<ScrollView>(null);
+  const [billSectionY, setBillSectionY] = useState(0);
+  const insets = useSafeAreaInsets();
   const luxuryPalette = useLuxuryPalette();
   const background = useThemeColor({}, 'background');
   const card = useThemeColor({}, 'card');
@@ -47,16 +50,6 @@ export default function CartScreen() {
     }
   };
 
-  const handleCheckout = async () => {
-    try {
-      await checkout();
-      await refresh();
-      Alert.alert('Order placed', 'Your order has been submitted successfully.');
-    } catch (err: any) {
-      Alert.alert('Checkout failed', err.message || 'Please try again.');
-    }
-  };
-
   if (loading) {
     return (
       <SafeAreaView style={[styles.safeArea, { backgroundColor: background, justifyContent: 'center', alignItems: 'center' }]}>
@@ -69,10 +62,22 @@ export default function CartScreen() {
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
+  const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
+
+  const handleJumpToBill = () => {
+    scrollRef.current?.scrollTo({
+      y: Math.max(billSectionY - spacing.md, 0),
+      animated: true,
+    });
+  };
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} bounces>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + 92 }]}
+        showsVerticalScrollIndicator={false}
+        bounces>
         <View pointerEvents="none" style={styles.atmosphereLayer}>
           <View style={[styles.orbOne, { backgroundColor: luxuryPalette.orbOne }]} />
           <View style={[styles.orbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
@@ -103,27 +108,6 @@ export default function CartScreen() {
             </ThemedText>
           </View>
         ) : null}
-
-        {state?.semantic && (
-          <View style={[styles.semanticAlert, { backgroundColor: luxuryPalette.gold + '15', borderColor: luxuryPalette.gold }]}>
-            <View style={styles.semanticHeader}>
-              <Ionicons name="sparkles" size={16} color={luxuryPalette.gold} />
-              <ThemedText style={[styles.semanticKicker, { color: luxuryPalette.gold }]}>
-                {state.semantic.primary_intent} intelligence
-              </ThemedText>
-            </View>
-            <ThemedText style={[styles.semanticSummary, { color: text }]}>
-              {state.semantic.summary}
-            </ThemedText>
-            <View style={styles.needsRow}>
-              {state.semantic.needs.slice(0, 3).map((need, idx) => (
-                <View key={idx} style={[styles.needTag, { backgroundColor: luxuryPalette.beige }]}>
-                  <ThemedText style={[styles.needText, { color: text }]}>+{need}</ThemedText>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
 
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
@@ -211,7 +195,9 @@ export default function CartScreen() {
           />
         )}
 
-        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+        <View
+          onLayout={(event) => setBillSectionY(event.nativeEvent.layout.y)}
+          style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
           <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
           <ThemedText style={[styles.summaryTitle, { color: text }]}>Payment overview</ThemedText>
 
@@ -257,17 +243,18 @@ export default function CartScreen() {
       <View
         style={[
           styles.checkoutWrap,
+          { bottom: tabBarClearance },
           { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+          luxuryShadow,
         ]}>
-        <View style={styles.checkoutMeta}>
-          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Secure payment</ThemedText>
+        <View style={styles.checkoutMetaInline}>
+          <ThemedText style={[styles.checkoutCaption, { color: muted }]}>Total</ThemedText>
           <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
         </View>
-        <Pressable onPress={handleCheckout} style={[styles.checkoutButton, { backgroundColor: text }, luxuryShadow]}>
-          <ThemedText lightColor={background} darkColor={background} style={styles.checkoutText}>
-            Proceed to payment
-          </ThemedText>
-          <Ionicons name="arrow-forward" size={18} color={background} />
+
+        <Pressable onPress={handleJumpToBill} style={[styles.billButtonInline, { borderColor: luxuryPalette.line }]}>
+          <Ionicons name="receipt-outline" size={16} color={text} />
+          <ThemedText style={[styles.billText, { color: text }]}>Go to Bill</ThemedText>
         </Pressable>
       </View>
     </SafeAreaView>
@@ -533,83 +520,46 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    bottom: 14,
     borderWidth: 1,
     borderRadius: radius.xl,
-    padding: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'space-between',
+    gap: 10,
   },
-  checkoutMeta: {
-    flex: 1,
-    gap: 2,
+  checkoutMetaInline: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
   },
   checkoutCaption: {
     fontFamily: Fonts.sans,
-    fontSize: 11,
-    letterSpacing: 1,
+    fontSize: 12,
     textTransform: 'uppercase',
+    letterSpacing: 0.8,
   },
   checkoutAmount: {
     fontFamily: Fonts.serif,
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
   },
-  checkoutButton: {
+  billButtonInline: {
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.lg,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    gap: 8,
-  },
-  checkoutText: {
-    fontFamily: Fonts.sans,
-    fontSize: 13,
-    fontWeight: '700',
-    letterSpacing: 0.7,
-    textTransform: 'uppercase',
-  },
-  semanticAlert: {
-    padding: spacing.md,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    gap: 8,
-    marginBottom: spacing.sm,
-  },
-  semanticHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: 6,
   },
-  semanticKicker: {
+  billText: {
     fontFamily: Fonts.sans,
-    fontSize: 11,
-    textTransform: 'uppercase',
-    letterSpacing: 1.2,
+    fontSize: 12,
     fontWeight: '700',
-  },
-  semanticSummary: {
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  needsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 4,
-  },
-  needTag: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  needText: {
-    fontFamily: Fonts.sans,
-    fontSize: 11,
-    fontWeight: '600',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
   },
 });

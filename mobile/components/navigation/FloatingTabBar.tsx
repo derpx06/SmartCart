@@ -25,15 +25,23 @@ const TAB_META: Record<TabRouteName, TabMeta> = {
   chat: { label: 'AI', activeIcon: 'sparkles', inactiveIcon: 'sparkles-outline' },
 };
 
+export const FLOATING_TAB_BAR_HEIGHT = 76;
+const FLOATING_TAB_BAR_MIN_BOTTOM_INSET = 8;
+const FLOATING_TAB_BAR_GAP = 10;
+
+export function getFloatingTabBarBottomOffset(insetBottom: number) {
+  return Math.max(insetBottom, FLOATING_TAB_BAR_MIN_BOTTOM_INSET) + FLOATING_TAB_BAR_GAP;
+}
+
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const bottomOffset = Math.max(insets.bottom, 8) + 10;
+  const bottomOffset = getFloatingTabBarBottomOffset(insets.bottom);
   const card = useThemeColor({}, 'card');
   const border = useThemeColor({}, 'border');
   const text = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
   const styles = useMemo(
-    () => createFloatingTabBarStyles(bottomOffset, { card, border, text, mutedText }),
+    () => createFloatingTabBarStyles(bottomOffset, { card, border, text, mutedText }, FLOATING_TAB_BAR_HEIGHT),
     [bottomOffset, card, border, text, mutedText]
   );
 
