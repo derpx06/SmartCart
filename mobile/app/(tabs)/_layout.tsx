@@ -1,9 +1,17 @@
-import { Tabs } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
+import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
+  const { isAuthenticated, isHydrated } = useAuth();
+
+  if (!isHydrated) return null;
+  if (!isAuthenticated) {
+    return <Redirect href="/(auth)/sign-in" />;
+  }
+
   return (
     <Tabs
       screenOptions={{
@@ -40,6 +48,14 @@ export default function TabLayout() {
       />
       <Tabs.Screen
         name="explore"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
+        name="notifications"
         options={{ href: null }}
       />
     </Tabs>
