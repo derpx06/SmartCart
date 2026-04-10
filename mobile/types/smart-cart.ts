@@ -1,5 +1,6 @@
 export interface SmartCartItem {
   productId: string;
+  slug?: string;
   name: string;
   category: string;
   price: number;

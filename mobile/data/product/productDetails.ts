@@ -26,6 +26,9 @@ export type ProductDetail = {
   rating: number;
   reviewCount: number;
   badge: string;
+  /** From API; when false, item is out of stock */
+  inStock?: boolean;
+  stockQuantity?: number;
   shippingLine: string;
   shippingEta: string;
   description: string;

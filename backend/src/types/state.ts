@@ -2,6 +2,7 @@ export interface SmartCartState {
     cart: {
         items: {
             productId: string;
+            slug: string;
             name: string;
             category: string;
             price: number;

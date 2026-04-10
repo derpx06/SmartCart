@@ -45,10 +45,24 @@ function productSummary(req: Request, product: any) {
   };
 }
 
+function productAvailableForSale(product: {
+  stock?: { status?: string; quantity?: number };
+}): boolean {
+  if (product?.stock?.status === 'OUT_OF_STOCK') {
+    return false;
+  }
+  const q = product?.stock?.quantity;
+  if (q === undefined || q === null) {
+    return true;
+  }
+  return Number(q) > 0;
+}
+
 function buildFeatures(product: any): string[] {
+  const ok = productAvailableForSale(product);
   return [
     product.attributes?.material ? `Crafted in ${titleCase(product.attributes.material)}` : '',
-    'Ready to ship',
+    ok ? 'Ready to ship' : 'Currently unavailable',
     product.category ? `${titleCase(product.category)} collection favorite` : '',
   ].filter(Boolean);
 }
@@ -99,6 +113,9 @@ export async function getProductDetail(req: Request, slug: string) {
     .limit(3)
     .lean();
 
+  const inStock = productAvailableForSale(product);
+  const stockQty = Number(product.stock?.quantity ?? 0);
+
   return {
     slug: product.slug,
     id: product._id.toString(),
@@ -108,9 +125,13 @@ export async function getProductDetail(req: Request, slug: string) {
     originalPrice: product.price?.original ? Number(product.price.original) : undefined,
     rating: Number(product.ratings?.average ?? 4.6),
     reviewCount: Number(product.ratings?.count ?? 24),
-    badge: 'In Stock',
-    shippingLine: 'Free Premium Shipping',
-    shippingEta: 'Estimated delivery: 3-5 business days',
+    badge: inStock ? (stockQty > 0 ? `In stock · ${stockQty} left` : 'In stock') : 'Out of stock',
+    inStock,
+    stockQuantity: stockQty,
+    shippingLine: inStock ? 'Free Premium Shipping' : 'Unavailable — check back soon',
+    shippingEta: inStock
+      ? 'Estimated delivery: 3-5 business days'
+      : 'This item cannot be shipped until restocked',
     description: product.description || 'Curated craftsmanship designed for elegant daily use.',
     features: buildFeatures(product),
     colors: [
