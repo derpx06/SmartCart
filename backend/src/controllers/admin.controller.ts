@@ -19,6 +19,7 @@ function toAdminProduct(product: any) {
     category: product.category,
     description: product.description || '',
     images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
+    tags: Array.isArray(product.tags) ? product.tags : [],
   };
 }
 
@@ -102,7 +103,7 @@ export const createAdminProduct = async (req: Request, res: Response): Promise<v
 
 export const updateAdminProduct = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, category, description, images, inventory, price } = req.body ?? {};
+    const { name, category, description, images, inventory, price, tags } = req.body ?? {};
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       {
@@ -110,6 +111,7 @@ export const updateAdminProduct = async (req: Request, res: Response): Promise<v
         ...(category ? { category, subCategory: category } : {}),
         ...(description !== undefined ? { description } : {}),
         ...(images !== undefined ? { images } : {}),
+        ...(tags !== undefined ? { tags } : {}),
         ...(inventory !== undefined
           ? {
               stock: {

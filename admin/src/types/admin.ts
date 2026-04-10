@@ -6,6 +6,7 @@ export interface Product {
   category: string;
   description: string;
   images: string[];
+  tags: string[];
 }
 
 export interface OrderItem {
