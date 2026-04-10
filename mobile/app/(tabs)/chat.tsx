@@ -56,9 +56,11 @@ const CHAT_COLORS = {
   screenBg: CHAT_MONO.white,
   streamBg: CHAT_MONO.soft,
   streamBorder: 'rgba(28, 27, 31, 0.12)',
+  streamInnerBg: 'rgba(255, 255, 255, 0.36)',
   dayChipBg: CHAT_MONO.white,
   dayChipBorder: 'rgba(28, 27, 31, 0.14)',
   dayChipText: 'rgba(28, 27, 31, 0.72)',
+  dayChipIcon: 'rgba(28, 27, 31, 0.58)',
   assistantAvatarBg: CHAT_MONO.ink,
   assistantAvatarIcon: CHAT_MONO.white,
   assistantBubbleBg: CHAT_MONO.white,
@@ -80,6 +82,11 @@ const CHAT_COLORS = {
   inputBorder: 'rgba(28, 27, 31, 0.16)',
   inputText: CHAT_MONO.ink,
   inputPlaceholder: 'rgba(28, 27, 31, 0.52)',
+  inputFocusedBorder: 'rgba(28, 27, 31, 0.35)',
+  headerBadgeBg: CHAT_MONO.ink,
+  headerBadgeText: CHAT_MONO.white,
+  statusDot: '#2B8A57',
+  statusText: 'rgba(28, 27, 31, 0.74)',
   sendEnabledBg: CHAT_MONO.ink,
   sendEnabledIcon: CHAT_MONO.white,
   sendDisabledBg: CHAT_MONO.soft,
@@ -259,6 +266,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
   const abortRef = useRef<null | (() => void)>(null);
@@ -426,7 +434,12 @@ export default function ChatScreen() {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
-            <ThemedText style={styles.headerTitle}>AI Chat</ThemedText>
+            <View style={styles.headerTitleWrap}>
+              <View style={[styles.headerBadge, { backgroundColor: CHAT_COLORS.headerBadgeBg }]}>
+                <ThemedText style={[styles.headerBadgeText, { color: CHAT_COLORS.headerBadgeText }]}>AI CHAT</ThemedText>
+              </View>
+              <ThemedText style={styles.headerTitle}>Concierge</ThemedText>
+            </View>
             <Pressable
               onPress={startNewSession}
               style={[styles.newSessionBtn, { backgroundColor: CHAT_COLORS.assistantAvatarBg }]}
@@ -439,10 +452,16 @@ export default function ChatScreen() {
           <ThemedText style={styles.headerSubtitle}>
             Ask for recommendations, comparisons, and cart help
           </ThemedText>
+          <View style={styles.headerStatusRow}>
+            <View style={[styles.headerStatusDot, { backgroundColor: CHAT_COLORS.statusDot }]} />
+            <ThemedText style={[styles.headerStatusText, { color: CHAT_COLORS.statusText }]}>Online now</ThemedText>
+          </View>
         </View>
 
         <View style={[styles.streamWrap, { backgroundColor: CHAT_COLORS.streamBg, borderColor: CHAT_COLORS.streamBorder }]}>
+          <View style={[styles.streamInnerOverlay, { backgroundColor: CHAT_COLORS.streamInnerBg }]} />
           <View style={[styles.dayChip, { backgroundColor: CHAT_COLORS.dayChipBg, borderColor: CHAT_COLORS.dayChipBorder }]}>
+            <Ionicons name="time-outline" size={12} color={CHAT_COLORS.dayChipIcon} />
             <ThemedText style={[styles.dayChipText, { color: CHAT_COLORS.dayChipText }]}>Today</ThemedText>
           </View>
 
@@ -485,7 +504,7 @@ export default function ChatScreen() {
             styles.inputBar,
             {
               backgroundColor: CHAT_COLORS.inputBg,
-              borderColor: CHAT_COLORS.inputBorder,
+                borderColor: isInputFocused ? CHAT_COLORS.inputFocusedBorder : CHAT_COLORS.inputBorder,
               marginBottom: tabBarClearance,
             },
             luxuryShadow,
@@ -496,6 +515,8 @@ export default function ChatScreen() {
             placeholderTextColor={CHAT_COLORS.inputPlaceholder}
             value={input}
             onChangeText={setInput}
+            onFocus={() => setIsInputFocused(true)}
+            onBlur={() => setIsInputFocused(false)}
             onSubmitEditing={() => sendMessage(input)}
             returnKeyType="send"
             multiline={false}
@@ -532,19 +553,53 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 10,
   },
+  headerTitleWrap: {
+    gap: 6,
+    flexShrink: 1,
+  },
+  headerBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: radius.pill,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  headerBadgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
   headerTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 26,
-    lineHeight: 30,
+    fontSize: 30,
+    lineHeight: 33,
     fontWeight: '700',
     color: CHAT_COLORS.ink,
     flexShrink: 1,
   },
   headerSubtitle: {
-    marginTop: 4,
+    marginTop: 8,
     fontFamily: Fonts.sans,
-    fontSize: 13,
+    fontSize: 14,
+    lineHeight: 20,
     color: 'rgba(28, 27, 31, 0.68)',
+  },
+  headerStatusRow: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+  },
+  headerStatusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 999,
+  },
+  headerStatusText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
   },
   newSessionBtn: {
     flexDirection: 'row',
@@ -575,6 +630,9 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     ...luxuryShadow,
   },
+  streamInnerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+  },
   dayChip: {
     alignSelf: 'center',
     marginTop: spacing.sm,
@@ -582,6 +640,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: 10,
     paddingVertical: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   dayChipText: {
     fontFamily: Fonts.sans,
@@ -594,6 +655,7 @@ const styles = StyleSheet.create({
   },
   messageContent: {
     paddingHorizontal: spacing.md,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.md,
     gap: spacing.sm,
   },
@@ -636,6 +698,7 @@ const styles = StyleSheet.create({
   },
   bubbleAssistant: {
     borderBottomLeftRadius: 6,
+    ...luxuryShadow,
   },
   bubbleText: {
     fontFamily: Fonts.sans,

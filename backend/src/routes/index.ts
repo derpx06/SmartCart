@@ -37,7 +37,7 @@ import {
 } from '../controllers/buyLater.controller';
 import { healthCheck } from '../controllers/health.controller';
 import { uploadImage } from '../controllers/upload.controller';
-import { authenticateToken } from '../middleware/authenticateToken';
+import { authenticateOptional, authenticateToken } from '../middleware/authenticateToken';
 import { requireAdmin } from '../middleware/requireAdmin';
 import { upload } from '../config/cloudinary';
 import {
@@ -73,9 +73,9 @@ router.get('/products/slug/:slug', getProductBySlug);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
 
-router.post('/chat/message', authenticateToken, sendChatMessage);
-router.post('/chat/stream', authenticateToken, streamChat);
-router.get('/chat/history/:sessionId', authenticateToken, chatHistory);
+router.post('/chat/message', authenticateOptional, sendChatMessage);
+router.post('/chat/stream', authenticateOptional, streamChat);
+router.get('/chat/history/:sessionId', authenticateOptional, chatHistory);
 
 router.get('/cart', authenticateToken, getCart);
 router.post('/cart/add', authenticateToken, addToCart);
