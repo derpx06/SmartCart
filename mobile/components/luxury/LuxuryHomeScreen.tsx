@@ -227,13 +227,14 @@ export function LuxuryHomeScreen() {
           }>
           <View style={[styles.stickyHeaderContainer, { backgroundColor: background }]}>
             <View style={styles.homeHeaderRow}>
-              <View>
+              <View style={styles.homeHeaderCopy}>
                 <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
                 <ThemedText type="title" style={styles.homeHeaderTitle}>
                   Williams Sonoma
                 </ThemedText>
               </View>
-              <View style={styles.homeHeaderActions}>
+              <View style={styles.homeHeaderActionsWrap}>
+                <View style={styles.homeHeaderActions}>
                 <Pressable
                   style={styles.headerIconButton}
                   accessibilityRole="button"
@@ -244,11 +245,24 @@ export function LuxuryHomeScreen() {
                 <Pressable
                   style={styles.headerIconButton}
                   accessibilityRole="button"
+                  accessibilityLabel="Wishlist"
+                  onPress={() => router.push('/(tabs)/wishlist')}>
+                  <Ionicons name="heart-outline" size={18} color={HOME_COLORS.text} />
+                  {wishlistItemsCount > 0 ? (
+                    <View style={styles.wishlistCountBadge}>
+                      <Text style={styles.wishlistCountText}>{wishlistItemsCount > 99 ? '99+' : wishlistItemsCount}</Text>
+                    </View>
+                  ) : null}
+                </Pressable>
+                <Pressable
+                  style={styles.headerIconButton}
+                  accessibilityRole="button"
                   accessibilityLabel="Notifications"
                   onPress={() => router.push('/(tabs)/notifications')}>
                   <Ionicons name="notifications-outline" size={18} color={HOME_COLORS.text} />
                   {hasUnreadNotifications ? <View style={styles.notificationDot} /> : null}
                 </Pressable>
+                </View>
               </View>
             </View>
           </View>
@@ -475,54 +489,65 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginHorizontal: spacing.lg,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  homeHeaderCopy: {
+    flex: 1,
+    paddingTop: 2,
   },
   homeHeaderEyebrow: {
     fontFamily: Fonts.sans,
-    fontSize: 13,
-    lineHeight: 18,
+    fontSize: 12,
+    lineHeight: 16,
     color: HOME_COLORS.mutedText,
   },
   homeHeaderTitle: {
     fontFamily: Fonts.serif,
-    fontSize: 26,
-    lineHeight: 30,
+    marginTop: 1,
+    fontSize: 20,
+    lineHeight: 24,
     color: HOME_COLORS.text,
     fontWeight: '700',
+  },
+  homeHeaderActionsWrap: {
+    borderWidth: 1,
+    borderColor: HOME_COLORS.line,
+    backgroundColor: HOME_COLORS.elevated,
+    borderRadius: radius.pill,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
   },
   homeHeaderActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: 4,
   },
   headerIconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    borderWidth: 1,
-    borderColor: HOME_COLORS.line,
-    backgroundColor: HOME_COLORS.elevated,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     alignItems: 'center',
     justifyContent: 'center',
   },
   notificationDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    top: 7,
+    right: 7,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
     backgroundColor: '#FF5A5F',
   },
   wishlistCountBadge: {
     position: 'absolute',
-    top: 8,
-    right: 7,
-    minWidth: 15,
-    height: 15,
-    borderRadius: 8,
-    paddingHorizontal: 3,
+    top: 5,
+    right: 5,
+    minWidth: 14,
+    height: 14,
+    borderRadius: 7,
+    paddingHorizontal: 2,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#D14862',
@@ -530,9 +555,9 @@ const styles = StyleSheet.create({
   wishlistCountText: {
     color: '#FFFFFF',
     fontFamily: Fonts.sans,
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: '700',
-    lineHeight: 11,
+    lineHeight: 10,
   },
   promoRow: {
     marginHorizontal: spacing.lg,
