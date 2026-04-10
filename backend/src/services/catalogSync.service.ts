@@ -96,7 +96,7 @@ export async function syncSingleProductFromSkuLikeInput(input: {
   name: string;
   category: string;
   description?: string;
-  imageUrl?: string;
+  images?: string[];
   inventory: number;
   price: number;
 }): Promise<any> {
@@ -117,7 +117,7 @@ export async function syncSingleProductFromSkuLikeInput(input: {
       capacity: '',
       isDishwasherSafe: false,
     },
-    images: input.imageUrl ? [input.imageUrl] : [],
+    images: input.images || [],
     stock: {
       status: 'IN_STOCK',
       quantity: Math.max(Number(input.inventory) || 0, 99),

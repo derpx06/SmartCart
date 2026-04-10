@@ -5,7 +5,7 @@ export interface Product {
   inventory: number;
   category: string;
   description: string;
-  imageUrl: string;
+  images: string[];
 }
 
 export interface OrderItem {

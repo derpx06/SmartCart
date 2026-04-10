@@ -12,11 +12,10 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -34,6 +33,46 @@ const SUGGESTIONS = [
   'Build a starter kitchen kit',
 ];
 
+const CHAT_MONO = {
+  white: '#FFFFFF',
+  soft: '#E9E9E7',
+  ink: '#1C1B1F',
+};
+
+const CHAT_COLORS = {
+  screenBg: CHAT_MONO.white,
+  streamBg: CHAT_MONO.soft,
+  streamBorder: 'rgba(28, 27, 31, 0.12)',
+  dayChipBg: CHAT_MONO.white,
+  dayChipBorder: 'rgba(28, 27, 31, 0.14)',
+  dayChipText: 'rgba(28, 27, 31, 0.72)',
+  assistantAvatarBg: CHAT_MONO.ink,
+  assistantAvatarIcon: CHAT_MONO.white,
+  assistantBubbleBg: CHAT_MONO.white,
+  assistantBubbleBorder: 'rgba(28, 27, 31, 0.14)',
+  assistantText: CHAT_MONO.ink,
+  assistantRole: CHAT_MONO.ink,
+  assistantTime: 'rgba(28, 27, 31, 0.68)',
+  userBubbleBg: CHAT_MONO.ink,
+  userBubbleBorder: CHAT_MONO.ink,
+  userText: CHAT_MONO.white,
+  userTime: 'rgba(255, 255, 255, 0.74)',
+  orbPrimary: 'rgba(28, 27, 31, 0.06)',
+  orbSecondary: 'rgba(233, 233, 231, 0.56)',
+  suggestionBg: CHAT_MONO.white,
+  suggestionBorder: 'rgba(28, 27, 31, 0.14)',
+  suggestionIcon: CHAT_MONO.ink,
+  suggestionText: CHAT_MONO.ink,
+  inputBg: CHAT_MONO.white,
+  inputBorder: 'rgba(28, 27, 31, 0.16)',
+  inputText: CHAT_MONO.ink,
+  inputPlaceholder: 'rgba(28, 27, 31, 0.52)',
+  sendEnabledBg: CHAT_MONO.ink,
+  sendEnabledIcon: CHAT_MONO.white,
+  sendDisabledBg: CHAT_MONO.soft,
+  sendDisabledIcon: 'rgba(28, 27, 31, 0.42)',
+};
+
 function now() {
   const d = new Date();
   return `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
@@ -50,17 +89,15 @@ const INITIAL_MESSAGES: Message[] = [
 
 function MessageBubble({
   msg,
-  palette,
 }: {
   msg: Message;
-  palette: ReturnType<typeof useLuxuryPalette>;
 }) {
   const isUser = msg.role === 'user';
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
       {!isUser && (
-        <View style={[styles.avatar, { backgroundColor: palette.gold }]}>
-          <Ionicons name="sparkles" size={13} color="#FFF" />
+        <View style={[styles.avatar, { backgroundColor: CHAT_COLORS.assistantAvatarBg }]}>
+          <Ionicons name="sparkles" size={13} color={CHAT_COLORS.assistantAvatarIcon} />
         </View>
       )}
       <View
@@ -68,17 +105,17 @@ function MessageBubble({
           styles.bubble,
           isUser ? styles.bubbleUserWrap : styles.bubbleAssistantWrap,
           isUser
-            ? [styles.bubbleUser, { backgroundColor: palette.text, borderColor: palette.text }]
-            : [styles.bubbleAssistant, { backgroundColor: palette.elevated, borderColor: palette.line }],
+            ? [styles.bubbleUser, { backgroundColor: CHAT_COLORS.userBubbleBg, borderColor: CHAT_COLORS.userBubbleBorder }]
+            : [styles.bubbleAssistant, { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: CHAT_COLORS.assistantBubbleBorder }],
         ]}>
-        <ThemedText style={[styles.bubbleText, { color: isUser ? palette.background : palette.text }]}>
+        <ThemedText style={[styles.bubbleText, { color: isUser ? CHAT_COLORS.userText : CHAT_COLORS.assistantText }]}>
           {msg.text}
         </ThemedText>
         <View style={styles.bubbleMeta}>
           {!isUser && (
-            <ThemedText style={[styles.bubbleRole, { color: palette.gold }]}>Concierge</ThemedText>
+            <ThemedText style={[styles.bubbleRole, { color: CHAT_COLORS.assistantRole }]}>Concierge</ThemedText>
           )}
-          <ThemedText style={[styles.bubbleTime, { color: isUser ? palette.beige : palette.mutedText }]}>
+          <ThemedText style={[styles.bubbleTime, { color: isUser ? CHAT_COLORS.userTime : CHAT_COLORS.assistantTime }]}>
             {msg.time}
           </ThemedText>
         </View>
@@ -87,7 +124,7 @@ function MessageBubble({
   );
 }
 
-function TypingIndicator({ palette }: { palette: ReturnType<typeof useLuxuryPalette> }) {
+function TypingIndicator() {
   const dot1 = useRef(new Animated.Value(0)).current;
   const dot2 = useRef(new Animated.Value(0)).current;
   const dot3 = useRef(new Animated.Value(0)).current;
@@ -109,15 +146,15 @@ function TypingIndicator({ palette }: { palette: ReturnType<typeof useLuxuryPale
 
   return (
     <View style={styles.bubbleRow}>
-      <View style={[styles.avatar, { backgroundColor: palette.gold }]}>
-        <Ionicons name="sparkles" size={13} color="#FFF" />
+      <View style={[styles.avatar, { backgroundColor: CHAT_COLORS.assistantAvatarBg }]}>
+        <Ionicons name="sparkles" size={13} color={CHAT_COLORS.assistantAvatarIcon} />
       </View>
       <View
         style={[
           styles.bubble,
           styles.bubbleAssistantWrap,
           styles.bubbleAssistant,
-          { backgroundColor: palette.elevated, borderColor: palette.line },
+          { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: CHAT_COLORS.assistantBubbleBorder },
         ]}>
         <View style={styles.typingRow}>
           {[dot1, dot2, dot3].map((dot, i) => (
@@ -126,7 +163,7 @@ function TypingIndicator({ palette }: { palette: ReturnType<typeof useLuxuryPale
               style={[
                 styles.typingDot,
                 {
-                  backgroundColor: palette.gold,
+                  backgroundColor: CHAT_COLORS.assistantAvatarBg,
                   transform: [{ translateY: dot }],
                 },
               ]}
@@ -139,8 +176,6 @@ function TypingIndicator({ palette }: { palette: ReturnType<typeof useLuxuryPale
 }
 
 export default function ChatScreen() {
-  const palette = useLuxuryPalette();
-  const muted = useThemeColor({}, 'mutedText');
   const insets = useSafeAreaInsets();
   const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
 
@@ -176,18 +211,18 @@ export default function ChatScreen() {
   const canSend = Boolean(input.trim());
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: CHAT_COLORS.screenBg }]} edges={['top', 'left', 'right']}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <View
           style={[
             styles.orb,
-            { backgroundColor: palette.gold + '1E', top: -52, right: -74, width: 240, height: 240 },
+            { backgroundColor: CHAT_COLORS.orbPrimary, top: -52, right: -74, width: 240, height: 240 },
           ]}
         />
         <View
           style={[
             styles.orb,
-            { backgroundColor: palette.gold + '14', top: 170, left: -84, width: 186, height: 186 },
+            { backgroundColor: CHAT_COLORS.orbSecondary, top: 170, left: -84, width: 186, height: 186 },
           ]}
         />
       </View>
@@ -196,9 +231,9 @@ export default function ChatScreen() {
         style={styles.flexOne}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
-        <View style={[styles.streamWrap, { backgroundColor: palette.surface, borderColor: palette.line }]}>
-          <View style={[styles.dayChip, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
-            <ThemedText style={[styles.dayChipText, { color: palette.mutedText }]}>Today</ThemedText>
+        <View style={[styles.streamWrap, { backgroundColor: CHAT_COLORS.streamBg, borderColor: CHAT_COLORS.streamBorder }]}>
+          <View style={[styles.dayChip, { backgroundColor: CHAT_COLORS.dayChipBg, borderColor: CHAT_COLORS.dayChipBorder }]}>
+            <ThemedText style={[styles.dayChipText, { color: CHAT_COLORS.dayChipText }]}>Today</ThemedText>
           </View>
 
           <ScrollView
@@ -208,9 +243,9 @@ export default function ChatScreen() {
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
             {messages.map((m) => (
-              <MessageBubble key={m.id} msg={m} palette={palette} />
+              <MessageBubble key={m.id} msg={m} />
             ))}
-            {isTyping && <TypingIndicator palette={palette} />}
+            {isTyping && <TypingIndicator />}
           </ScrollView>
         </View>
 
@@ -224,9 +259,9 @@ export default function ChatScreen() {
               <Pressable
                 key={s}
                 onPress={() => sendMessage(s)}
-                style={[styles.pill, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
-                <Ionicons name="sparkles-outline" size={14} color={palette.gold} />
-                <ThemedText numberOfLines={1} style={[styles.pillText, { color: palette.text }]}>
+                style={[styles.pill, { backgroundColor: CHAT_COLORS.suggestionBg, borderColor: CHAT_COLORS.suggestionBorder }]}>
+                <Ionicons name="sparkles-outline" size={14} color={CHAT_COLORS.suggestionIcon} />
+                <ThemedText numberOfLines={1} style={[styles.pillText, { color: CHAT_COLORS.suggestionText }]}>
                   {s}
                 </ThemedText>
               </Pressable>
@@ -239,16 +274,16 @@ export default function ChatScreen() {
           style={[
             styles.inputBar,
             {
-              backgroundColor: palette.elevated,
-              borderColor: palette.line,
+              backgroundColor: CHAT_COLORS.inputBg,
+              borderColor: CHAT_COLORS.inputBorder,
               marginBottom: tabBarClearance,
             },
             luxuryShadow,
           ]}>
           <TextInput
-            style={[styles.inputField, { color: palette.text }]}
+            style={[styles.inputField, { color: CHAT_COLORS.inputText }]}
             placeholder="Type a message..."
-            placeholderTextColor={muted}
+            placeholderTextColor={CHAT_COLORS.inputPlaceholder}
             value={input}
             onChangeText={setInput}
             onSubmitEditing={() => sendMessage(input)}
@@ -259,8 +294,8 @@ export default function ChatScreen() {
           <Pressable
             onPress={() => sendMessage(input)}
             disabled={!canSend}
-            style={[styles.sendBtn, { backgroundColor: canSend ? palette.text : palette.line }]}>
-            <Ionicons name="arrow-up" size={18} color={canSend ? palette.background : palette.mutedText} />
+            style={[styles.sendBtn, { backgroundColor: canSend ? CHAT_COLORS.sendEnabledBg : CHAT_COLORS.sendDisabledBg }]}>
+            <Ionicons name="arrow-up" size={18} color={canSend ? CHAT_COLORS.sendEnabledIcon : CHAT_COLORS.sendDisabledIcon} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

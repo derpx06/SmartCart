@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import React from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 
-import { radius, spacing, useLuxuryPalette, luxuryShadow } from './luxury/design';
+import { radius, spacing, luxuryShadow } from './luxury/design';
 import { ThemedText } from './themed-text';
 import { Fonts } from '@/constants/theme';
 import { RankedItem } from '@/types/smart-cart';
@@ -12,16 +12,31 @@ interface RecommendationSectionProps {
     onAdd: (productId: string) => void;
 }
 
-export function RecommendationSection({ ranked, onAdd }: RecommendationSectionProps) {
-    const palette = useLuxuryPalette();
+const REC_MONO = {
+    white: '#FFFFFF',
+    soft: '#E9E9E7',
+    ink: '#1C1B1F',
+};
 
+const REC_COLORS = {
+    cardBg: REC_MONO.white,
+    imageBg: REC_MONO.soft,
+    border: 'rgba(28, 27, 31, 0.14)',
+    text: REC_MONO.ink,
+    badgeBg: REC_MONO.ink,
+    badgeText: REC_MONO.white,
+    buttonBg: REC_MONO.ink,
+    buttonText: REC_MONO.white,
+};
+
+export function RecommendationSection({ ranked, onAdd }: RecommendationSectionProps) {
     if (!ranked || ranked.length === 0) return null;
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <ThemedText style={[styles.kicker, { color: palette.gold }]}>Suggested for you</ThemedText>
-                <ThemedText style={[styles.title, { color: palette.text }]}>Selected complementary pieces</ThemedText>
+                <ThemedText style={[styles.kicker, { color: REC_COLORS.text }]}>Suggested for you</ThemedText>
+                <ThemedText style={[styles.title, { color: REC_COLORS.text }]}>Selected complementary pieces</ThemedText>
             </View>
 
             <ScrollView
@@ -36,18 +51,18 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                         key={item.productId}
                         style={[
                             styles.card,
-                            { backgroundColor: palette.elevated, borderColor: palette.line },
+                            { backgroundColor: REC_COLORS.cardBg, borderColor: REC_COLORS.border },
                             luxuryShadow,
                         ]}
                     >
-                        <View style={[styles.imagePlaceholder, { backgroundColor: palette.beige }]}>
-                            <Ionicons name="sparkles-outline" size={32} color={palette.gold} />
+                        <View style={[styles.imagePlaceholder, { backgroundColor: REC_COLORS.imageBg }]}>
+                            <Ionicons name="sparkles-outline" size={32} color={REC_COLORS.text} />
 
                             <View style={styles.badgeContainer}>
                                 {item.reasons.slice(0, 2).map((reason, idx) => (
                                     <View
                                         key={idx}
-                                        style={[styles.reasonBadge, { backgroundColor: palette.gold }]}
+                                        style={[styles.reasonBadge, { backgroundColor: REC_COLORS.badgeBg }]}
                                     >
                                         <ThemedText style={styles.reasonText}>{reason}</ThemedText>
                                     </View>
@@ -56,22 +71,22 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                         </View>
 
                         <View style={styles.cardBody}>
-                            <ThemedText numberOfLines={1} style={[styles.productName, { color: palette.text }]}>
+                            <ThemedText numberOfLines={1} style={[styles.productName, { color: REC_COLORS.text }]}>
                                 {item.name || 'Fine Selection'}
                             </ThemedText>
 
-                            <ThemedText style={[styles.productPrice, { color: palette.gold }]}>
+                            <ThemedText style={[styles.productPrice, { color: REC_COLORS.text }]}>
                                 {item.price ? `$${item.price.toFixed(2)}` : 'Inquire for price'}
                             </ThemedText>
 
                             <Pressable
                                 onPress={() => onAdd(item.productId)}
-                                style={[styles.addButton, { backgroundColor: palette.text }]}
+                                style={[styles.addButton, { backgroundColor: REC_COLORS.buttonBg }]}
                             >
-                                <ThemedText style={{ color: palette.elevated, fontWeight: '700', fontSize: 12 }}>
+                                <ThemedText style={{ color: REC_COLORS.buttonText, fontWeight: '700', fontSize: 12 }}>
                                     Add to selection
                                 </ThemedText>
-                                <Ionicons name="add" size={16} color={palette.elevated} />
+                                <Ionicons name="add" size={16} color={REC_COLORS.buttonText} />
                             </Pressable>
                         </View>
                     </View>
@@ -132,7 +147,7 @@ const styles = StyleSheet.create({
         borderRadius: radius.pill,
     },
     reasonText: {
-        color: '#FFF',
+        color: REC_COLORS.badgeText,
         fontSize: 10,
         fontWeight: '700',
         textTransform: 'uppercase',

@@ -9,7 +9,7 @@ const emptyProductForm: Omit<Product, 'id'> = {
   inventory: 0,
   category: '',
   description: '',
-  imageUrl: '',
+  images: [],
 };
 
 function ProductDetailsForm({
@@ -32,13 +32,18 @@ function ProductDetailsForm({
     <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
       <div style={{ flex: '1 1 300px', maxWidth: '400px' }}>
         <div className="glass-card" style={{ padding: '12px', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>Image Preview</h3>
-          {formData.imageUrl ? (
-            <img
-              src={formData.imageUrl}
-              alt="Preview"
-              style={{ width: '100%', borderRadius: 'var(--radius-md)', aspectRatio: '1', objectFit: 'cover' }}
-            />
+          <h3 style={{ marginBottom: '16px', fontSize: '14px', color: 'var(--text-secondary)' }}>Image Previews</h3>
+          {formData.images && formData.images.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {formData.images.map((img, idx) => (
+                <img
+                  key={idx}
+                  src={img}
+                  alt={`Preview ${idx + 1}`}
+                  style={{ width: '100%', borderRadius: 'var(--radius-md)', aspectRatio: '1', objectFit: 'cover' }}
+                />
+              ))}
+            </div>
           ) : (
             <div
               style={{
@@ -54,7 +59,7 @@ function ProductDetailsForm({
                 color: 'var(--text-secondary)',
               }}>
               <ImageIcon size={48} opacity={0.5} />
-              <span>No image URL provided</span>
+              <span>No images provided</span>
             </div>
           )}
         </div>
@@ -120,14 +125,42 @@ function ProductDetailsForm({
             </div>
 
             <div style={{ gridColumn: '1 / -1' }}>
-              <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Image URL</label>
-              <input
-                type="text"
-                className="input-field"
-                value={formData.imageUrl}
-                onChange={e => setFormData({ ...formData, imageUrl: e.target.value })}
-                placeholder="https://images.unsplash.com/..."
-              />
+              <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Image URLs</label>
+              {(formData.images || []).map((url, idx) => (
+                <div key={idx} style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                  <input
+                    type="text"
+                    className="input-field"
+                    style={{ flex: 1 }}
+                    value={url}
+                    onChange={e => {
+                      const newImages = [...(formData.images || [])];
+                      newImages[idx] = e.target.value;
+                      setFormData({ ...formData, images: newImages });
+                    }}
+                    placeholder="https://images.unsplash.com/..."
+                  />
+                  <button 
+                    type="button" 
+                    className="btn btn-outline" 
+                    onClick={() => {
+                      const newImages = [...(formData.images || [])];
+                      newImages.splice(idx, 1);
+                      setFormData({ ...formData, images: newImages });
+                    }}
+                  >
+                    Remove
+                  </button>
+                </div>
+              ))}
+              <button 
+                type="button" 
+                className="btn btn-outline" 
+                onClick={() => setFormData({ ...formData, images: [...(formData.images || []), ''] })}
+                style={{ marginTop: '8px' }}
+              >
+                + Add Image
+              </button>
             </div>
           </div>
 
@@ -184,7 +217,7 @@ export default function ProductDetails() {
                   inventory: existingProduct.inventory,
                   category: existingProduct.category,
                   description: existingProduct.description,
-                  imageUrl: existingProduct.imageUrl,
+                  images: existingProduct.images || [],
                 }
               : emptyProductForm
           }

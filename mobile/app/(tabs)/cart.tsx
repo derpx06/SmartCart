@@ -1,17 +1,39 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
-import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSmartCartState } from '@/hooks/use-smart-cart-state';
 import { useOrdersStore } from '@/store/orders-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { RecommendationSection } from '@/components/RecommendationSection';
+
+const CART_MONO = {
+  white: '#FFFFFF',
+  soft: '#E9E9E7',
+  ink: '#1C1B1F',
+};
+
+const CART_COLORS = {
+  screenBg: CART_MONO.white,
+  cardBg: CART_MONO.white,
+  sectionSoftBg: CART_MONO.soft,
+  text: CART_MONO.ink,
+  muted: 'rgba(28, 27, 31, 0.68)',
+  border: 'rgba(28, 27, 31, 0.14)',
+  orbOne: 'rgba(28, 27, 31, 0.08)',
+  orbTwo: 'rgba(233, 233, 231, 0.72)',
+  danger: '#c52b2b',
+  checkoutBtnBg: CART_MONO.ink,
+  checkoutBtnText: CART_MONO.white,
+  checkoutBtnDisabledBg: CART_MONO.soft,
+  checkoutBtnDisabledText: 'rgba(28, 27, 31, 0.42)',
+};
 
 function money(value: number) {
   return `$${value.toFixed(2)}`;
@@ -27,6 +49,7 @@ function initials(name: string) {
 }
 
 export default function CartScreen() {
+  const router = useRouter();
   const { state, loading, error } = useSmartCartState();
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
   const addToCart = useSmartCartStore((store) => store.addToCart);
@@ -35,15 +58,14 @@ export default function CartScreen() {
   const scrollRef = useRef<ScrollView>(null);
   const [placingOrder, setPlacingOrder] = useState(false);
   const insets = useSafeAreaInsets();
-  const luxuryPalette = useLuxuryPalette();
-  const background = useThemeColor({}, 'background');
-  const card = useThemeColor({}, 'card');
-  const text = useThemeColor({}, 'text');
-  const muted = useThemeColor({}, 'mutedText');
-  const danger = useThemeColor({ light: '#c52b2b', dark: '#ff8b8b' }, 'text');
-  const accent = luxuryPalette.gold;
-  const softSurface = luxuryPalette.surface;
-  const softSurfaceAlt = luxuryPalette.beige;
+  const background = CART_COLORS.screenBg;
+  const card = CART_COLORS.cardBg;
+  const text = CART_COLORS.text;
+  const muted = CART_COLORS.muted;
+  const danger = CART_COLORS.danger;
+  const accent = CART_COLORS.text;
+  const softSurface = CART_COLORS.sectionSoftBg;
+  const softSurfaceAlt = CART_COLORS.sectionSoftBg;
 
   const handleQuantityChange = async (productId: string, quantity: number) => {
     try {
@@ -94,8 +116,8 @@ export default function CartScreen() {
         showsVerticalScrollIndicator={false}
         bounces>
         <View pointerEvents="none" style={styles.atmosphereLayer}>
-          <View style={[styles.orbOne, { backgroundColor: luxuryPalette.orbOne }]} />
-          <View style={[styles.orbTwo, { backgroundColor: luxuryPalette.orbTwo }]} />
+          <View style={[styles.orbOne, { backgroundColor: CART_COLORS.orbOne }]} />
+          <View style={[styles.orbTwo, { backgroundColor: CART_COLORS.orbTwo }]} />
         </View>
 
         <View style={styles.topRow}>
@@ -109,7 +131,7 @@ export default function CartScreen() {
           <View
             style={[
               styles.iconBadge,
-              { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+              { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
             ]}>
             <Ionicons name="bag-outline" size={18} color={text} />
           </View>
@@ -125,7 +147,7 @@ export default function CartScreen() {
         ) : null}
 
         {!items.length ? (
-          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+          <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
             <Ionicons name="bag-handle-outline" size={30} color={muted} />
             <ThemedText style={[styles.emptyTitle, { color: text }]}>Your cart is empty</ThemedText>
             <ThemedText style={[styles.emptyText, { color: muted }]}>
@@ -136,64 +158,80 @@ export default function CartScreen() {
           <View style={styles.itemsWrap}>
             {items.map((item) => {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
+              const slug = item.slug?.trim();
+              const canOpenProduct = Boolean(slug);
               return (
                 <View
                   key={item.productId}
                   style={[
                     styles.itemCard,
-                    { backgroundColor: card, borderColor: luxuryPalette.line },
+                    { backgroundColor: card, borderColor: CART_COLORS.border },
                   ]}>
-                  <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
-                    <ThemedText style={[styles.itemMonogram, { color: text }]}>
-                      {initials(item.name)}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.itemBody}>
-                    <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
-                      {item.category}
-                    </ThemedText>
-
-                    <View style={styles.itemTopLine}>
-                      <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
-                        {item.name}
-                      </ThemedText>
-                      <ThemedText style={[styles.itemPrice, { color: text }]}>
-                        {money(item.price)}
+                  <Pressable
+                    disabled={!canOpenProduct}
+                    onPress={() => slug && router.push(`/product/${encodeURIComponent(slug)}`)}
+                    style={({ pressed }) => [
+                      styles.itemPressableMain,
+                      canOpenProduct && pressed ? styles.itemPressablePressed : null,
+                    ]}
+                    accessibilityRole={canOpenProduct ? 'button' : undefined}
+                    accessibilityLabel={canOpenProduct ? `Open ${item.name}` : undefined}>
+                    <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
+                      <ThemedText style={[styles.itemMonogram, { color: text }]}>
+                        {initials(item.name)}
                       </ThemedText>
                     </View>
 
-                    <View style={styles.itemBottom}>
-                      <View
-                        style={[
-                          styles.qtyPill,
-                          { borderColor: luxuryPalette.line, backgroundColor: softSurface },
-                        ]}>
-                        <Pressable
-                          style={styles.qtyBtn}
-                          onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
-                          <Ionicons name="remove" size={14} color={text} />
-                        </Pressable>
-                        <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
-                        <Pressable
-                          style={styles.qtyBtn}
-                          onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
-                          <Ionicons name="add" size={14} color={text} />
-                        </Pressable>
-                      </View>
+                    <View style={styles.itemBody}>
+                      <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
+                        {item.category}
+                      </ThemedText>
 
-                      <View style={styles.metaWrap}>
-                        <View style={styles.metaRow}>
-                          <Ionicons
-                            name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
-                            size={isOutOfStock ? 13 : 9}
-                            color={isOutOfStock ? danger : accent}
-                          />
-                          <ThemedText
-                            style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
-                            {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
-                          </ThemedText>
-                        </View>
+                      <View style={styles.itemTopLine}>
+                        <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
+                          {item.name}
+                        </ThemedText>
+                        <ThemedText style={[styles.itemPrice, { color: text }]}>
+                          {money(item.price)}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {canOpenProduct ? (
+                      <Ionicons name="chevron-forward" size={18} color={muted} />
+                    ) : null}
+                  </Pressable>
+
+                  <View style={styles.itemBottom}>
+                    <View
+                      style={[
+                        styles.qtyPill,
+                        { borderColor: CART_COLORS.border, backgroundColor: softSurface },
+                      ]}>
+                      <Pressable
+                        style={styles.qtyBtn}
+                        onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
+                        <Ionicons name="remove" size={14} color={text} />
+                      </Pressable>
+                      <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
+                      <Pressable
+                        style={styles.qtyBtn}
+                        onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
+                        <Ionicons name="add" size={14} color={text} />
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.metaWrap}>
+                      <View style={styles.metaRow}>
+                        <Ionicons
+                          name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
+                          size={isOutOfStock ? 13 : 9}
+                          color={isOutOfStock ? danger : CART_COLORS.text}
+                        />
+                        <ThemedText
+                          style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
+                          {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
+                        </ThemedText>
                       </View>
                     </View>
                   </View>
@@ -210,7 +248,7 @@ export default function CartScreen() {
           />
         )}
 
-        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
           <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
           <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
 
@@ -230,7 +268,7 @@ export default function CartScreen() {
           <View
             style={[
               styles.savingsRow,
-              { backgroundColor: softSurface, borderColor: luxuryPalette.line },
+              { backgroundColor: softSurface, borderColor: CART_COLORS.border },
             ]}>
             <Ionicons name="diamond-outline" size={14} color={accent} />
             <ThemedText style={[styles.rowLabel, { color: muted }]}>Preferred pricing applied</ThemedText>
@@ -243,7 +281,7 @@ export default function CartScreen() {
             </ThemedText>
           )}
 
-          <View style={[styles.totalRow, { borderColor: luxuryPalette.line }]}>
+          <View style={[styles.totalRow, { borderColor: CART_COLORS.border }]}>
             <ThemedText style={[styles.totalLabel, { color: text }]}>Total</ThemedText>
             <ThemedText style={[styles.totalValue, { color: text }]}>{money(total)}</ThemedText>
           </View>
@@ -257,7 +295,7 @@ export default function CartScreen() {
         style={[
           styles.checkoutWrap,
           { bottom: tabBarClearance },
-          { borderColor: luxuryPalette.line, backgroundColor: luxuryPalette.elevated },
+          { borderColor: CART_COLORS.border, backgroundColor: CART_COLORS.cardBg },
           luxuryShadow,
         ]}>
         <View style={styles.checkoutMetaInline}>
@@ -270,14 +308,29 @@ export default function CartScreen() {
           disabled={!items.length || placingOrder}
           style={[
             styles.billButtonInline,
-            { borderColor: luxuryPalette.line, opacity: !items.length || placingOrder ? 0.45 : 1 },
+            {
+              borderColor: CART_COLORS.border,
+              backgroundColor:
+                !items.length || placingOrder ? CART_COLORS.checkoutBtnDisabledBg : CART_COLORS.checkoutBtnBg,
+            },
           ]}>
           {placingOrder ? (
-            <ActivityIndicator size="small" color={text} />
+            <ActivityIndicator size="small" color={CART_COLORS.checkoutBtnDisabledText} />
           ) : (
-            <Ionicons name="bag-check-outline" size={16} color={text} />
+            <Ionicons
+              name="bag-check-outline"
+              size={16}
+              color={!items.length ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText}
+            />
           )}
-          <ThemedText style={[styles.billText, { color: text }]}>
+          <ThemedText
+            style={[
+              styles.billText,
+              {
+                color:
+                  !items.length || placingOrder ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText,
+              },
+            ]}>
             {placingOrder ? 'Placing…' : 'Place order'}
           </ThemedText>
         </Pressable>
@@ -399,8 +452,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.xl,
     padding: spacing.md,
+    gap: spacing.sm,
+  },
+  itemPressableMain: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
+  },
+  itemPressablePressed: {
+    opacity: 0.88,
   },
   itemImage: {
     width: 92,
