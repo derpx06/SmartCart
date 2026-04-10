@@ -68,7 +68,7 @@ export function LuxuryHomeScreen() {
   }, [loadHome]);
 
   const onRefresh = async () => {
-    await refreshHome();
+    await refreshHome(activeFilter || undefined);
   };
 
   const openProduct = (product: ProductItem) => {
@@ -102,7 +102,7 @@ export function LuxuryHomeScreen() {
 
   const handleSelectFilter = (filter: string) => {
     setActiveFilter(filter);
-    openSearchResults(searchQuery, filter);
+    void loadHome(filter);
   };
 
   const heroImage = homeData.heroSlides[0]?.image;
@@ -271,7 +271,7 @@ export function LuxuryHomeScreen() {
 
             <RevealSection style={styles.sectionWrap} delay={340}>
               <ProductCarousel
-                title="For Your Kitchen"
+                title={`For Your ${activeFilter && activeFilter !== 'All Product' ? activeFilter : 'Kitchen'}`}
                 caption="Personalized picks based on your taste and recent browsing."
                 products={homeData.recommendedProducts}
                 loading={loading}

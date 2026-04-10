@@ -69,9 +69,27 @@ function buildFeatures(product: any): string[] {
 
 export async function getHomeContent(req: Request) {
   await ensureCatalogSeededFromSkus();
-  const products = await Product.find().sort({ createdAt: -1 }).lean();
-  const topProducts = products.slice(0, 8);
-  const uniqueCategories = [...new Set(products.map((product: any) => product.category).filter(Boolean))];
+  const tag = req.query.tag as string;
+
+  let filterQuery = {};
+  if (tag && tag !== 'All Product') {
+    const lowerTag = tag.toLowerCase();
+    filterQuery = {
+      $or: [
+        { tags: { $regex: new RegExp(`^${lowerTag}$`, 'i') } },
+        { category: lowerTag },
+      ],
+    };
+  }
+
+  // Fetch all for categories mapping (or use a separate bare query for categories if huge)
+  const allProducts = await Product.find().sort({ createdAt: -1 }).lean();
+  const filteredProducts = tag && tag !== 'All Product' 
+    ? await Product.find(filterQuery).sort({ createdAt: -1 }).lean()
+    : allProducts;
+
+  const topProducts = filteredProducts.slice(0, 8);
+  const uniqueCategories = [...new Set(allProducts.map((product: any) => product.category).filter(Boolean))];
 
   return {
     heroSlides: topProducts.slice(0, 3).map((product: any, index: number) => ({
@@ -83,7 +101,7 @@ export async function getHomeContent(req: Request) {
       slug: product.slug,
     })),
     categories: uniqueCategories.slice(0, 6).map((category: string, index: number) => {
-      const match = products.find((product: any) => product.category === category);
+      const match = allProducts.find((product: any) => product.category === category);
       return {
         id: `category-${index + 1}`,
         title: titleCase(category),

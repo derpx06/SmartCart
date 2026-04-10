@@ -152,14 +152,15 @@ export const api = {
       body: JSON.stringify({ name, email, password }),
     });
   },
-  getHome() {
+  getHome(tag?: string) {
+    const query = tag && tag !== 'All Product' ? `?tag=${encodeURIComponent(tag)}` : '';
     return request<{
       heroSlides: HeroSlide[];
       categories: CategoryItem[];
       collections: CollectionItem[];
       bestsellers: ProductItem[];
       recommendedProducts: ProductItem[];
-    }>('/home');
+    }>(`/home${query}`);
   },
   getProductBySlug(slug: string) {
     return request<ProductDetail>(`/products/slug/${slug}`);

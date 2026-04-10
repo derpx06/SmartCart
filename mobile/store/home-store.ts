@@ -34,8 +34,8 @@ type HomeStore = {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
-  loadHome: () => Promise<void>;
-  refreshHome: () => Promise<void>;
+  loadHome: (tag?: string) => Promise<void>;
+  refreshHome: (tag?: string) => Promise<void>;
 };
 
 export const useHomeStore = create<HomeStore>((set) => ({
@@ -43,10 +43,10 @@ export const useHomeStore = create<HomeStore>((set) => ({
   loading: true,
   refreshing: false,
   error: null,
-  loadHome: async () => {
+  loadHome: async (tag?: string) => {
     try {
       set({ loading: true, error: null });
-      const data = await api.getHome();
+      const data = await api.getHome(tag);
       set({
         homeData: {
           heroSlides: data.heroSlides?.length ? data.heroSlides : heroSlides,
@@ -68,10 +68,10 @@ export const useHomeStore = create<HomeStore>((set) => ({
       });
     }
   },
-  refreshHome: async () => {
+  refreshHome: async (tag?: string) => {
     try {
       set({ refreshing: true, error: null });
-      const data = await api.getHome();
+      const data = await api.getHome(tag);
       set({
         homeData: {
           heroSlides: data.heroSlides?.length ? data.heroSlides : heroSlides,
