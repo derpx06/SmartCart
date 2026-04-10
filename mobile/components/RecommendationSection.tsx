@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import React from 'react';
 import { ScrollView, StyleSheet, View, Pressable } from 'react-native';
 
@@ -56,7 +57,11 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                         ]}
                     >
                         <View style={[styles.imagePlaceholder, { backgroundColor: REC_COLORS.imageBg }]}>
-                            <Ionicons name="sparkles-outline" size={32} color={REC_COLORS.text} />
+                            {item.image ? (
+                                <Image source={{ uri: item.image }} style={styles.image} contentFit="cover" />
+                            ) : (
+                                <Ionicons name="sparkles-outline" size={32} color={REC_COLORS.text} />
+                            )}
 
                             <View style={styles.badgeContainer}>
                                 {item.reasons.slice(0, 2).map((reason, idx) => (
@@ -132,6 +137,11 @@ const styles = StyleSheet.create({
         height: 160,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    image: {
+        width: '100%',
+        height: '100%',
     },
     badgeContainer: {
         position: 'absolute',

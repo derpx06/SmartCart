@@ -73,9 +73,9 @@ router.get('/products/slug/:slug', getProductBySlug);
 router.get('/products/:id', getProductById);
 router.get('/products/:id/recommendations', authenticateToken, getProductRecommendations);
 
-router.post('/chat/message', sendChatMessage);
-router.post('/chat/stream', streamChat);
-router.get('/chat/history/:sessionId', chatHistory);
+router.post('/chat/message', authenticateToken, sendChatMessage);
+router.post('/chat/stream', authenticateToken, streamChat);
+router.get('/chat/history/:sessionId', authenticateToken, chatHistory);
 
 router.get('/cart', authenticateToken, getCart);
 router.post('/cart/add', authenticateToken, addToCart);

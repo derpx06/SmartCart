@@ -4,6 +4,8 @@ import { cosineSimilarity } from '../utils/vector';
 
 export interface RankedItem {
     productId: string;
+    slug?: string;
+    image?: string;
     name: string;
     category: string;
     price: number;
@@ -120,6 +122,8 @@ export function rankItems(candidates: any[], context: RankingContext): RankedIte
 
         results.push({
             productId: item._id?.toString() || item.productId,
+            slug: item.slug,
+            image: Array.isArray(item.images) && item.images.length ? item.images[0] : undefined,
             name: item.name,
             category: item.category,
             price: typeof item.price === 'number' ? item.price : (item.price?.selling || 0),

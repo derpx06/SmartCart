@@ -5,6 +5,7 @@ import {
   Alert,
   Animated,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -12,6 +13,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
@@ -115,6 +117,68 @@ function MessageBubble({
     return [intentLine, needsLine].filter(Boolean).join(' • ');
   }, [isUser, msg.intent, msg.needs]);
 
+  const bubbleNode = (
+    <View
+      style={[
+        styles.bubble,
+        isUser
+          ? [styles.bubbleUser, { backgroundColor: CHAT_COLORS.userBubbleBg, borderColor: CHAT_COLORS.userBubbleBorder }]
+          : [
+              styles.bubbleAssistant,
+              { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: msg.isError ? 'rgba(197, 43, 43, 0.35)' : CHAT_COLORS.assistantBubbleBorder },
+            ],
+      ]}>
+      {isUser ? (
+        <ThemedText style={[styles.bubbleText, { color: CHAT_COLORS.userText }]}>{msg.text}</ThemedText>
+      ) : (
+        <Markdown
+          style={{
+            body: styles.bubbleMarkdownBody,
+            paragraph: styles.bubbleMarkdownParagraph,
+            text: styles.bubbleMarkdownText,
+            strong: styles.bubbleMarkdownStrong,
+            em: styles.bubbleMarkdownEm,
+            bullet_list: styles.bubbleMarkdownList,
+            ordered_list: styles.bubbleMarkdownList,
+            list_item: styles.bubbleMarkdownItem,
+            link: styles.bubbleMarkdownLink,
+            code_inline: styles.bubbleMarkdownInlineCode,
+            code_block: styles.bubbleMarkdownCodeBlock,
+          }}
+          onLinkPress={(url) => {
+            Linking.openURL(url).catch(() => {
+              Alert.alert('Invalid link', 'Unable to open this link.');
+            });
+            return true;
+          }}>
+          {msg.text || '...'}
+        </Markdown>
+      )}
+      {msg.actionMessage ? (
+        <ThemedText style={[styles.bubbleActionHint, { color: CHAT_COLORS.assistantRole }]}>
+          {msg.actionMessage}
+        </ThemedText>
+      ) : null}
+
+      {subtitle ? (
+        <ThemedText style={[styles.bubbleSubtitle, { color: CHAT_COLORS.assistantTime }]} numberOfLines={2}>
+          {subtitle}
+        </ThemedText>
+      ) : null}
+
+      <View style={styles.bubbleMeta}>
+        {!isUser && (
+          <ThemedText style={[styles.bubbleRole, { color: CHAT_COLORS.assistantRole }]}>
+            {msg.isError ? 'Concierge (error)' : 'Concierge'}
+          </ThemedText>
+        )}
+        <ThemedText style={[styles.bubbleTime, { color: isUser ? CHAT_COLORS.userTime : CHAT_COLORS.assistantTime }]}>
+          {msg.isStreaming ? 'Streaming…' : msg.time}
+        </ThemedText>
+      </View>
+    </View>
+  );
+
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
       {!isUser && (
@@ -123,50 +187,14 @@ function MessageBubble({
         </View>
       )}
       <View style={isUser ? styles.bubbleUserWrap : styles.bubbleAssistantWrap}>
-        <View
-          style={[
-            styles.bubble,
-            isUser
-              ? [styles.bubbleUser, { backgroundColor: CHAT_COLORS.userBubbleBg, borderColor: CHAT_COLORS.userBubbleBorder }]
-              : [
-                  styles.bubbleAssistant,
-                  { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: msg.isError ? 'rgba(197, 43, 43, 0.35)' : CHAT_COLORS.assistantBubbleBorder },
-                ],
-          ]}>
-          <ThemedText style={[styles.bubbleText, { color: isUser ? CHAT_COLORS.userText : CHAT_COLORS.assistantText }]}>
-            {msg.text}
-          </ThemedText>
-          {msg.actionMessage ? (
-            <ThemedText style={[styles.bubbleActionHint, { color: CHAT_COLORS.assistantRole }]}>
-              {msg.actionMessage}
-            </ThemedText>
-          ) : null}
-
-          {subtitle ? (
-            <ThemedText style={[styles.bubbleSubtitle, { color: CHAT_COLORS.assistantTime }]} numberOfLines={2}>
-              {subtitle}
-            </ThemedText>
-          ) : null}
-
-          <View style={styles.bubbleMeta}>
-            {!isUser && (
-              <ThemedText style={[styles.bubbleRole, { color: CHAT_COLORS.assistantRole }]}>
-                {msg.isError ? 'Concierge (error)' : 'Concierge'}
-              </ThemedText>
-            )}
-            <ThemedText style={[styles.bubbleTime, { color: isUser ? CHAT_COLORS.userTime : CHAT_COLORS.assistantTime }]}>
-              {msg.isStreaming ? 'Streaming…' : msg.time}
-            </ThemedText>
-          </View>
-        </View>
-
-        {hasProducts ? (
+        {!isUser && hasProducts ? (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRail}>
             {msg.products?.map((p) => (
               <ChatProductCard key={p.id} product={p} onPress={onPressProduct} />
             ))}
           </ScrollView>
         ) : null}
+        {bubbleNode}
       </View>
     </View>
   );
@@ -246,6 +274,22 @@ export default function ChatScreen() {
     [router]
   );
 
+  const startNewSession = useCallback(() => {
+    abortRef.current?.();
+    abortRef.current = null;
+    setSessionId(null);
+    setInput('');
+    setIsSending(false);
+    setMessages([
+      {
+        id: `welcome-${Date.now()}`,
+        role: 'assistant',
+        text: "Welcome to SmartCart AI. Tell me what you're shopping for, and I'll recommend products that match your needs and budget.",
+        time: now(),
+      },
+    ]);
+  }, []);
+
   useEffect(() => {
     return () => {
       abortRef.current?.();
@@ -311,7 +355,7 @@ export default function ChatScreen() {
               m.id === assistantId
                 ? {
                     ...m,
-                    text: m.text ? `${m.text} ${chunk}` : chunk,
+                    text: `${m.text || ''}${chunk}`,
                   }
                 : m
             )
@@ -381,8 +425,18 @@ export default function ChatScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
         <View style={styles.header}>
-          <ThemedText style={styles.headerTitle}>AI Chat</ThemedText>
-          <ThemedText style={styles.headerSubtitle} numberOfLines={1}>
+          <View style={styles.headerTopRow}>
+            <ThemedText style={styles.headerTitle}>AI Chat</ThemedText>
+            <Pressable
+              onPress={startNewSession}
+              style={[styles.newSessionBtn, { backgroundColor: CHAT_COLORS.assistantAvatarBg }]}
+              accessibilityRole="button"
+              accessibilityLabel="Start new chat session">
+              <Ionicons name="add" size={14} color={CHAT_COLORS.assistantAvatarIcon} />
+              <ThemedText style={styles.newSessionText}>New session</ThemedText>
+            </Pressable>
+          </View>
+          <ThemedText style={styles.headerSubtitle}>
             Ask for recommendations, comparisons, and cart help
           </ThemedText>
         </View>
@@ -472,18 +526,41 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.xs,
   },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
   headerTitle: {
     fontFamily: Fonts.serif,
     fontSize: 26,
     lineHeight: 30,
     fontWeight: '700',
     color: CHAT_COLORS.ink,
+    flexShrink: 1,
   },
   headerSubtitle: {
     marginTop: 4,
     fontFamily: Fonts.sans,
     fontSize: 13,
     color: 'rgba(28, 27, 31, 0.68)',
+  },
+  newSessionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  newSessionText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: CHAT_COLORS.assistantAvatarIcon,
   },
   orb: {
     position: 'absolute',
@@ -496,6 +573,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.xl,
     overflow: 'hidden',
+    ...luxuryShadow,
   },
   dayChip: {
     alignSelf: 'center',
@@ -564,6 +642,53 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 21,
     flexShrink: 1,
+  },
+  bubbleMarkdownBody: {
+    color: CHAT_COLORS.assistantText,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  bubbleMarkdownParagraph: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  bubbleMarkdownText: {
+    color: CHAT_COLORS.assistantText,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    lineHeight: 21,
+  },
+  bubbleMarkdownStrong: {
+    fontWeight: '700',
+    color: CHAT_COLORS.assistantText,
+  },
+  bubbleMarkdownEm: {
+    fontStyle: 'italic',
+  },
+  bubbleMarkdownList: {
+    marginTop: 0,
+    marginBottom: 8,
+  },
+  bubbleMarkdownItem: {
+    color: CHAT_COLORS.assistantText,
+  },
+  bubbleMarkdownLink: {
+    color: '#1359B8',
+    textDecorationLine: 'underline',
+  },
+  bubbleMarkdownInlineCode: {
+    backgroundColor: 'rgba(28, 27, 31, 0.08)',
+    color: CHAT_COLORS.assistantText,
+    borderRadius: 5,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  bubbleMarkdownCodeBlock: {
+    backgroundColor: 'rgba(28, 27, 31, 0.06)',
+    color: CHAT_COLORS.assistantText,
+    borderRadius: radius.md,
+    padding: 8,
   },
   bubbleSubtitle: {
     marginTop: 6,
@@ -650,7 +775,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     paddingLeft: spacing.sm,
     paddingRight: 8,
-    paddingVertical: 8,
+    paddingVertical: 10,
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: 8,

@@ -8,6 +8,7 @@ import { getSemanticState } from './semantic.service';
 import { cosineSimilarity } from '../utils/vector';
 import { embedText } from './embedding.service';
 import { generateAssistantReply } from './llm.service';
+import { searchQdrantProductIds } from './qdrant.service';
 
 type ChatResponse = {
   sessionId: string;
@@ -121,9 +122,60 @@ async function getRecentConversation(sessionId: string, limit = 8) {
 async function rankProducts(query: string, limit = 6) {
   const fallbackQuery = {
     slug: { $exists: true, $nin: [null, ''] },
+    'stock.status': { $ne: 'OUT_OF_STOCK' },
+    'stock.quantity': { $gt: 0 },
   } as const;
 
   const queryEmbedding = await embedText(query);
+  const q = String(query || '').toLowerCase();
+  const categoryHints = [
+    'chair',
+    'sofa',
+    'furniture',
+    'pan',
+    'cookware',
+    'knife',
+    'bakeware',
+    'decor',
+    'lighting',
+  ].filter((hint) => q.includes(hint));
+
+  if (categoryHints.length > 0) {
+    const hintPattern = categoryHints.join('|');
+    const categoryMatches = await Product.find({
+      ...fallbackQuery,
+      $or: [
+        { category: { $regex: hintPattern, $options: 'i' } },
+        { subCategory: { $regex: hintPattern, $options: 'i' } },
+        { name: { $regex: hintPattern, $options: 'i' } },
+      ],
+    })
+      .limit(limit)
+      .lean();
+    if (categoryMatches.length > 0) return categoryMatches;
+  }
+
+  if (queryEmbedding.length > 0) {
+    const qdrantIds = await searchQdrantProductIds(queryEmbedding, Math.max(limit * 2, 12));
+    if (qdrantIds.length > 0) {
+      const qdrantMatches = await Product.find({
+        ...fallbackQuery,
+        _id: { $in: qdrantIds },
+      }).lean();
+      const byId = new Map(qdrantMatches.map((p: any) => [String(p._id), p]));
+      const ordered = qdrantIds.map((id) => byId.get(id)).filter(Boolean) as any[];
+      if (ordered.length >= limit) return ordered.slice(0, limit);
+      if (ordered.length > 0) {
+        const sampled = await Product.aggregate([
+          { $match: fallbackQuery },
+          { $match: { _id: { $nin: ordered.map((p: any) => p._id) } } },
+          { $sample: { size: limit } },
+        ]);
+        return [...ordered, ...(sampled as any[])].slice(0, limit);
+      }
+    }
+  }
+
   if (!queryEmbedding.length) {
     const fallback = await Product.find(fallbackQuery).limit(limit).lean();
     return fallback;
@@ -144,8 +196,9 @@ async function rankProducts(query: string, limit = 6) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  const ranked = scored.map((s) => s.product);
-  if (ranked.length > 0) return ranked;
+  // Ignore weak semantic matches; otherwise users can repeatedly get the same irrelevant item.
+  const ranked = scored.filter((s) => s.score >= 0.18).map((s) => s.product);
+  if (ranked.length >= limit) return ranked.slice(0, limit);
 
   // Fallback 1: keyword match for cases where embeddings are sparse/missing relevance.
   const tokens = String(query || '')
@@ -162,15 +215,39 @@ async function rankProducts(query: string, limit = 6) {
       $or: [
         { name: { $regex: pattern, $options: 'i' } },
         { category: { $regex: pattern, $options: 'i' } },
+        { description: { $regex: pattern, $options: 'i' } },
       ],
     })
       .limit(limit)
       .lean();
-    if (keywordMatches.length > 0) return keywordMatches;
+    if (ranked.length > 0) {
+      const seen = new Set(ranked.map((p: any) => String(p._id)));
+      const merged = [...ranked, ...keywordMatches.filter((p: any) => !seen.has(String(p._id)))];
+      if (merged.length >= limit) return merged.slice(0, limit);
+      ranked.splice(0, ranked.length, ...merged);
+    } else if (keywordMatches.length > 0) {
+      if (keywordMatches.length >= limit) return keywordMatches.slice(0, limit);
+      ranked.push(...keywordMatches);
+    }
   }
 
-  // Fallback 2: generic top products so chat still returns cards.
-  return Product.find(fallbackQuery).limit(limit).lean();
+  // Fallback 2: randomize generic options so suggestions don't look static.
+  const excludeIds = ranked.map((p: any) => p._id).filter(Boolean);
+  const sampled = await Product.aggregate([
+    { $match: fallbackQuery },
+    ...(excludeIds.length ? [{ $match: { _id: { $nin: excludeIds } } }] : []),
+    { $sample: { size: limit } },
+  ]);
+  if (sampled.length > 0) {
+    const merged = [...ranked, ...(sampled as any[])];
+    return merged.slice(0, limit);
+  }
+
+  // Final fallback for very small catalogs.
+  const stable = await Product.find(fallbackQuery).limit(limit).lean();
+  if (!ranked.length) return stable;
+  const seen = new Set(ranked.map((p: any) => String(p._id)));
+  return [...ranked, ...stable.filter((p: any) => !seen.has(String(p._id)))].slice(0, limit);
 }
 
 function userAskedForProducts(text: string): boolean {
@@ -292,6 +369,10 @@ async function resolveAddToCartTarget(
 export async function handleChatMessage(req: Request, sessionId: string, message: string, userId?: string): Promise<ChatResponse> {
   await ensureSession(sessionId, userId);
   const resolvedUserId = userId || 'user_001';
+  const ownedSession = await ChatSession.findOne({ sessionId }).lean();
+  if (ownedSession?.userId && ownedSession.userId !== resolvedUserId) {
+    throw new Error('Session does not belong to this user');
+  }
 
   await ChatMessage.create({
     sessionId,
@@ -396,7 +477,12 @@ export async function handleChatMessage(req: Request, sessionId: string, message
 
   const requestedAddToCart = userAskedToAddToCart(message);
   const includeProducts = userAskedForProducts(message) || requestedAddToCart;
-  const products = includeProducts ? await rankProducts(message, 6) : [];
+  let products = includeProducts ? await rankProducts(message, 6) : [];
+  if (includeProducts && products.length > 0 && products.length < 2) {
+    const supplemental = await rankProducts('popular in stock products', 6);
+    const seen = new Set(products.map((p: any) => String(p._id)));
+    products = [...products, ...supplemental.filter((p: any) => !seen.has(String(p._id)))].slice(0, 6);
+  }
   const productSummaries = includeProducts ? products.map((product) => productSummary(req, product)) : [];
   const recentMessages = await getRecentConversation(sessionId, 8);
 
@@ -447,27 +533,29 @@ export async function handleChatMessage(req: Request, sessionId: string, message
     }
   }
 
-  const responseMessage = await generateAssistantReply({
-    userMessage: message,
-    context: context
-      ? {
-          user: context.state?.user || undefined,
-          semantic: context.semantic,
-          cart: context.state?.cart,
-          session: context.state?.session,
-          inventory: { inStock, outOfStock },
-        }
-      : null,
-    includeProducts,
-    productHints: productSummaries.map((p) => ({
-      name: p.name,
-      category: p.category,
-      price: p.price,
-      slug: p.slug,
-      image: p.image,
-    })),
-    recentMessages,
-  });
+  const responseMessage = includeProducts && productSummaries.length
+    ? 'Here are some options for you. Pick one filter (budget, material, or use-case), and I will refine the cards.'
+    : await generateAssistantReply({
+        userMessage: message,
+        context: context
+          ? {
+              user: context.state?.user || undefined,
+              semantic: context.semantic,
+              cart: context.state?.cart,
+              session: context.state?.session,
+              inventory: { inStock, outOfStock },
+            }
+          : null,
+        includeProducts,
+        productHints: productSummaries.map((p) => ({
+          name: p.name,
+          category: p.category,
+          price: p.price,
+          slug: p.slug,
+          image: p.image,
+        })),
+        recentMessages,
+      });
 
   const action: ChatResponse['action'] | undefined = undefined;
   const finalResponseMessage = responseMessage;
@@ -503,7 +591,9 @@ export async function streamChatMessage(req: Request, sessionId: string, message
 }
 
 export async function getChatHistory(req: Request, sessionId: string, limit = 50) {
-  const messages = await ChatMessage.find({ sessionId })
+  const userId = req.user?.userId;
+  const sessionFilter = userId ? { sessionId, userId } : { sessionId };
+  const messages = await ChatMessage.find(sessionFilter)
     .sort({ createdAt: 1 })
     .limit(limit)
     .lean();

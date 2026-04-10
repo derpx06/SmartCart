@@ -1,4 +1,5 @@
 import { embedText } from './embedding.service';
+import { upsertQdrantProductVector } from './qdrant.service';
 
 export function buildEmbeddingText(product: {
   name?: string;
@@ -59,4 +60,38 @@ export async function ensureProductEmbedding(
     return product.embedding;
   }
   return embedProduct(product);
+}
+
+export async function vectorizeAndSyncProduct(product: {
+  _id?: any;
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  brand?: string | null;
+  category?: string;
+  subCategory?: string | null;
+  tags?: string[];
+  attributes?: Record<string, any> | null;
+  price?: { selling?: number };
+  stock?: { status?: string; quantity?: number };
+  embedding?: number[];
+}): Promise<number[]> {
+  const embedding = await ensureProductEmbedding(product);
+  if (!embedding.length || !product._id) return embedding;
+
+  await upsertQdrantProductVector({
+    productId: String(product._id),
+    embedding,
+    payload: {
+      slug: product.slug || '',
+      name: product.name || '',
+      category: product.category || '',
+      subCategory: product.subCategory || '',
+      price: Number(product.price?.selling ?? 0),
+      stockStatus: product.stock?.status || 'IN_STOCK',
+      stockQty: Number(product.stock?.quantity ?? 0),
+    },
+  });
+
+  return embedding;
 }
