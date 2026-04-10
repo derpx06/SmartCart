@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -45,8 +46,8 @@ const HOME_COLORS = {
   text: HOME_MONO.ink,
   mutedText: 'rgba(28, 27, 31, 0.68)',
   line: 'rgba(28, 27, 31, 0.14)',
-  overlayTop: 'rgba(28, 27, 31, 0.16)',
-  overlayBottom: 'transparent',
+  overlayTop: 'rgba(28, 27, 31, 0)',
+  overlayBottom: 'rgba(28, 27, 31, 0.74)',
   panelBg: 'transparent',
   panelBorder: 'transparent',
   chipBg: 'rgba(255, 255, 255, 0.9)',
@@ -193,7 +194,12 @@ export function LuxuryHomeScreen() {
                 transition={650}
               />
             )}
-            <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
+            <LinearGradient
+              pointerEvents="none"
+              colors={[HOME_COLORS.overlayTop, 'rgba(28, 27, 31, 0.32)', HOME_COLORS.overlayBottom]}
+              locations={[0, 0.58, 1]}
+              style={styles.heroShadeBottom}
+            />
 
             <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
               <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
@@ -416,14 +422,9 @@ const styles = StyleSheet.create({
   heroSkeleton: {
     flex: 1,
   },
-  heroShadeTop: {
-    ...StyleSheet.absoluteFillObject,
-    top: 0,
-    bottom: '46%',
-  },
   heroShadeBottom: {
     ...StyleSheet.absoluteFillObject,
-    top: '34%',
+    top: '36%',
   },
   heroBadge: {
     position: 'absolute',
