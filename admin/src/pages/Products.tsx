@@ -180,9 +180,9 @@ export default function Products() {
                     <td>
                       <div className="products-item-cell">
                         <div className="products-item-thumb">
-                          {product.imageUrl ? (
+                          {product.images && product.images.length > 0 ? (
                             <img
-                              src={product.imageUrl}
+                              src={product.images[0]}
                               alt={product.name}
                               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
