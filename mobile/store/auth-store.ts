@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { Buffer } from 'buffer';
+import { Platform } from 'react-native';
 
 import { api } from '@/lib/api';
 
@@ -111,10 +112,15 @@ function extractSessionDetails(payload: {
 }
 
 async function persistSession(session: AuthSession | null) {
-  const secureStore = getSecureStore();
+  const secureStore = await getSecureStore();
+  const webStorage = getWebStorage();
+
   if (!session) {
     if (secureStore) {
       await secureStore.deleteItemAsync(AUTH_STORAGE_KEY);
+    }
+    if (webStorage) {
+      webStorage.removeItem(AUTH_STORAGE_KEY);
     }
     inMemorySession = null;
     return;
@@ -124,16 +130,57 @@ async function persistSession(session: AuthSession | null) {
   if (secureStore) {
     await secureStore.setItemAsync(AUTH_STORAGE_KEY, serialized);
   }
+  if (webStorage) {
+    webStorage.setItem(AUTH_STORAGE_KEY, serialized);
+  }
   inMemorySession = serialized;
 }
 
-function getSecureStore(): SecureStoreLike | null {
-  try {
-    // Lazy import to avoid crashing if native module isn't in current binary yet.
-    return require('expo-secure-store') as SecureStoreLike;
-  } catch {
+let secureStoreCache: SecureStoreLike | null | undefined;
+
+async function getSecureStore(): Promise<SecureStoreLike | null> {
+  if (secureStoreCache !== undefined) {
+    return secureStoreCache;
+  }
+
+  if (Platform.OS === 'web') {
+    secureStoreCache = null;
     return null;
   }
+
+  try {
+    const module = await import('expo-secure-store');
+    const candidate = (module?.default ?? module) as Partial<SecureStoreLike> | undefined;
+    if (
+      candidate &&
+      typeof candidate.getItemAsync === 'function' &&
+      typeof candidate.setItemAsync === 'function' &&
+      typeof candidate.deleteItemAsync === 'function'
+    ) {
+      secureStoreCache = candidate as SecureStoreLike;
+      return secureStoreCache;
+    }
+    secureStoreCache = null;
+    return null;
+  } catch {
+    secureStoreCache = null;
+    return null;
+  }
+}
+
+function getWebStorage(): Storage | null {
+  if (Platform.OS !== 'web') {
+    return null;
+  }
+
+  try {
+    if (typeof globalThis !== 'undefined' && 'localStorage' in globalThis) {
+      return globalThis.localStorage;
+    }
+  } catch {
+    // ignore storage access failures
+  }
+  return null;
 }
 
 export const useMobileAuthStore = create<AuthState>((set) => ({
@@ -149,8 +196,11 @@ export const useMobileAuthStore = create<AuthState>((set) => ({
   submitting: false,
   hydrateSession: async () => {
     try {
-      const secureStore = getSecureStore();
-      const raw = secureStore ? await secureStore.getItemAsync(AUTH_STORAGE_KEY) : inMemorySession;
+      const secureStore = await getSecureStore();
+      const webStorage = getWebStorage();
+      const raw = secureStore
+        ? await secureStore.getItemAsync(AUTH_STORAGE_KEY)
+        : webStorage?.getItem(AUTH_STORAGE_KEY) ?? inMemorySession;
       if (!raw) {
         api.setToken(null);
         set({

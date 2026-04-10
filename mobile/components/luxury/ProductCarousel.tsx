@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AnimatedPressable } from '@/components/luxury/AnimatedPressable';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
@@ -9,6 +9,7 @@ import { SectionTitle } from '@/components/luxury/SectionTitle';
 import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
+import { useWishlistStore } from '@/store/wishlist-store';
 
 type ProductCarouselProps = {
   title: string;
@@ -37,6 +38,17 @@ export function ProductCarousel({
   loading = false,
   onPressProduct,
 }: ProductCarouselProps) {
+  const wishlistItems = useWishlistStore((state) => state.items);
+  const wishlistLoaded = useWishlistStore((state) => state.hasLoaded);
+  const syncingIds = useWishlistStore((state) => state.syncingIds);
+  const fetchWishlist = useWishlistStore((state) => state.fetchWishlist);
+  const toggleWishlistItem = useWishlistStore((state) => state.toggleWishlistItem);
+
+  useEffect(() => {
+    if (wishlistLoaded) return;
+    void fetchWishlist({ silent: true });
+  }, [wishlistLoaded, fetchWishlist]);
+
   return (
     <View>
       <SectionTitle title={title} caption={caption} />
@@ -64,11 +76,15 @@ export function ProductCarousel({
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}>
-          {products.map((product) => (
-            <AnimatedPressable
-              key={product.id}
-              containerStyle={styles.cardWrap}
-              onPress={() => onPressProduct?.(product)}>
+          {products.map((product) => {
+            const wishlisted = wishlistItems.some((item) => item.productId === product.id);
+            const syncing = syncingIds.includes(product.id);
+
+            return (
+              <AnimatedPressable
+                key={product.id}
+                containerStyle={styles.cardWrap}
+                onPress={() => onPressProduct?.(product)}>
               <View
                 style={[
                   styles.card,
@@ -88,16 +104,28 @@ export function ProductCarousel({
                   <View style={[styles.featureChip, { backgroundColor: PRODUCT_COLORS.featureBg }]}>
                     <Text style={[styles.featureText, { color: PRODUCT_COLORS.featureText }]}>NEW</Text>
                   </View>
-                  <View
+                  <Pressable
                     style={[
                       styles.wishlistChip,
                       {
                         backgroundColor: PRODUCT_COLORS.wishlistBg,
                         borderColor: PRODUCT_COLORS.line,
                       },
-                    ]}>
-                    <Ionicons name="heart-outline" size={16} color={PRODUCT_COLORS.text} />
-                  </View>
+                      syncing ? styles.wishlistChipDisabled : null,
+                    ]}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      void toggleWishlistItem(product.id);
+                    }}
+                    disabled={syncing}
+                    accessibilityRole="button"
+                    accessibilityLabel={wishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}>
+                    <Ionicons
+                      name={wishlisted ? 'heart' : 'heart-outline'}
+                      size={16}
+                      color={wishlisted ? '#D14862' : PRODUCT_COLORS.text}
+                    />
+                  </Pressable>
                 </View>
                 <View style={styles.content}>
                   <Text style={[styles.name, { color: PRODUCT_COLORS.text }]} numberOfLines={2}>
@@ -112,8 +140,9 @@ export function ProductCarousel({
                   </View>
                 </View>
               </View>
-            </AnimatedPressable>
-          ))}
+              </AnimatedPressable>
+            );
+          })}
         </ScrollView>
       )}
     </View>
@@ -186,6 +215,9 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  wishlistChipDisabled: {
+    opacity: 0.6,
   },
   content: {
     marginTop: spacing.sm,

@@ -17,6 +17,7 @@ import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import type { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
 import { useHomeStore } from '@/store/home-store';
+import { useWishlistStore } from '@/store/wishlist-store';
 
 const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'] as const;
 
@@ -71,10 +72,16 @@ function ProductCard({
   product,
   index,
   onPress,
+  isWishlisted,
+  wishlistSyncing,
+  onToggleWishlist,
 }: {
   product: ProductItem;
   index: number;
   onPress: () => void;
+  isWishlisted: boolean;
+  wishlistSyncing: boolean;
+  onToggleWishlist: (productId: string) => void;
 }) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(28)).current;
@@ -136,10 +143,25 @@ function ProductCard({
             contentFit="cover"
             transition={350}
           />
-          {/* Wishlist icon */}
-          <View style={styles.wishlistBtn}>
-            <Ionicons name="heart-outline" size={16} color={SEARCH_COLORS.wishlist} />
-          </View>
+          <Pressable
+            style={[
+              styles.wishlistBtn,
+              isWishlisted ? styles.wishlistBtnActive : null,
+              wishlistSyncing ? styles.wishlistBtnDisabled : null,
+            ]}
+            onPress={(event) => {
+              event.stopPropagation();
+              onToggleWishlist(product.id);
+            }}
+            disabled={wishlistSyncing}
+            accessibilityRole="button"
+            accessibilityLabel={isWishlisted ? `Remove ${product.name} from wishlist` : `Save ${product.name} to wishlist`}>
+            <Ionicons
+              name={isWishlisted ? 'heart' : 'heart-outline'}
+              size={16}
+              color={isWishlisted ? '#D14862' : SEARCH_COLORS.wishlist}
+            />
+          </Pressable>
         </View>
         <View style={styles.gridBody}>
           <Text style={styles.gridName} numberOfLines={2}>
@@ -165,6 +187,11 @@ export function LuxurySearchResultsScreen() {
   const homeData = useHomeStore((state) => state.homeData);
   const loading = useHomeStore((state) => state.loading);
   const loadHome = useHomeStore((state) => state.loadHome);
+  const wishlistItems = useWishlistStore((state) => state.items);
+  const wishlistLoaded = useWishlistStore((state) => state.hasLoaded);
+  const syncingIds = useWishlistStore((state) => state.syncingIds);
+  const fetchWishlist = useWishlistStore((state) => state.fetchWishlist);
+  const toggleWishlistItem = useWishlistStore((state) => state.toggleWishlistItem);
 
   const paramQuery = typeof params.q === 'string' ? params.q : '';
   const paramCategory = normalizeFilter(typeof params.category === 'string' ? params.category : undefined);
@@ -179,6 +206,11 @@ export function LuxurySearchResultsScreen() {
   useEffect(() => {
     void loadHome();
   }, [loadHome]);
+
+  useEffect(() => {
+    if (wishlistLoaded) return;
+    void fetchWishlist({ silent: true });
+  }, [wishlistLoaded, fetchWishlist]);
 
   useEffect(() => {
     setSearchQuery(paramQuery);
@@ -207,6 +239,7 @@ export function LuxurySearchResultsScreen() {
   }, [homeData.bestsellers, homeData.recommendedProducts]);
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
+  const wishlistIdSet = useMemo(() => new Set(wishlistItems.map((item) => item.productId)), [wishlistItems]);
 
   const results = useMemo(() => {
     return allProducts.filter((product) => {
@@ -253,6 +286,14 @@ export function LuxurySearchResultsScreen() {
   const openProduct = (product: ProductItem) => {
     router.push(`/product/${product.slug || 'signature-enameled-cast-iron-dutch-oven'}`);
   };
+
+  const handleToggleWishlist = useCallback(
+    (productId: string) => {
+      if (!productId) return;
+      void toggleWishlistItem(productId);
+    },
+    [toggleWishlistItem],
+  );
 
   /* Build the 2-column layout */
   const leftColumn: { product: ProductItem; index: number }[] = [];
@@ -427,6 +468,9 @@ export function LuxurySearchResultsScreen() {
                   product={product}
                   index={index}
                   onPress={() => openProduct(product)}
+                  isWishlisted={wishlistIdSet.has(product.id)}
+                  wishlistSyncing={syncingIds.includes(product.id)}
+                  onToggleWishlist={handleToggleWishlist}
                 />
               ))}
             </View>
@@ -437,6 +481,9 @@ export function LuxurySearchResultsScreen() {
                   product={product}
                   index={index}
                   onPress={() => openProduct(product)}
+                  isWishlisted={wishlistIdSet.has(product.id)}
+                  wishlistSyncing={syncingIds.includes(product.id)}
+                  onToggleWishlist={handleToggleWishlist}
                 />
               ))}
             </View>
@@ -714,6 +761,12 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.88)',
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  wishlistBtnActive: {
+    backgroundColor: 'rgba(255, 240, 244, 0.95)',
+  },
+  wishlistBtnDisabled: {
+    opacity: 0.6,
   },
   gridBody: {
     padding: spacing.xs,

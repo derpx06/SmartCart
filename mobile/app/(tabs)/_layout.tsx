@@ -55,6 +55,10 @@ export default function TabLayout() {
         options={{ href: null }}
       />
       <Tabs.Screen
+        name="wishlist"
+        options={{ href: null }}
+      />
+      <Tabs.Screen
         name="notifications"
         options={{ href: null }}
       />

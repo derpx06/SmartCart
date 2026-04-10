@@ -27,6 +27,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
 import { useHomeStore } from '@/store/home-store';
+import { useWishlistStore } from '@/store/wishlist-store';
 
 const promoMessages = [
   'Save 10% off full-price items*',
@@ -64,6 +65,9 @@ export function LuxuryHomeScreen() {
   const homeData = useHomeStore((state) => state.homeData);
   const loadHome = useHomeStore((state) => state.loadHome);
   const refreshHome = useHomeStore((state) => state.refreshHome);
+  const wishlistItemsCount = useWishlistStore((state) => state.items.length);
+  const wishlistLoaded = useWishlistStore((state) => state.hasLoaded);
+  const fetchWishlist = useWishlistStore((state) => state.fetchWishlist);
   const background = HOME_COLORS.background;
   const [activeFilter, setActiveFilter] = useState<string | null>(quickFilters[0] ?? null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +79,11 @@ export function LuxuryHomeScreen() {
     }
     void loadHome();
   }, [loadHome]);
+
+  useEffect(() => {
+    if (wishlistLoaded) return;
+    void fetchWishlist({ silent: true });
+  }, [wishlistLoaded, fetchWishlist]);
 
   const normalizeFilter = (filter: string | null) =>
     filter && filter !== 'All Product' ? filter : undefined;
@@ -153,6 +162,24 @@ export function LuxuryHomeScreen() {
                 accessibilityLabel="Profile"
                 onPress={() => router.push('/(tabs)/profile')}>
                 <Ionicons name="person-outline" size={18} color={HOME_COLORS.text} />
+              </Pressable>
+              <Pressable
+                style={styles.headerIconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Wishlist"
+                onPress={() => router.push('/(tabs)/wishlist')}>
+                <Ionicons
+                  name={wishlistItemsCount > 0 ? 'heart' : 'heart-outline'}
+                  size={18}
+                  color={wishlistItemsCount > 0 ? '#D14862' : HOME_COLORS.text}
+                />
+                {wishlistItemsCount > 0 ? (
+                  <View style={styles.wishlistCountBadge}>
+                    <Text style={styles.wishlistCountText}>
+                      {wishlistItemsCount > 9 ? '9+' : `${wishlistItemsCount}`}
+                    </Text>
+                  </View>
+                ) : null}
               </Pressable>
               <Pressable
                 style={styles.headerIconButton}
@@ -381,6 +408,25 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     backgroundColor: '#FF5A5F',
+  },
+  wishlistCountBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 7,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#D14862',
+  },
+  wishlistCountText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.sans,
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 11,
   },
   promoRow: {
     marginHorizontal: spacing.lg,

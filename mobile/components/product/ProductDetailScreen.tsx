@@ -21,10 +21,10 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
 import { useProductRecommendations } from '@/hooks/use-product-recommendations';
-import { api } from '@/lib/api';
 import { useMobileAuthStore } from '@/store/auth-store';
 import { useProductStore } from '@/store/product-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
+import { useWishlistStore } from '@/store/wishlist-store';
 import ARBtn from '@/src/features/ar/componenets/arBtn';
 
 type ProductDetailScreenProps = {
@@ -59,7 +59,6 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [selectedSize, setSelectedSize] = useState(product.selectedSize);
   const [quantity, setQuantity] = useState(1);
   const [saving, setSaving] = useState(false);
-  const [isWishlisted, setIsWishlisted] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   const [isReviewComposerOpen, setIsReviewComposerOpen] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
@@ -71,6 +70,15 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const submitReview = useProductStore((s) => s.submitReview);
   const reviewSubmitting = useProductStore((s) => s.reviewSubmitting);
   const reviewerName = useMobileAuthStore((s) => s.name);
+  const wishlistLoaded = useWishlistStore((s) => s.hasLoaded);
+  const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
+  const toggleWishlistItem = useWishlistStore((s) => s.toggleWishlistItem);
+  const isWishlisted = useWishlistStore((s) =>
+    Boolean(product.id) && s.items.some((item) => item.productId === product.id),
+  );
+  const isWishlistSyncing = useWishlistStore((s) =>
+    Boolean(product.id) && s.syncingIds.includes(product.id),
+  );
 
   const handleAddRelated = async (productId: string) => {
     try {
@@ -120,6 +128,11 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
       return q;
     });
   }, [product.id, product.slug, available, stockCap]);
+
+  useEffect(() => {
+    if (wishlistLoaded) return;
+    void fetchWishlist({ silent: true });
+  }, [wishlistLoaded, fetchWishlist]);
 
   const total = quantity * product.price;
 
@@ -194,18 +207,14 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   };
 
   const handleWishlistToggle = async () => {
-    const next = !isWishlisted;
-    setIsWishlisted(next);
-
-    if (!next || !product.id) {
+    if (!product.id) {
       return;
     }
 
     try {
-      await api.addToWishlist(product.id);
-      Alert.alert('Saved', 'Added to wishlist.');
+      const nowWishlisted = await toggleWishlistItem(product.id);
+      Alert.alert(nowWishlisted ? 'Saved' : 'Removed', nowWishlisted ? 'Added to wishlist.' : 'Removed from wishlist.');
     } catch (err: any) {
-      setIsWishlisted(false);
       Alert.alert('Wishlist update failed', err.message || 'Please try again.');
     }
   };
@@ -238,7 +247,12 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               onPress={() => {
                 void handleWishlistToggle();
               }}
-              style={[styles.headerButton, { backgroundColor: palette.elevated, borderColor: palette.line }]}
+              disabled={isWishlistSyncing}
+              style={[
+                styles.headerButton,
+                { backgroundColor: palette.elevated, borderColor: palette.line },
+                isWishlistSyncing ? styles.headerButtonDisabled : null,
+              ]}
             >
               <Ionicons
                 name={isWishlisted ? 'heart' : 'heart-outline'}
@@ -853,6 +867,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     ...luxuryShadow,
+  },
+  headerButtonDisabled: {
+    opacity: 0.62,
   },
   headerButtonLarge: {
     width: 44,

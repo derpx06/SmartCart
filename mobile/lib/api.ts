@@ -94,6 +94,26 @@ export type CreateProductReviewInput = {
   authorName?: string;
 };
 
+export type WishlistApiProduct = {
+  _id?: string;
+  id?: string;
+  name?: string;
+  slug?: string;
+  category?: string;
+  images?: string[];
+  price?: {
+    selling?: number;
+    original?: number;
+  };
+};
+
+export type WishlistApiResponse = {
+  items?: {
+    productId?: string | WishlistApiProduct;
+    addedAt?: string;
+  }[];
+};
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
 
@@ -221,10 +241,18 @@ export const api = {
   getRegistries() {
     return request<TabDemoContent>('/registries');
   },
+  getWishlist() {
+    return request<WishlistApiResponse>('/wishlist');
+  },
   addToWishlist(productId: string) {
-    return request('/wishlist/add', {
+    return request<WishlistApiResponse>('/wishlist/add', {
       method: 'POST',
       body: JSON.stringify({ productId }),
+    });
+  },
+  removeFromWishlist(productId: string) {
+    return request<WishlistApiResponse>(`/wishlist/remove/${encodeURIComponent(productId)}`, {
+      method: 'DELETE',
     });
   },
   getProductRecommendations(productId: string) {
