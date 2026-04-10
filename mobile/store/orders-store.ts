@@ -8,23 +8,28 @@ export type MobileOrder = {
   total: number;
   status: string;
   date: string;
-  items: { name: string; quantity: number }[];
+  items: { name: string; quantity: number; slug?: string; productId?: string }[];
 };
 
 type OrdersStore = {
   orders: MobileOrder[];
   loading: boolean;
   error: string | null;
-  fetchOrders: () => Promise<void>;
+  fetchOrders: (options?: { silent?: boolean }) => Promise<void>;
 };
 
-export const useOrdersStore = create<OrdersStore>((set) => ({
+export const useOrdersStore = create<OrdersStore>((set, get) => ({
   orders: [],
   loading: true,
   error: null,
-  fetchOrders: async () => {
+  fetchOrders: async (options) => {
+    const silent = options?.silent === true;
     try {
-      set({ loading: true, error: null });
+      if (!silent) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       const data = await api.getOrders();
       set({
         orders: Array.isArray(data) ? data : [],
@@ -33,7 +38,7 @@ export const useOrdersStore = create<OrdersStore>((set) => ({
       });
     } catch (error: any) {
       set({
-        orders: [],
+        orders: silent ? get().orders : [],
         loading: false,
         error: error?.message || 'Unable to load orders',
       });

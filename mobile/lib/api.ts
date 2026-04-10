@@ -96,7 +96,7 @@ export const api = {
       total: number;
       status: string;
       date: string;
-      items: { name: string; quantity: number }[];
+      items: { name: string; quantity: number; slug?: string; productId?: string }[];
     }>>('/orders/mobile');
   },
   getRecipes() {

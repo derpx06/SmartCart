@@ -8,8 +8,8 @@ type SmartCartStore = {
   state: SmartCartState | null;
   loading: boolean;
   error: string | null;
-  fetchCart: () => Promise<void>;
-  refresh: () => Promise<void>;
+  fetchCart: (options?: { silent?: boolean }) => Promise<void>;
+  refresh: (options?: { silent?: boolean }) => Promise<void>;
   updateCartQuantity: (productId: string, quantity: number) => Promise<void>;
   addToCart: (productId: string, quantity: number) => Promise<void>;
   checkout: () => Promise<void>;
@@ -19,9 +19,14 @@ export const useSmartCartStore = create<SmartCartStore>((set, get) => ({
   state: null,
   loading: true,
   error: null,
-  fetchCart: async () => {
+  fetchCart: async (options) => {
+    const silent = options?.silent === true;
     try {
-      set({ loading: true, error: null });
+      if (!silent) {
+        set({ loading: true, error: null });
+      } else {
+        set({ error: null });
+      }
       const response = await fetch(`${Config.API_URL}/smartcart/state`, {
         headers: {
           ...(api.getToken() ? { Authorization: `Bearer ${api.getToken()}` } : {}),
@@ -43,19 +48,19 @@ export const useSmartCartStore = create<SmartCartStore>((set, get) => ({
       });
     }
   },
-  refresh: async () => {
-    await get().fetchCart();
+  refresh: async (options) => {
+    await get().fetchCart(options);
   },
   updateCartQuantity: async (productId, quantity) => {
     await api.updateCart(productId, quantity);
-    await get().fetchCart();
+    await get().fetchCart({ silent: true });
   },
   addToCart: async (productId, quantity) => {
     await api.addToCart(productId, quantity);
-    await get().fetchCart();
+    await get().fetchCart({ silent: true });
   },
   checkout: async () => {
     await api.checkout();
-    await get().fetchCart();
+    await get().fetchCart({ silent: true });
   },
 }));

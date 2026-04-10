@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import React, { useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/luxury/design';
@@ -9,6 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useSmartCartState } from '@/hooks/use-smart-cart-state';
+import { useOrdersStore } from '@/store/orders-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { RecommendationSection } from '@/components/RecommendationSection';
 
@@ -29,8 +30,10 @@ export default function CartScreen() {
   const { state, loading, error } = useSmartCartState();
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
   const addToCart = useSmartCartStore((store) => store.addToCart);
+  const checkout = useSmartCartStore((store) => store.checkout);
+  const fetchOrders = useOrdersStore((store) => store.fetchOrders);
   const scrollRef = useRef<ScrollView>(null);
-  const [billSectionY, setBillSectionY] = useState(0);
+  const [placingOrder, setPlacingOrder] = useState(false);
   const insets = useSafeAreaInsets();
   const luxuryPalette = useLuxuryPalette();
   const background = useThemeColor({}, 'background');
@@ -64,11 +67,23 @@ export default function CartScreen() {
   const total = subtotal - discount;
   const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
 
-  const handleJumpToBill = () => {
-    scrollRef.current?.scrollTo({
-      y: Math.max(billSectionY - spacing.md, 0),
-      animated: true,
-    });
+  const handlePlaceOrder = async () => {
+    if (!items.length || placingOrder) {
+      return;
+    }
+    try {
+      setPlacingOrder(true);
+      await checkout();
+      await fetchOrders();
+      Alert.alert(
+        'Order placed',
+        'Your order is saved to your account. No payment step is required in this build.',
+      );
+    } catch (err: any) {
+      Alert.alert('Could not place order', err?.message || 'Please sign in and try again.');
+    } finally {
+      setPlacingOrder(false);
+    }
   };
 
   return (
@@ -85,10 +100,10 @@ export default function CartScreen() {
 
         <View style={styles.topRow}>
           <View style={styles.topCopy}>
-            <ThemedText style={[styles.kicker, { color: accent }]}>Private checkout</ThemedText>
+            <ThemedText style={[styles.kicker, { color: accent }]}>Your cart</ThemedText>
             <ThemedText style={[styles.pageTitle, { color: text }]}>Your selection</ThemedText>
             <ThemedText style={[styles.topSub, { color: muted }]}>
-              Reserved for dispatch once you approve payment.
+              Review items and place your order — it is completed on our side with no payment screen.
             </ThemedText>
           </View>
           <View
@@ -195,11 +210,9 @@ export default function CartScreen() {
           />
         )}
 
-        <View
-          onLayout={(event) => setBillSectionY(event.nativeEvent.layout.y)}
-          style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
+        <View style={[styles.summaryCard, { backgroundColor: card, borderColor: luxuryPalette.line }]}>
           <ThemedText style={[styles.collectionLabel, { color: accent }]}>Order summary</ThemedText>
-          <ThemedText style={[styles.summaryTitle, { color: text }]}>Payment overview</ThemedText>
+          <ThemedText style={[styles.summaryTitle, { color: text }]}>Totals</ThemedText>
 
           <View style={styles.row}>
             <ThemedText style={[styles.rowLabel, { color: muted }]}>Subtotal</ThemedText>
@@ -226,7 +239,7 @@ export default function CartScreen() {
 
           {(state?.session.confidence ?? 1) < 0.5 && (
             <ThemedText style={[styles.errorText, { color: muted }]}>
-              Review your selection before payment to ensure nothing essential has been removed.
+              Review your selection before placing the order to ensure nothing essential has been removed.
             </ThemedText>
           )}
 
@@ -235,7 +248,7 @@ export default function CartScreen() {
             <ThemedText style={[styles.totalValue, { color: text }]}>{money(total)}</ThemedText>
           </View>
           <ThemedText style={[styles.taxNote, { color: muted }]}>
-            Taxes and final delivery timing are confirmed at payment.
+            Delivery timing and any taxes are illustrative in this demo.
           </ThemedText>
         </View>
       </ScrollView>
@@ -252,9 +265,21 @@ export default function CartScreen() {
           <ThemedText style={[styles.checkoutAmount, { color: text }]}>{money(total)}</ThemedText>
         </View>
 
-        <Pressable onPress={handleJumpToBill} style={[styles.billButtonInline, { borderColor: luxuryPalette.line }]}>
-          <Ionicons name="receipt-outline" size={16} color={text} />
-          <ThemedText style={[styles.billText, { color: text }]}>Go to Bill</ThemedText>
+        <Pressable
+          onPress={handlePlaceOrder}
+          disabled={!items.length || placingOrder}
+          style={[
+            styles.billButtonInline,
+            { borderColor: luxuryPalette.line, opacity: !items.length || placingOrder ? 0.45 : 1 },
+          ]}>
+          {placingOrder ? (
+            <ActivityIndicator size="small" color={text} />
+          ) : (
+            <Ionicons name="bag-check-outline" size={16} color={text} />
+          )}
+          <ThemedText style={[styles.billText, { color: text }]}>
+            {placingOrder ? 'Placing…' : 'Place order'}
+          </ThemedText>
         </Pressable>
       </View>
     </SafeAreaView>
