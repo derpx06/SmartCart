@@ -7,7 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { radius, spacing } from '@/components/luxury/design';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-export default function ARBtn() {
+export default function ARBtn({ modelUrl }: { modelUrl?: string }) {
   const router = useRouter();
   const text = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
@@ -17,7 +17,10 @@ export default function ARBtn() {
   return (
     <View style={styles.container}>
       <Pressable
-        onPress={() => router.push('/ar')}
+        onPress={() => router.push({
+          pathname: '/ar',
+          params: { modelUrl }
+        })}
         style={({ pressed }) => [
           styles.button,
           {

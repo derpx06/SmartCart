@@ -10,5 +10,5 @@ const fallbackApiUrl =
   }) ?? 'http://10.211.149.94:3001';
 
 export const Config = {
-  API_URL: webApiUrlFromEnv || fallbackApiUrl,
+  API_URL: 'http://54.227.131.6',
 };

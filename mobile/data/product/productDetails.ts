@@ -38,6 +38,10 @@ export type ProductDetail = {
   sizes: string[];
   selectedSize: string;
   images: string[];
+  model3D?: {
+    url: string;
+    format: string;
+  };
   related: RelatedProduct[];
   reviews: ProductReview[];
 };
@@ -69,6 +73,10 @@ const dutchOven: ProductDetail = {
     'https://images.unsplash.com/photo-1556909172-54557c7e4fb7?auto=format&fit=crop&w=900&q=80',
     'https://images.unsplash.com/photo-1590794056226-79ef3a8147e1?auto=format&fit=crop&w=900&q=80',
   ],
+  model3D: {
+    url: 'https://github.com/KhronosGroup/glTF-Sample-Models/raw/master/2.0/Duck/glTF-Binary/Duck.glb',
+    format: 'glb'
+  },
   related: [
     {
       id: 'iron-skillet',

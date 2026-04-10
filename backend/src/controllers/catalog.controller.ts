@@ -140,7 +140,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
     }
 
     const product = await Product.findById(req.params.id)
-      .select("name price images category description")
+      .select("name price images category description model3D")
       .lean();
 
     if (!product) {

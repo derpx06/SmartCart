@@ -26,7 +26,7 @@ import { useMobileAuthStore } from '@/store/auth-store';
 import { useProductStore } from '@/store/product-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { useWishlistStore } from '@/store/wishlist-store';
-import ARBtn from '@/src/features/ar/componenets/arBtn';
+import ARBtn from '@/src/features/ar/components/arBtn';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -79,10 +79,10 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const fetchWishlist = useWishlistStore((s) => s.fetchWishlist);
   const toggleWishlistItem = useWishlistStore((s) => s.toggleWishlistItem);
   const isWishlisted = useWishlistStore((s) =>
-    Boolean(product.id) && s.items.some((item) => item.productId === product.id),
+    Boolean(product.id) && s.items.some((item) => item.productId === (product.id ?? '')),
   );
   const isWishlistSyncing = useWishlistStore((s) =>
-    Boolean(product.id) && s.syncingIds.includes(product.id),
+    Boolean(product.id) && s.syncingIds.includes(product.id ?? ''),
   );
 
   const handleAddRelated = async (productId: string) => {
@@ -373,9 +373,11 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
 
             <ThemedText style={[styles.description, { color: palette.mutedText }]}>{product.description}</ThemedText>
 
-            <View style={styles.arButtonRow}>
-              <ARBtn />
-            </View>
+            {product.model3D?.url ? (
+              <View style={styles.arButtonRow}>
+                <ARBtn modelUrl={product.model3D.url} />
+              </View>
+            ) : null}
 
             <View style={[styles.trustGrid, { borderTopColor: palette.line, borderBottomColor: palette.line }]}>
               <View style={styles.trustItem}>
