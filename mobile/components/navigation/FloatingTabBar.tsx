@@ -9,7 +9,7 @@ import { ThemedText } from '@/components/themed-text';
 import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
 import { useThemeColor } from '@/hooks/use-theme-color';
 
-type TabRouteName = 'index' | 'recipe' | 'registry' | 'orders' | 'cart' | 'chat';
+type TabRouteName = 'index' | 'recipe' | 'orders' | 'cart' | 'chat';
 
 type TabMeta = {
   label: string;
@@ -20,7 +20,6 @@ type TabMeta = {
 const TAB_META: Record<TabRouteName, TabMeta> = {
   index: { label: 'HOME', activeIcon: 'home', inactiveIcon: 'home-outline' },
   recipe: { label: 'RECIPE', activeIcon: 'restaurant', inactiveIcon: 'restaurant-outline' },
-  registry: { label: 'REGISTRY', activeIcon: 'gift', inactiveIcon: 'gift-outline' },
   orders: { label: 'ORDERS', activeIcon: 'cube', inactiveIcon: 'cube-outline' },
   cart: { label: 'CART', activeIcon: 'cart', inactiveIcon: 'cart-outline' },
   chat: { label: 'AI', activeIcon: 'sparkles', inactiveIcon: 'sparkles-outline' },

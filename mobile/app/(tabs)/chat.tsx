@@ -167,7 +167,7 @@ export default function ChatScreen() {
     };
 
     return (
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top']}>
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: palette.background }]} edges={['top', 'bottom']}>
             {/* Atmosphere orbs */}
             <View style={StyleSheet.absoluteFill} pointerEvents="none">
                 <View style={[styles.orb, { backgroundColor: palette.gold + '20', top: -40, right: -60, width: 220, height: 220 }]} />
@@ -204,13 +204,9 @@ export default function ChatScreen() {
                     {isTyping && <TypingIndicator palette={palette} />}
                 </ScrollView>
 
-                {/* Quick suggestion pills (only when fresh) */}
+                {/* Quick suggestion pills */}
                 {messages.length <= 1 && (
-                    <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        style={{ flexShrink: 0 }}
-                        contentContainerStyle={styles.pillsContent}>
+                    <View style={styles.pillsRow}>
                         {SUGGESTIONS.map((s) => (
                             <Pressable
                                 key={s}
@@ -219,34 +215,34 @@ export default function ChatScreen() {
                                 <ThemedText style={[styles.pillText, { color: palette.text }]}>{s}</ThemedText>
                             </Pressable>
                         ))}
-                    </ScrollView>
+                    </View>
                 )}
-
-                {/* Input bar — always visible at bottom */}
-                <View style={[styles.inputBar, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
-                    <TextInput
-                        style={[styles.inputField, { color: palette.text }]}
-                        placeholder="Ask your culinary question…"
-                        placeholderTextColor={muted}
-                        value={input}
-                        onChangeText={setInput}
-                        onSubmitEditing={() => sendMessage(input)}
-                        returnKeyType="send"
-                        multiline
-                        maxLength={500}
-                    />
-                    <Pressable
-                        onPress={() => sendMessage(input)}
-                        disabled={!input.trim()}
-                        style={[styles.sendBtn, { backgroundColor: input.trim() ? palette.text : palette.line }]}>
-                        <Ionicons
-                            name="arrow-up"
-                            size={18}
-                            color={input.trim() ? palette.background : palette.mutedText}
-                        />
-                    </Pressable>
-                </View>
             </KeyboardAvoidingView>
+
+            {/* Input bar — always visible at bottom */}
+            <View style={[styles.inputBar, { backgroundColor: palette.elevated, borderColor: palette.line }, luxuryShadow]}>
+                <TextInput
+                    style={[styles.inputField, { color: palette.text }]}
+                    placeholder="Ask your culinary question…"
+                    placeholderTextColor={muted}
+                    value={input}
+                    onChangeText={setInput}
+                    onSubmitEditing={() => sendMessage(input)}
+                    returnKeyType="send"
+                    multiline
+                    maxLength={500}
+                />
+                <Pressable
+                    onPress={() => sendMessage(input)}
+                    disabled={!input.trim()}
+                    style={[styles.sendBtn, { backgroundColor: input.trim() ? palette.text : palette.line }]}>
+                    <Ionicons
+                        name="arrow-up"
+                        size={18}
+                        color={input.trim() ? palette.background : palette.mutedText}
+                    />
+                </Pressable>
+            </View>
         </SafeAreaView>
     );
 }
@@ -353,8 +349,10 @@ const styles = StyleSheet.create({
         textAlign: 'right',
     },
 
-    // Pills
-    pillsContent: {
+    // Pills row
+    pillsRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
         paddingHorizontal: spacing.lg,
         paddingVertical: spacing.xs,
         gap: 8,
@@ -375,7 +373,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'flex-end',
         marginHorizontal: spacing.lg,
-        marginBottom: spacing.md,
+        marginBottom: 90, // sit above the floating tab bar
         marginTop: spacing.xs,
         borderRadius: radius.xl,
         borderWidth: 1,
