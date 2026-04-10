@@ -244,91 +244,109 @@ export function LuxuryHomeScreen() {
             <HomeLoadingSkeleton />
           ) : (
             <>
-              <View
+              <Animated.View
                 style={[
-                  styles.promoRow,
+                  styles.filterContentWrap,
                   {
-                    marginTop: spacing.sm,
-                    backgroundColor: HOME_COLORS.surface,
-                    borderColor: HOME_COLORS.line,
+                    opacity: filterContentAnim,
+                    transform: [
+                      {
+                        translateY: filterContentAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
                   },
                 ]}>
-                <ScrollView
-                  horizontal
-                  keyboardShouldPersistTaps="always"
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.promoScroll}>
-                  {promoMessages.map((message, index) => (
-                    <View key={message} style={styles.promoItem}>
-                      <View style={styles.promoIconWrap}>
-                        <Ionicons name="sparkles-outline" size={11} color={HOME_COLORS.text} />
+                <View
+                  style={[
+                    styles.promoRow,
+                    {
+                      marginTop: spacing.sm,
+                      backgroundColor: HOME_COLORS.surface,
+                      borderColor: HOME_COLORS.line,
+                    },
+                  ]}>
+                  <ScrollView
+                    horizontal
+                    keyboardShouldPersistTaps="always"
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.promoScroll}>
+                    {promoMessages.map((message, index) => (
+                      <View key={message} style={styles.promoItem}>
+                        <View style={styles.promoIconWrap}>
+                          <Ionicons name="sparkles-outline" size={11} color={HOME_COLORS.text} />
+                        </View>
+                        <Text style={[styles.promoText, { color: HOME_COLORS.text }]} numberOfLines={1}>
+                          {message}
+                        </Text>
+                        {index < promoMessages.length - 1 ? (
+                          <View style={[styles.promoDot, { backgroundColor: HOME_COLORS.mutedText }]} />
+                        ) : null}
                       </View>
-                      <Text style={[styles.promoText, { color: HOME_COLORS.text }]} numberOfLines={1}>
-                        {message}
-                      </Text>
-                      {index < promoMessages.length - 1 ? (
-                        <View style={[styles.promoDot, { backgroundColor: HOME_COLORS.mutedText }]} />
-                      ) : null}
-                    </View>
-                  ))}
-                </ScrollView>
-              </View>
-
-              <View style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-                <Image
-                  source={{
-                    uri:
-                      heroImage ||
-                      'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
-                  }}
-                  style={styles.heroImage}
-                  contentFit="cover"
-                  transition={0}
-                />
-                <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
-
-                <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
-                  <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
-                  <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
+                    ))}
+                  </ScrollView>
                 </View>
 
                 <View
-                  style={[
-                    styles.heroCopyWrap,
-                    { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
-                  ]}>
-                  <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
-                  <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
-                  <View style={styles.heroCtaRow}>
-                    <Text style={styles.heroCtaText}>Shop featured picks</Text>
-                    <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                  style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
+                  <Image
+                    source={{
+                      uri:
+                        heroImage ||
+                        'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
+                    }}
+                    style={styles.heroImage}
+                    contentFit="cover"
+                    transition={0}
+                  />
+                  <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
+
+                  <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
+                    <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
+                    <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
+                  </View>
+
+                  <View
+                    style={[
+                      styles.heroCopyWrap,
+                      { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
+                    ]}>
+                    <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
+                    <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
+                    <View style={styles.heroCtaRow}>
+                      <Text style={styles.heroCtaText}>Shop featured picks</Text>
+                      <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                    </View>
                   </View>
                 </View>
-              </View>
 
-              <View style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-                <Pressable onPress={handleSubmitSearch} style={styles.searchSubmitBtn}>
-                  <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
-                </Pressable>
-                <TextInput
-                  value={searchQuery}
-                  editable
-                  autoCorrect={false}
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  returnKeyType="go"
-                  placeholder="Search anything..."
-                  placeholderTextColor={HOME_COLORS.mutedText}
-                  onChangeText={setSearchQuery}
-                  onSubmitEditing={handleSubmitSearch}
-                  style={[styles.searchInput, { color: HOME_COLORS.text }]}
-                />
-                {searchQuery.length > 0 ? (
-                  <Pressable onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
-                    <Ionicons name="close" size={14} color={HOME_COLORS.text} />
+                <View
+                  style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
+                  <Pressable onPress={handleSubmitSearch} style={styles.searchSubmitBtn}>
+                    <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
                   </Pressable>
-                ) : null}
-              </View>
+                  <TextInput
+                    value={searchQuery}
+                    editable
+                    autoCorrect={false}
+                    autoCapitalize="none"
+                    spellCheck={false}
+                    returnKeyType="go"
+                    placeholder="Search anything..."
+                    placeholderTextColor={HOME_COLORS.mutedText}
+                    onChangeText={setSearchQuery}
+                    onSubmitEditing={handleSubmitSearch}
+                    style={[styles.searchInput, { color: HOME_COLORS.text }]}
+                  />
+                  {searchQuery.length > 0 ? (
+                    <Pressable onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                      <Ionicons name="close" size={14} color={HOME_COLORS.text} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              </Animated.View>
 
               <View style={styles.filterTabsContainer}>
                 {quickFilters.map((filter) => {
