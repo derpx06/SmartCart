@@ -89,7 +89,7 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                                 style={[styles.addButton, { backgroundColor: REC_COLORS.buttonBg }]}
                             >
                                 <ThemedText style={{ color: REC_COLORS.buttonText, fontWeight: '700', fontSize: 12 }}>
-                                    Add to selection
+                                    Add to cart
                                 </ThemedText>
                                 <Ionicons name="add" size={16} color={REC_COLORS.buttonText} />
                             </Pressable>

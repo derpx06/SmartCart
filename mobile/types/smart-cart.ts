@@ -16,6 +16,10 @@ export interface SemanticState {
   stage: 'exploring' | 'deciding' | 'ready';
   needs: string[];
   risk: 'low' | 'medium' | 'high';
+  completionPercent?: number;
+  requiredItems?: string[];
+  presentItems?: string[];
+  missingItems?: string[];
 }
 
 export interface RelatedItem {
@@ -33,6 +37,39 @@ export interface RankedItem {
   price: number;
   score: number;
   reasons: string[];
+}
+
+export interface CartIntelligencePanel {
+  intentLabel: string;
+  goal: string;
+  completionPercent: number;
+  missingItems: string[];
+  riskLevel: 'low' | 'medium' | 'high';
+  message: string;
+}
+
+export interface KitIntelligence {
+  kitId: string;
+  intentLabel: string;
+  completionPercent: number;
+  missingItems: string[];
+  riskLevel: 'low' | 'medium' | 'high';
+  message: string;
+}
+
+export interface SmartBundle {
+  kitId: string;
+  title: string;
+  subtitle: string;
+  intentLabel: string;
+  completionPercent: number;
+  have: SmartCartItem[];
+  missing: Array<{
+    keyword: string;
+    recommendation?: RankedItem;
+  }>;
+  recommendations: RankedItem[];
+  cta: string;
 }
 
 export interface SmartCartState {
@@ -59,4 +96,7 @@ export interface SmartCartState {
   semantic: SemanticState;
   related: RelatedItem[];
   ranked: RankedItem[];
+  intelligencePanel?: CartIntelligencePanel;
+  kitIntelligence?: KitIntelligence[];
+  smartBundles?: SmartBundle[];
 }

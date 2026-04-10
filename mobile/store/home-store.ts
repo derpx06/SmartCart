@@ -32,6 +32,7 @@ const fallbackHomeData: HomeData = {
 type HomeStore = {
   homeData: HomeData;
   loading: boolean;
+  hasFetched: boolean;
   refreshing: boolean;
   error: string | null;
   loadHome: (tag?: string) => Promise<void>;
@@ -41,11 +42,12 @@ type HomeStore = {
 export const useHomeStore = create<HomeStore>((set) => ({
   homeData: fallbackHomeData,
   loading: true,
+  hasFetched: false,
   refreshing: false,
   error: null,
   loadHome: async (tag?: string) => {
     try {
-      set({ loading: true, error: null });
+      set((state) => ({ loading: !state.hasFetched, error: null }));
       const data = await api.getHome(tag);
       set({
         homeData: {
@@ -58,12 +60,14 @@ export const useHomeStore = create<HomeStore>((set) => ({
             : recommendedProducts,
         },
         loading: false,
+        hasFetched: true,
         error: null,
       });
     } catch {
       set({
         homeData: fallbackHomeData,
         loading: false,
+        hasFetched: true,
         error: 'Unable to load home data',
       });
     }

@@ -116,6 +116,8 @@ export type WishlistApiResponse = {
 
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
   if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
@@ -125,10 +127,21 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     headers.set('Authorization', `Bearer ${authToken}`);
   }
 
-  const response = await fetch(`${Config.API_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${Config.API_URL}${path}`, {
+      ...options,
+      headers,
+      signal: options.signal || controller.signal,
+    });
+  } catch (error: any) {
+    clearTimeout(timeout);
+    if (error?.name === 'AbortError') {
+      throw new Error('Request timed out. Check backend URL/network and try again.');
+    }
+    throw error;
+  }
+  clearTimeout(timeout);
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);

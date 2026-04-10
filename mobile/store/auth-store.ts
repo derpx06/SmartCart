@@ -117,7 +117,11 @@ async function persistSession(session: AuthSession | null) {
 
   if (!session) {
     if (secureStore) {
-      await secureStore.deleteItemAsync(AUTH_STORAGE_KEY);
+      try {
+        await secureStore.deleteItemAsync(AUTH_STORAGE_KEY);
+      } catch {
+        // Ignore secure-store runtime mismatch; fallback to in-memory storage.
+      }
     }
     if (webStorage) {
       webStorage.removeItem(AUTH_STORAGE_KEY);
@@ -128,7 +132,11 @@ async function persistSession(session: AuthSession | null) {
 
   const serialized = JSON.stringify(session);
   if (secureStore) {
-    await secureStore.setItemAsync(AUTH_STORAGE_KEY, serialized);
+    try {
+      await secureStore.setItemAsync(AUTH_STORAGE_KEY, serialized);
+    } catch {
+      // Ignore secure-store runtime mismatch; fallback to in-memory storage.
+    }
   }
   if (webStorage) {
     webStorage.setItem(AUTH_STORAGE_KEY, serialized);
@@ -199,7 +207,7 @@ export const useMobileAuthStore = create<AuthState>((set) => ({
       const secureStore = await getSecureStore();
       const webStorage = getWebStorage();
       const raw = secureStore
-        ? await secureStore.getItemAsync(AUTH_STORAGE_KEY)
+        ? await secureStore.getItemAsync(AUTH_STORAGE_KEY).catch(() => webStorage?.getItem(AUTH_STORAGE_KEY) ?? inMemorySession)
         : webStorage?.getItem(AUTH_STORAGE_KEY) ?? inMemorySession;
       if (!raw) {
         api.setToken(null);

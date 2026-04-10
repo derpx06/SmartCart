@@ -1,13 +1,52 @@
 import { Ionicons } from '@expo/vector-icons';
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
 import { useAuth } from '@/context/AuthContext';
+import { useOrdersStore } from '@/store/orders-store';
 
 export default function ProfileScreen() {
-  const { name, userId, email, role, phone, logout } = useAuth();
+  const { name, email, phone, logout } = useAuth();
+  const orders = useOrdersStore((state) => state.orders);
+  const fetchOrders = useOrdersStore((state) => state.fetchOrders);
+
+  useEffect(() => {
+    if (orders.length === 0) {
+      void fetchOrders({ silent: true });
+    }
+  }, [fetchOrders, orders.length]);
+
+  const profileStats = useMemo(() => {
+    const totalOrders = orders.length;
+    const totalSpent = orders.reduce((sum, order) => sum + (Number.isFinite(order.total) ? order.total : 0), 0);
+    const activeOrders = orders.filter((order) => {
+      const s = order.status.toLowerCase();
+      return !s.includes('deliver') && !s.includes('complete') && !s.includes('cancel');
+    }).length;
+
+    const latestTimestamp = orders.reduce((latest, order) => {
+      const ts = Date.parse(order.date);
+      return Number.isNaN(ts) ? latest : Math.max(latest, ts);
+    }, 0);
+
+    const latestOrderDate =
+      latestTimestamp > 0
+        ? new Date(latestTimestamp).toLocaleDateString(undefined, {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : 'No orders yet';
+
+    return {
+      totalOrders,
+      totalSpent,
+      activeOrders,
+      latestOrderDate,
+    };
+  }, [orders]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -32,18 +71,31 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.divider} />
           <View style={styles.row}>
-            <ThemedText style={styles.label}>Role</ThemedText>
-            <ThemedText style={styles.value}>{role || 'Customer'}</ThemedText>
-          </View>
-          <View style={styles.divider} />
-          <View style={styles.row}>
             <ThemedText style={styles.label}>Phone</ThemedText>
             <ThemedText style={styles.value}>{phone || 'Not available'}</ThemedText>
           </View>
+        </View>
+
+        <View style={styles.card}>
+          <ThemedText style={styles.sectionTitle}>Order details</ThemedText>
+          <View style={styles.row}>
+            <ThemedText style={styles.label}>Total orders</ThemedText>
+            <ThemedText style={styles.value}>{profileStats.totalOrders}</ThemedText>
+          </View>
           <View style={styles.divider} />
           <View style={styles.row}>
-            <ThemedText style={styles.label}>Customer ID</ThemedText>
-            <ThemedText style={styles.value}>{userId || 'Not available'}</ThemedText>
+            <ThemedText style={styles.label}>Active orders</ThemedText>
+            <ThemedText style={styles.value}>{profileStats.activeOrders}</ThemedText>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <ThemedText style={styles.label}>Total spent</ThemedText>
+            <ThemedText style={styles.value}>${profileStats.totalSpent.toFixed(2)}</ThemedText>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.row}>
+            <ThemedText style={styles.label}>Last order</ThemedText>
+            <ThemedText style={styles.value}>{profileStats.latestOrderDate}</ThemedText>
           </View>
         </View>
 
@@ -72,6 +124,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 28, lineHeight: 34, fontWeight: '700' },
   subtitle: { marginTop: 6, fontSize: 14, color: 'rgba(28,27,31,0.68)' },
   card: {
+    marginBottom: 12,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: 'rgba(28,27,31,0.14)',
@@ -79,6 +132,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
+  sectionTitle: { fontSize: 13, fontWeight: '700', color: 'rgba(28,27,31,0.78)', marginBottom: 2 },
   row: { paddingVertical: 12 },
   label: { fontSize: 12, color: 'rgba(28,27,31,0.58)' },
   value: { marginTop: 4, fontSize: 15, fontWeight: '600' },

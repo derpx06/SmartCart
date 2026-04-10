@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Pressable, View } from 'react-native';
+import { Animated, Easing, Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from '@/components/themed-text';
@@ -34,13 +34,16 @@ export function getFloatingTabBarBottomOffset(insetBottom: number) {
 }
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+  const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
   const bottomOffset = getFloatingTabBarBottomOffset(insets.bottom);
-  const text = useThemeColor({}, 'text');
-  const mutedText = useThemeColor({}, 'mutedText');
+  const themedText = useThemeColor({}, 'text');
+  const themedMuted = useThemeColor({}, 'mutedText');
+  const text = isAndroid ? '#FFFFFF' : themedText;
+  const mutedText = isAndroid ? 'rgba(255, 255, 255, 0.72)' : themedMuted;
   const styles = useMemo(
-    () => createFloatingTabBarStyles(bottomOffset, { text, mutedText }, FLOATING_TAB_BAR_HEIGHT),
-    [bottomOffset, text, mutedText]
+    () => createFloatingTabBarStyles(bottomOffset, { text, mutedText }, FLOATING_TAB_BAR_HEIGHT, isAndroid),
+    [bottomOffset, text, mutedText, isAndroid]
   );
 
   const animationState = useRef<Record<string, Animated.Value>>({});
@@ -159,11 +162,11 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               onLongPress={onLongPress}
               onPressIn={onPressIn}
               onPressOut={onPressOut}
-              style={styles.tabButton}>
+              style={[styles.tabButton, isFocused && styles.tabButtonActive]}>
               <Animated.View style={{ transform: [{ scale: iconScale }] }}>
                 <Ionicons
                   name={isFocused ? meta.activeIcon : meta.inactiveIcon}
-                  size={24}
+                  size={22}
                   color={isFocused ? text : mutedText}
                 />
               </Animated.View>

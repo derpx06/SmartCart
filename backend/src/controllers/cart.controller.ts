@@ -7,6 +7,7 @@ import { getSemanticState } from '../services/semantic.service';
 import { getRelatedProducts } from '../services/relationship.service';
 import { rankItems } from '../services/ranking.service';
 import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
+import { buildIntelligenceAndBundles } from '../services/bundle.service';
 
 function mediaUrl(req: Request, path: string): string {
   if (!path) return '';
@@ -76,6 +77,11 @@ export const getSmartCartState = async (req: Request, res: Response): Promise<vo
     }));
     const requestSeed = String(req.get('x-reco-seed') || `${Date.now()}`);
     const variedRanked = withRecommendationVariety(rankedWithMedia, requestSeed);
+    const bundleOutput = buildIntelligenceAndBundles({
+      state: { ...state, semantic, related, ranked: variedRanked },
+      semantic,
+      ranked: variedRanked,
+    });
 
     // Strip embeddings and vectors from response payloads
     const safeItems = state.cart.items.map(({ embedding, ...rest }) => rest);
@@ -89,6 +95,9 @@ export const getSmartCartState = async (req: Request, res: Response): Promise<vo
       semantic: safeSemantic,
       related,
       ranked: variedRanked,
+      intelligencePanel: bundleOutput.intelligencePanel,
+      kitIntelligence: bundleOutput.kitIntelligence,
+      smartBundles: bundleOutput.smartBundles,
     });
   } catch (error) {
     console.error('State build failed:', error);
