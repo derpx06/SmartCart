@@ -3,14 +3,29 @@ import { env } from "./env";
 
 const Redis = require("ioredis");
 
+/** Strip wrapping quotes often introduced by .env generators or copy-paste (breaks ioredis). */
+function normalizeRedisUrl(raw: string | undefined): string | undefined {
+  if (raw == null) return undefined;
+  let s = raw.trim();
+  if (s.length >= 2) {
+    const q = s[0];
+    if ((q === '"' || q === "'") && s[s.length - 1] === q) {
+      s = s.slice(1, -1).trim();
+    }
+  }
+  return s === "" ? undefined : s;
+}
+
+const redisUrl = normalizeRedisUrl(process.env.REDIS_URL);
+
 // For local development on Windows without Redis installed, we mock the basic methods
 // if no explicit REDIS_URL is provided to prevent ECONNREFUSED crash loops.
-const isRedisConfigured = process.env.REDIS_URL;
+const isRedisConfigured = redisUrl;
 
 let redis: any;
 
 if (isRedisConfigured) {
-  redis = new Redis(process.env.REDIS_URL as string);
+  redis = new Redis(redisUrl as string);
   redis.on("error", (err: any) => console.warn("Redis Error:", err.message));
 } else {
   if (env.nodeEnv === "production") {
