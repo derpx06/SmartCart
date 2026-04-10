@@ -8,6 +8,8 @@ export const env = {
   jwtSecret: process.env.JWT_SECRET ?? 'super-secret-key',
   groqApiKey: process.env.GROQ_API_KEY ?? '',
   groqModel: process.env.GROQ_MODEL ?? 'openai/gpt-oss-20b',
+  groqSttModel: process.env.GROQ_STT_MODEL ?? 'whisper-large-v3-turbo',
+  groqTtsModel: process.env.GROQ_TTS_MODEL ?? 'canopylabs/orpheus-v1-english',
   groqBaseUrl: process.env.GROQ_BASE_URL ?? 'https://api.groq.com/openai/v1',
   qdrantUrl: process.env.QDRANT_URL ?? '',
   qdrantApiKey: process.env.QDRANT_API_KEY ?? '',
