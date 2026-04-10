@@ -941,7 +941,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: Fonts.serif,
     fontSize: 30,
-    lineHeight: 36,
+    lineHeight: 40,
     fontWeight: '700',
   },
   metaRibbon: {
@@ -997,19 +997,22 @@ const styles = StyleSheet.create({
   },
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-end',
     flexWrap: 'wrap',
     gap: 10,
     marginTop: spacing.md,
+    marginBottom: spacing.xs,
   },
   price: {
     fontFamily: Fonts.serif,
     fontSize: 32,
+    lineHeight: 40,
     fontWeight: '700',
   },
   originalPrice: {
     fontFamily: Fonts.serif,
     fontSize: 20,
+    lineHeight: 28,
     textDecorationLine: 'line-through',
   },
   savePill: {
@@ -1030,11 +1033,11 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     fontFamily: Fonts.sans,
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   arButtonRow: {
     marginTop: spacing.md,
-    alignSelf: 'flex-start',
+    width: '100%',
   },
   trustGrid: {
     marginTop: spacing.md,
@@ -1144,6 +1147,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontFamily: Fonts.sans,
     fontSize: 13,
+    lineHeight: 19,
   },
   sectionHeading: {
     fontFamily: Fonts.serif,
@@ -1177,6 +1181,7 @@ const styles = StyleSheet.create({
   featureText: {
     fontFamily: Fonts.sans,
     fontSize: 14,
+    lineHeight: 20,
     fontWeight: '600',
     flex: 1,
   },
@@ -1220,13 +1225,14 @@ const styles = StyleSheet.create({
   reviewTitle: {
     fontFamily: Fonts.serif,
     fontSize: 17,
+    lineHeight: 24,
     fontWeight: '700',
     marginBottom: 6,
   },
   reviewBody: {
     fontFamily: Fonts.sans,
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   reviewAuthor: {
     marginTop: spacing.sm,
@@ -1248,7 +1254,7 @@ const styles = StyleSheet.create({
   emptyReviewBody: {
     fontFamily: Fonts.sans,
     fontSize: 14,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   reviewModalBackdrop: {
     flex: 1,
@@ -1285,7 +1291,7 @@ const styles = StyleSheet.create({
   reviewModalSubtitle: {
     fontFamily: Fonts.sans,
     fontSize: 13,
-    lineHeight: 20,
+    lineHeight: 21,
   },
   reviewModalCloseButton: {
     width: 38,

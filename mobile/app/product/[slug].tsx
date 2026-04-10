@@ -26,36 +26,17 @@ function ProductDetailSkeleton({ background }: { background: string }) {
         contentContainerStyle={styles.skeletonContent}
       >
         <View style={styles.skeletonHeroCard}>
-          <SkeletonBlock height={380} borderRadius={radius.xl} />
-        </View>
-
-        <View style={styles.skeletonThumbRail}>
-          {[0, 1, 2, 3].map((idx) => (
-            <SkeletonBlock key={`thumb-${idx}`} height={74} width={74} borderRadius={radius.md} />
-          ))}
+          <SkeletonBlock height={360} borderRadius={radius.xl} />
         </View>
 
         <View style={styles.skeletonDetailsCard}>
-          <SkeletonBlock height={12} width={90} />
-          <SkeletonBlock height={34} width="78%" />
-          <SkeletonBlock height={30} width={180} borderRadius={radius.pill} />
-          <SkeletonBlock height={36} width={170} />
-          <SkeletonBlock height={15} width="100%" />
-          <SkeletonBlock height={15} width="84%" />
+          <SkeletonBlock height={12} width={88} />
+          <SkeletonBlock height={32} width="72%" />
+          <SkeletonBlock height={24} width={148} />
+          <SkeletonBlock height={14} width="100%" />
+          <SkeletonBlock height={14} width="78%" />
           <SkeletonBlock height={52} width="100%" borderRadius={radius.md} />
-          <SkeletonBlock height={68} width="100%" borderRadius={radius.md} />
-          <SkeletonBlock height={12} width={84} />
-          <View style={styles.skeletonColorRow}>
-            {[0, 1, 2, 3].map((idx) => (
-              <SkeletonBlock key={`color-${idx}`} height={40} width={40} borderRadius={20} />
-            ))}
-          </View>
-          <SkeletonBlock height={12} width={66} />
-          <View style={styles.skeletonSizeRow}>
-            {[0, 1, 2, 3].map((idx) => (
-              <SkeletonBlock key={`size-${idx}`} height={42} width="23%" borderRadius={radius.md} />
-            ))}
-          </View>
+          <SkeletonBlock height={52} width="62%" borderRadius={radius.pill} />
         </View>
       </ScrollView>
 
@@ -154,24 +135,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.xl,
     padding: spacing.xs,
   },
-  skeletonThumbRail: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-    marginBottom: spacing.xs,
-  },
   skeletonDetailsCard: {
     borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
-  },
-  skeletonColorRow: {
-    flexDirection: 'row',
-    gap: spacing.xs,
-  },
-  skeletonSizeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.xs,
   },
   skeletonBottomBar: {
     position: 'absolute',

@@ -3,7 +3,6 @@ import type { PropsWithChildren } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import type { StyleProp, ViewStyle } from 'react-native';
 
-import { BlurView } from '@sbaiahmed1/react-native-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useGlassTheme } from '@/components/glass/glassTheme';
@@ -19,7 +18,7 @@ type GlassCardProps = PropsWithChildren<{
 function GlassCardComponent({
   children,
   style,
-  intensity = 28,
+  intensity: _intensity = 28,
   tint,
   radius = 24,
   glow = false,
@@ -35,10 +34,7 @@ function GlassCardComponent({
         },
         style,
       ]}>
-      <BlurView
-        blurType={theme.blurType}
-        blurAmount={Math.max(0, Math.min(intensity, 100))}
-        reducedTransparencyFallbackColor={theme.cardBackground}
+      <View
         style={[
           styles.card,
           {
@@ -49,7 +45,7 @@ function GlassCardComponent({
         ]}>
         {glow ? <LinearGradient colors={theme.glow} style={styles.glow} pointerEvents="none" /> : null}
         <View style={styles.content}>{children}</View>
-      </BlurView>
+      </View>
     </View>
   );
 }
