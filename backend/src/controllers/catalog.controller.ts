@@ -5,16 +5,25 @@ import Product from '../models/Product';
 import Sku from '../models/Sku';
 import { getRelatedProducts } from '../services/relationship.service';
 import { rankItems } from '../services/ranking.service';
+import redis from "../config/redis";
 
 export const getFeed = async (_req: Request, res: Response): Promise<void> => {
   try {
-    const feed = await Feed.findOne({}, '-_id -__v').lean();
-    if (!feed) {
-      res.json({ items: [] });
+    const cacheKey = "feed";
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      res.json(JSON.parse(cached));
       return;
     }
 
-    res.json({ items: feed.items });
+    const feed = await Feed.findOne({}, '-_id -__v').lean();
+
+    const response = { items: feed?.items || [] };
+
+    await redis.set(cacheKey, JSON.stringify(response), "EX", 300);
+
+    res.json(response);
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
@@ -22,17 +31,83 @@ export const getFeed = async (_req: Request, res: Response): Promise<void> => {
 
 export const getSkus = async (_req: Request, res: Response): Promise<void> => {
   try {
+    const cacheKey = "skus";
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      res.json(JSON.parse(cached));
+      return;
+    }
+
     const skus = await Sku.find({}, '-_id -__v').lean();
+
+    await redis.set(cacheKey, JSON.stringify(skus), "EX", 1800); // 30 min
+
     res.json(skus);
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
 };
 
-export const getProducts = async (_req: Request, res: Response): Promise<void> => {
+
+export const getProducts = async (req: Request, res: Response): Promise<void> => {
   try {
-    const products = await Product.find().lean();
-    res.json(products);
+    const page = Math.max(1, Number(req.query.page) || 1);
+    const limit = Math.min(50, Number(req.query.limit) || 10);
+    const skip = (page - 1) * limit;
+
+    const { category, minPrice, maxPrice, search } = req.query;
+
+    const query: any = {};
+
+    if (category) query.category = category;
+    if (minPrice || maxPrice) {
+      query["price.selling"] = {
+        ...(minPrice ? { $gte: Number(minPrice) } : {}),
+        ...(maxPrice ? { $lte: Number(maxPrice) } : {}),
+      };
+    }
+
+    if (search) {
+      query.name = { $regex: search, $options: "i" }; // basic search
+    }
+
+    const cacheKey = `products:${page}:${limit}:${category || "all"}:${minPrice || 0}:${maxPrice || 0}:${search || ""}`;
+    const cachedProducts = await redis.get(cacheKey);
+    if (cachedProducts) {
+      res.json(JSON.parse(cachedProducts));
+      return;
+    }
+
+    const [products, total] = await Promise.all([
+      Product.find(query).skip(skip).limit(limit).lean(),
+      Product.countDocuments(query),
+    ]);
+
+    await redis.set(
+      cacheKey,
+      JSON.stringify({
+        data: products,
+        pagination: {
+          page,
+          limit,
+          total,
+          hasNext: page * limit < total,
+        },
+      }),
+      "EX",
+      60 // 1 min cache
+    );
+
+    res.json({
+      data: products,
+      pagination: {
+        page,
+        limit,
+        total,
+        hasNext: page * limit < total,
+      },
+    });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
@@ -40,11 +115,24 @@ export const getProducts = async (_req: Request, res: Response): Promise<void> =
 
 export const getProductById = async (req: Request, res: Response): Promise<void> => {
   try {
-    const product = await Product.findById(req.params.id).lean();
+    const cacheKey = `product:${req.params.id}`;
+
+    const cached = await redis.get(cacheKey);
+    if (cached) {
+      res.json(JSON.parse(cached));
+      return;
+    }
+
+    const product = await Product.findById(req.params.id)
+      .select("name price images category description")
+      .lean();
+
     if (!product) {
       res.status(404).json({ error: 'Product not found' });
       return;
     }
+
+    await redis.set(cacheKey, JSON.stringify(product), "EX", 300);
 
     res.json(product);
   } catch {
