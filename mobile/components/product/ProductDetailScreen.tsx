@@ -20,7 +20,8 @@ import { luxuryShadow, radius, spacing, useLuxuryPalette } from '@/components/lu
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
 import { ProductDetail } from '@/data/product/productDetails';
-import { useProductRecommendations } from '@/hooks/use-product-recommendations';
+import { useProductRecommendationRows } from '@/hooks/use-product-recommendation-rows';
+import { api } from '@/lib/api';
 import { useMobileAuthStore } from '@/store/auth-store';
 import { useProductStore } from '@/store/product-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
@@ -65,7 +66,7 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewBody, setReviewBody] = useState('');
 
-  const { ranked, loading: recsLoading } = useProductRecommendations(product.id);
+  const { rows: recommendationRows, loading: recsLoading } = useProductRecommendationRows(product.id);
   const addToCart = useSmartCartStore((s) => s.addToCart);
   const submitReview = useProductStore((s) => s.submitReview);
   const reviewSubmitting = useProductStore((s) => s.reviewSubmitting);
@@ -133,6 +134,13 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
     if (wishlistLoaded) return;
     void fetchWishlist({ silent: true });
   }, [wishlistLoaded, fetchWishlist]);
+
+  useEffect(() => {
+    if (!product?.id) return;
+    void api.recordView(product.id).catch(() => {
+      // ignore view tracking failures
+    });
+  }, [product?.id]);
 
   const total = quantity * product.price;
 
@@ -556,63 +564,72 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             )}
           </View>
 
-          <View style={styles.sectionWrap}>
-            <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>You may also like</ThemedText>
-            {recsLoading ? (
-              <View style={{ height: 180, justifyContent: 'center' }}>
-                <ActivityIndicator color={palette.gold} />
-              </View>
-            ) : ranked.length > 0 ? (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
-                {ranked.map((related) => (
-                  <View key={related.productId} style={styles.relatedCardContainer}>
-                    <Pressable
-                      style={[
-                        styles.relatedCard,
-                        {
-                          backgroundColor: palette.elevated,
-                          borderColor: palette.line,
-                        },
-                      ]}
-                      onPress={() => {
-                        const target = related.slug || related.productId;
-                        router.push(`/product/${target}`);
-                      }}
-                    >
-                      <View style={[styles.relatedImagePlaceholder, { backgroundColor: palette.beige }]}>
-                        {related.image ? (
-                          <Image source={{ uri: related.image }} style={StyleSheet.absoluteFill} contentFit="cover" />
-                        ) : (
-                          <Ionicons name="sparkles-outline" size={24} color={palette.gold} />
-                        )}
-                        {related.reasons.length > 0 && (
-                          <View style={styles.miniBadge}>
-                            <ThemedText style={styles.miniBadgeText}>{related.reasons[0]}</ThemedText>
+          {recsLoading ? (
+            <View style={[styles.sectionWrap, { height: 180, justifyContent: 'center' }]}>
+              <ActivityIndicator color={palette.gold} />
+            </View>
+          ) : recommendationRows.length > 0 ? (
+            recommendationRows.map((row) =>
+              row.items?.length ? (
+                <View key={row.id} style={styles.sectionWrap}>
+                  <ThemedText style={[styles.sectionHeading, { color: palette.text }]}>{row.title}</ThemedText>
+                  {row.subtitle ? (
+                    <ThemedText style={[styles.description, { color: palette.mutedText }]}>{row.subtitle}</ThemedText>
+                  ) : null}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.relatedRail}>
+                    {row.items.map((related) => (
+                      <View key={`${row.id}-${related.productId}`} style={styles.relatedCardContainer}>
+                        <Pressable
+                          style={[
+                            styles.relatedCard,
+                            {
+                              backgroundColor: palette.elevated,
+                              borderColor: palette.line,
+                            },
+                          ]}
+                          onPress={() => {
+                            const target = related.slug || related.productId;
+                            router.push(`/product/${target}`);
+                          }}
+                        >
+                          <View style={[styles.relatedImagePlaceholder, { backgroundColor: palette.beige }]}>
+                            {related.image ? (
+                              <Image source={{ uri: related.image }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                            ) : (
+                              <Ionicons name="sparkles-outline" size={24} color={palette.gold} />
+                            )}
+                            {related.reasons.length > 0 && (
+                              <View style={styles.miniBadge}>
+                                <ThemedText style={styles.miniBadgeText}>{related.reasons[0]}</ThemedText>
+                              </View>
+                            )}
                           </View>
-                        )}
+                          <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
+                            {related.name}
+                          </ThemedText>
+                          <ThemedText style={[styles.relatedPrice, { color: palette.gold }]}>
+                            ${related.price.toFixed(2)}
+                          </ThemedText>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => handleAddRelated(related.productId)}
+                          style={[styles.miniAddBtn, { backgroundColor: palette.text }]}
+                        >
+                          <Ionicons name="add" size={16} color={palette.elevated} />
+                        </Pressable>
                       </View>
-                      <ThemedText style={[styles.relatedName, { color: palette.text }]} numberOfLines={2}>
-                        {related.name}
-                      </ThemedText>
-                      <ThemedText style={[styles.relatedPrice, { color: palette.gold }]}>
-                        ${related.price.toFixed(2)}
-                      </ThemedText>
-                    </Pressable>
-                    <Pressable
-                      onPress={() => handleAddRelated(related.productId)}
-                      style={[styles.miniAddBtn, { backgroundColor: palette.text }]}
-                    >
-                      <Ionicons name="add" size={16} color={palette.elevated} />
-                    </Pressable>
-                  </View>
-                ))}
-              </ScrollView>
-            ) : (
+                    ))}
+                  </ScrollView>
+                </View>
+              ) : null
+            )
+          ) : (
+            <View style={styles.sectionWrap}>
               <ThemedText style={[styles.description, { color: palette.mutedText, textAlign: 'center' }]}>
                 No recommendations found for this item yet.
               </ThemedText>
-            )}
-          </View>
+            </View>
+          )}
         </ScrollView>
 
         <Modal

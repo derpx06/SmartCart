@@ -8,6 +8,7 @@ import { rankItems } from '../services/ranking.service';
 import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
 import { ensureProductEmbedding } from '../services/productEmbedding.service';
 import { getCatalogCacheVersion } from '../services/cache.service';
+import { NEEDS_MAP } from '../config/semanticMaps';
 import redis from "../config/redis";
 
 function mediaUrl(req: Request, path: string): string {
@@ -240,6 +241,109 @@ export const getProductRecommendations = async (req: Request, res: Response): Pr
     );
   } catch (error) {
     console.error('Recommendations failed:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+function inferIntentFromCategory(category: string): keyof typeof NEEDS_MAP {
+  const c = String(category || '').toLowerCase();
+  if (/(cook|kitchen|pan|pot|knife|spatula)/.test(c)) return 'kitchen_setup';
+  if (/(bake|oven|muffin|tray)/.test(c)) return 'baking';
+  if (/(bed|bedding|mattress|pillow|blanket)/.test(c)) return 'bed_setup';
+  if (/(decor|furniture|home)/.test(c)) return 'home_setup';
+  return 'cooking';
+}
+
+export const getProductRecommendationRows = async (req: Request, res: Response): Promise<void> => {
+  try {
+    await ensureCatalogSeededFromSkus();
+    const product = await Product.findById(req.params.id).lean();
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    const related = await getRelatedProducts(product._id.toString());
+    const candidates = await Product.find({ _id: { $ne: product._id } }).limit(60).lean();
+    const candidateById = new Map<string, any>();
+    for (const c of candidates) {
+      const id = c._id?.toString?.();
+      if (id) candidateById.set(id, c);
+    }
+
+    const toItem = (p: any, reason: string, score = 0) => ({
+      productId: p._id.toString(),
+      slug: p.slug || '',
+      image: mediaUrl(req, p.images?.[0] || ''),
+      name: p.name,
+      category: p.category,
+      price: Number(p.price?.selling ?? 0),
+      score,
+      reasons: [reason],
+    });
+
+    const relatedSorted = [...related].sort((a: any, b: any) => b.score - a.score);
+    const fbtRaw = relatedSorted.filter((r: any) => r.type === 'co_occurrence');
+    const fbtPool = (fbtRaw.length ? fbtRaw : relatedSorted).slice(0, 18);
+    const frequentlyBoughtTogether = fbtPool
+      .map((r: any) => {
+        const p = candidateById.get(r.productId);
+        return p ? toItem(p, 'Frequently bought together', Number(r.score || 0)) : null;
+      })
+      .filter(Boolean);
+
+    const intent = inferIntentFromCategory(String(product.category || ''));
+    const needs = NEEDS_MAP[intent] || NEEDS_MAP.cooking;
+    const completeSetup = candidates
+      .filter((c: any) => {
+        const text = `${c.name} ${c.category} ${c.description || ''}`.toLowerCase();
+        return needs.some((n) => text.includes(String(n).toLowerCase()));
+      })
+      .slice(0, 12)
+      .map((p: any) => toItem(p, 'Completes your setup'));
+
+    const semanticRaw = relatedSorted.filter((r: any) => r.type === 'embedding');
+    const semanticPool = (semanticRaw.length ? semanticRaw : relatedSorted).slice(0, 20);
+    const semanticSimilar = semanticPool
+      .map((r: any) => {
+        const p = candidateById.get(r.productId);
+        return p ? toItem(p, 'Semantic match', Number(r.score || 0)) : null;
+      })
+      .filter(Boolean);
+
+    const dedupe = (items: any[]) => {
+      const seen = new Set<string>();
+      return items.filter((i) => {
+        if (!i?.productId || seen.has(i.productId)) return false;
+        seen.add(i.productId);
+        return true;
+      });
+    };
+
+    res.json({
+      rows: [
+        {
+          id: 'frequently-bought-together',
+          title: 'Frequently Bought Together',
+          subtitle: 'Customers pair these with this product.',
+          items: dedupe(frequentlyBoughtTogether).slice(0, 8),
+        },
+        {
+          id: 'complete-your-setup',
+          title: 'Complete Your Setup',
+          subtitle: 'Missing essentials that make this setup complete.',
+          items: dedupe(completeSetup).slice(0, 8),
+        },
+        {
+          id: 'semantic-similar',
+          title: 'Similar Items (Semantic)',
+          subtitle: 'Close matches by meaning, use, and style.',
+          items: dedupe(semanticSimilar).slice(0, 8),
+        },
+      ],
+    });
+  } catch (error) {
+    console.error('getProductRecommendationRows failed:', error);
     res.status(500).json({ error: 'Server error' });
   }
 };

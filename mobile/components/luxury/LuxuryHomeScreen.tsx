@@ -22,6 +22,7 @@ import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
+import { HomeRowRail } from '@/components/home/HomeRowRail';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
 import { useHomeStore } from '@/store/home-store';
@@ -98,6 +99,7 @@ export function LuxuryHomeScreen() {
   const hasFetched = useHomeStore((state) => state.hasFetched);
   const refreshing = useHomeStore((state) => state.refreshing);
   const homeData = useHomeStore((state) => state.homeData);
+  const homeRows = useHomeStore((state) => state.homeRows);
   const loadHome = useHomeStore((state) => state.loadHome);
   const refreshHome = useHomeStore((state) => state.refreshHome);
   const wishlistItemsCount = useWishlistStore((state) => state.items.length);
@@ -461,6 +463,12 @@ export function LuxuryHomeScreen() {
                     onPressProduct={openProduct}
                   />
                 </View>
+
+                {homeRows.map((row) => (
+                  <View key={row.id} style={styles.sectionWrap}>
+                    <HomeRowRail row={row} loading={false} onPressProduct={openProduct} />
+                  </View>
+                ))}
 
                 <View style={styles.sectionWrap}>
                   <BrandStoryCard loading={false} />
