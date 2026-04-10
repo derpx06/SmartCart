@@ -1,13 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
+import { useHomeStore } from '@/store/home-store';
 import { useSmartCartState } from '@/hooks/use-smart-cart-state';
 import { useOrdersStore } from '@/store/orders-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
@@ -55,8 +57,10 @@ export default function CartScreen() {
   const addToCart = useSmartCartStore((store) => store.addToCart);
   const checkout = useSmartCartStore((store) => store.checkout);
   const fetchOrders = useOrdersStore((store) => store.fetchOrders);
+  const homeData = useHomeStore((state) => state.homeData);
   const scrollRef = useRef<ScrollView>(null);
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [cartSearchQuery, setCartSearchQuery] = useState('');
   const insets = useSafeAreaInsets();
   const background = CART_COLORS.screenBg;
   const card = CART_COLORS.cardBg;
@@ -83,7 +87,15 @@ export default function CartScreen() {
     );
   }
 
-  const items = state?.cart.items || [];
+  const allItems = state?.cart.items || [];
+  const cartSearch = cartSearchQuery.trim().toLowerCase();
+  const items = cartSearch
+    ? allItems.filter(
+        (item) =>
+          item.name.toLowerCase().includes(cartSearch) ||
+          (item.category && item.category.toLowerCase().includes(cartSearch)),
+      )
+    : allItems;
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
@@ -137,6 +149,27 @@ export default function CartScreen() {
           </View>
         </View>
 
+        {/* ── Search bar ── */}
+        <View style={[styles.cartSearchWrap, { backgroundColor: CART_COLORS.cardBg, borderColor: CART_COLORS.border }]}>
+          <Ionicons name="search" size={16} color={muted} />
+          <TextInput
+            value={cartSearchQuery}
+            onChangeText={setCartSearchQuery}
+            placeholder="Search your cart..."
+            placeholderTextColor={muted}
+            autoCorrect={false}
+            autoCapitalize="none"
+            spellCheck={false}
+            returnKeyType="search"
+            style={[styles.cartSearchInput, { color: text }]}
+          />
+          {cartSearchQuery.length > 0 ? (
+            <Pressable onPress={() => setCartSearchQuery('')} style={[styles.cartSearchClear, { backgroundColor: softSurface }]}>
+              <Ionicons name="close" size={13} color={text} />
+            </Pressable>
+          ) : null}
+        </View>
+
         {error ? (
           <View style={[styles.errorPill, { borderColor: danger, backgroundColor: card }]}>
             <Ionicons name="alert-circle-outline" size={14} color={danger} />
@@ -148,10 +181,14 @@ export default function CartScreen() {
 
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
-            <Ionicons name="bag-handle-outline" size={30} color={muted} />
-            <ThemedText style={[styles.emptyTitle, { color: text }]}>Your cart is empty</ThemedText>
+            <Ionicons name={cartSearch ? 'search-outline' : 'bag-handle-outline'} size={30} color={muted} />
+            <ThemedText style={[styles.emptyTitle, { color: text }]}>
+              {cartSearch ? 'No matching items' : 'Your cart is empty'}
+            </ThemedText>
             <ThemedText style={[styles.emptyText, { color: muted }]}>
-              Add pieces to begin a more considered checkout experience.
+              {cartSearch
+                ? 'Try a different search term to find items in your cart.'
+                : 'Add pieces to begin a more considered checkout experience.'}
             </ThemedText>
           </View>
         ) : (
@@ -160,6 +197,11 @@ export default function CartScreen() {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
               const slug = item.slug?.trim();
               const canOpenProduct = Boolean(slug);
+              
+              const allProducts = [...(homeData?.bestsellers || []), ...(homeData?.recommendedProducts || [])];
+              const matchingProduct = allProducts.find(p => p.id === item.productId || p.slug === item.slug);
+              const imageUrl = matchingProduct?.image;
+
               return (
                 <View
                   key={item.productId}
@@ -176,10 +218,14 @@ export default function CartScreen() {
                     ]}
                     accessibilityRole={canOpenProduct ? 'button' : undefined}
                     accessibilityLabel={canOpenProduct ? `Open ${item.name}` : undefined}>
-                    <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
-                      <ThemedText style={[styles.itemMonogram, { color: text }]}>
-                        {initials(item.name)}
-                      </ThemedText>
+                    <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt, overflow: 'hidden' }]}>
+                      {imageUrl ? (
+                        <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+                      ) : (
+                        <ThemedText style={[styles.itemMonogram, { color: text }]}>
+                          {initials(item.name)}
+                        </ThemedText>
+                      )}
                     </View>
 
                     <View style={styles.itemBody}>
@@ -399,6 +445,29 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 13,
     lineHeight: 20,
+  },
+  cartSearchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    paddingHorizontal: spacing.sm,
+    height: 46,
+    gap: spacing.xs,
+    ...luxuryShadow,
+  },
+  cartSearchInput: {
+    flex: 1,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    letterSpacing: -0.1,
+  },
+  cartSearchClear: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconBadge: {
     width: 44,
