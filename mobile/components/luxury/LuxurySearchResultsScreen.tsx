@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,9 +20,12 @@ import { Fonts } from '@/constants/theme';
 import { useHomeStore } from '@/store/home-store';
 import { useWishlistStore } from '@/store/wishlist-store';
 
-const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'] as const;
-
 const trendingSearches = ['Dutch Oven', 'Sofa', 'Espresso', 'Nightstand', 'Lamp'];
+const PRICE_BANDS = ['all', 'under_100', '100_250', '250_500', '500_plus', 'custom'] as const;
+const RATING_OPTIONS = [0, 4, 4.5];
+const SORT_OPTIONS = ['relevance', 'price_low_high', 'price_high_low', 'rating_high_low'] as const;
+type PriceBand = (typeof PRICE_BANDS)[number];
+type SortOption = (typeof SORT_OPTIONS)[number];
 
 const CARD_GAP = 12;
 const GRID_PADDING = spacing.lg;
@@ -48,23 +52,47 @@ const SEARCH_COLORS = {
   trendingText: '#1C1B1F',
 };
 
-function normalizeFilter(raw: string | undefined) {
-  if (!raw) return 'All Product';
-  const found = quickFilters.find((filter) => filter.toLowerCase() === raw.toLowerCase());
-  return found ?? 'All Product';
+function parseProductPrice(price: string) {
+  const normalized = price.replace(/[^0-9.]/g, '');
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function matchesCategory(product: ProductItem, category: string) {
-  if (category === 'All Product') return true;
-  const name = product.name.toLowerCase();
+function parseInputNumber(value: string): number | null {
+  if (!value.trim()) return null;
+  const parsed = Number(value.replace(/[^0-9.]/g, ''));
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
-  const categoryKeywords: Record<string, string[]> = {
-    'Living Room': ['living', 'sofa', 'furniture', 'coffee', 'table', 'tray', 'decor', 'lamp'],
-    Bedroom: ['bed', 'bedroom', 'bedding', 'nightstand', 'dresser', 'wardrobe'],
-    Kitchen: ['kitchen', 'pan', 'cook', 'oven', 'plate', 'espresso', 'flatware', 'board', 'dutch'],
-  };
+function getPriceRange(priceBand: PriceBand, minInput: string, maxInput: string): { min: number | null; max: number | null } {
+  if (priceBand === 'under_100') return { min: null, max: 100 };
+  if (priceBand === '100_250') return { min: 100, max: 250 };
+  if (priceBand === '250_500') return { min: 250, max: 500 };
+  if (priceBand === '500_plus') return { min: 500, max: null };
+  if (priceBand !== 'custom') return { min: null, max: null };
 
-  return (categoryKeywords[category] ?? []).some((token) => name.includes(token));
+  const min = parseInputNumber(minInput);
+  const max = parseInputNumber(maxInput);
+  if (min != null && max != null && min > max) {
+    return { min: max, max: min };
+  }
+  return { min, max };
+}
+
+function getSortLabel(sortBy: SortOption) {
+  if (sortBy === 'price_low_high') return 'Price: Low to High';
+  if (sortBy === 'price_high_low') return 'Price: High to Low';
+  if (sortBy === 'rating_high_low') return 'Rating';
+  return 'Sort';
+}
+
+function getPriceBandLabel(priceBand: PriceBand) {
+  if (priceBand === 'under_100') return 'Under $100';
+  if (priceBand === '100_250') return '$100 to $250';
+  if (priceBand === '250_500') return '$250 to $500';
+  if (priceBand === '500_plus') return '$500 & Above';
+  if (priceBand === 'custom') return 'Custom Price';
+  return 'All Prices';
 }
 
 /* ─── Animated Product Card ─── */
@@ -183,7 +211,7 @@ function ProductCard({
 /* ─── Main Screen ─── */
 export function LuxurySearchResultsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ q?: string; category?: string }>();
+  const params = useLocalSearchParams<{ q?: string }>();
   const homeData = useHomeStore((state) => state.homeData);
   const loading = useHomeStore((state) => state.loading);
   const loadHome = useHomeStore((state) => state.loadHome);
@@ -194,11 +222,21 @@ export function LuxurySearchResultsScreen() {
   const toggleWishlistItem = useWishlistStore((state) => state.toggleWishlistItem);
 
   const paramQuery = typeof params.q === 'string' ? params.q : '';
-  const paramCategory = normalizeFilter(typeof params.category === 'string' ? params.category : undefined);
 
   const [searchQuery, setSearchQuery] = useState(paramQuery);
-  const [activeFilter, setActiveFilter] = useState<string>(paramCategory);
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isFilterModalVisible, setIsFilterModalVisible] = useState(false);
+  const [sortBy, setSortBy] = useState<SortOption>('relevance');
+  const [priceBand, setPriceBand] = useState<PriceBand>('all');
+  const [minPriceInput, setMinPriceInput] = useState('');
+  const [maxPriceInput, setMaxPriceInput] = useState('');
+  const [minRating, setMinRating] = useState(0);
+
+  const [draftSortBy, setDraftSortBy] = useState<SortOption>('relevance');
+  const [draftPriceBand, setDraftPriceBand] = useState<PriceBand>('all');
+  const [draftMinPriceInput, setDraftMinPriceInput] = useState('');
+  const [draftMaxPriceInput, setDraftMaxPriceInput] = useState('');
+  const [draftMinRating, setDraftMinRating] = useState(0);
 
   const headerFade = useRef(new Animated.Value(0)).current;
   const searchBarAnim = useRef(new Animated.Value(0)).current;
@@ -214,8 +252,7 @@ export function LuxurySearchResultsScreen() {
 
   useEffect(() => {
     setSearchQuery(paramQuery);
-    setActiveFilter(paramCategory);
-  }, [paramCategory, paramQuery]);
+  }, [paramQuery]);
 
   useEffect(() => {
     Animated.stagger(120, [
@@ -240,11 +277,19 @@ export function LuxurySearchResultsScreen() {
 
   const normalizedQuery = searchQuery.trim().toLowerCase();
   const wishlistIdSet = useMemo(() => new Set(wishlistItems.map((item) => item.productId)), [wishlistItems]);
+  const appliedPriceRange = useMemo(
+    () => getPriceRange(priceBand, minPriceInput, maxPriceInput),
+    [priceBand, minPriceInput, maxPriceInput],
+  );
 
   const results = useMemo(() => {
-    return allProducts.filter((product) => {
-      const byCategory = matchesCategory(product, activeFilter);
-      if (!byCategory) return false;
+    const filtered = allProducts.filter((product) => {
+      const priceValue = parseProductPrice(product.price);
+      if (appliedPriceRange.min != null && priceValue < appliedPriceRange.min) return false;
+      if (appliedPriceRange.max != null && priceValue > appliedPriceRange.max) return false;
+
+      if (minRating > 0 && product.rating < minRating) return false;
+
       if (!normalizedQuery) return true;
 
       return (
@@ -252,14 +297,36 @@ export function LuxurySearchResultsScreen() {
         product.price.toLowerCase().includes(normalizedQuery)
       );
     });
-  }, [activeFilter, allProducts, normalizedQuery]);
+
+    if (sortBy === 'relevance') {
+      return filtered;
+    }
+
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'price_low_high') {
+        return parseProductPrice(a.price) - parseProductPrice(b.price);
+      }
+      if (sortBy === 'price_high_low') {
+        return parseProductPrice(b.price) - parseProductPrice(a.price);
+      }
+      if (sortBy === 'rating_high_low') {
+        return b.rating - a.rating;
+      }
+      return 0;
+    });
+  }, [allProducts, normalizedQuery, appliedPriceRange, minRating, sortBy]);
+
+  const activeFiltersCount =
+    (priceBand !== 'all' ? 1 : 0) +
+    (minRating > 0 ? 1 : 0) +
+    (sortBy !== 'relevance' ? 1 : 0);
+  const sortLabel = getSortLabel(sortBy);
 
   const openSearch = useCallback(
-    (nextQuery: string, nextFilter: string) => {
+    (nextQuery: string) => {
       const trimmed = nextQuery.trim();
       const paramsToPass: Record<string, string> = {};
       if (trimmed) paramsToPass.q = trimmed;
-      if (nextFilter !== 'All Product') paramsToPass.category = nextFilter;
 
       router.replace({
         pathname: '/(tabs)/search',
@@ -270,21 +337,50 @@ export function LuxurySearchResultsScreen() {
   );
 
   const handleSubmitSearch = () => {
-    openSearch(searchQuery, activeFilter);
-  };
-
-  const handleSelectFilter = (filter: string) => {
-    setActiveFilter(filter);
-    openSearch(searchQuery, filter);
+    openSearch(searchQuery);
   };
 
   const handleTrendingPress = (term: string) => {
     setSearchQuery(term);
-    openSearch(term, activeFilter);
+    openSearch(term);
   };
 
   const openProduct = (product: ProductItem) => {
     router.push(`/product/${product.slug || 'signature-enameled-cast-iron-dutch-oven'}`);
+  };
+
+  const openFilterModal = useCallback(() => {
+    setDraftSortBy(sortBy);
+    setDraftPriceBand(priceBand);
+    setDraftMinPriceInput(minPriceInput);
+    setDraftMaxPriceInput(maxPriceInput);
+    setDraftMinRating(minRating);
+    setIsFilterModalVisible(true);
+  }, [sortBy, priceBand, minPriceInput, maxPriceInput, minRating]);
+
+  const applyFilters = () => {
+    setSortBy(draftSortBy);
+    setPriceBand(draftPriceBand);
+    setMinPriceInput(draftMinPriceInput);
+    setMaxPriceInput(draftMaxPriceInput);
+    setMinRating(draftMinRating);
+    setIsFilterModalVisible(false);
+  };
+
+  const resetDraftFilters = () => {
+    setDraftSortBy('relevance');
+    setDraftPriceBand('all');
+    setDraftMinPriceInput('');
+    setDraftMaxPriceInput('');
+    setDraftMinRating(0);
+  };
+
+  const resetAppliedFilters = () => {
+    setSortBy('relevance');
+    setPriceBand('all');
+    setMinPriceInput('');
+    setMaxPriceInput('');
+    setMinRating(0);
   };
 
   const handleToggleWishlist = useCallback(
@@ -314,8 +410,13 @@ export function LuxurySearchResultsScreen() {
           <Text style={styles.headerTitle}>Discover</Text>
         </View>
         <View style={styles.headerRight}>
-          <Pressable style={styles.iconBtn}>
+          <Pressable style={styles.iconBtn} onPress={openFilterModal}>
             <Ionicons name="options-outline" size={18} color={SEARCH_COLORS.text} />
+            {activeFiltersCount > 0 ? (
+              <View style={styles.filtersBadge}>
+                <Text style={styles.filtersBadgeText}>{activeFiltersCount}</Text>
+              </View>
+            ) : null}
           </Pressable>
         </View>
       </Animated.View>
@@ -365,38 +466,29 @@ export function LuxurySearchResultsScreen() {
         )}
       </Animated.View>
 
-      {/* ── Filter Chips ── */}
-      <View style={styles.filterContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          keyboardShouldPersistTaps="always"
-          contentContainerStyle={styles.filterRow}>
-          {quickFilters.map((filter) => {
-            const isActive = filter === activeFilter;
-            return (
-              <Pressable
-                key={filter}
-                onPress={() => handleSelectFilter(filter)}
-                style={[
-                  styles.filterChip,
-                  {
-                    backgroundColor: isActive ? SEARCH_COLORS.chipActiveBg : SEARCH_COLORS.chipBg,
-                    borderColor: isActive ? SEARCH_COLORS.chipActiveBg : SEARCH_COLORS.chipBorder,
-                  },
-                ]}>
-                <Text
-                  style={[
-                    styles.filterChipText,
-                    { color: isActive ? SEARCH_COLORS.chipActiveText : SEARCH_COLORS.chipText },
-                  ]}>
-                  {filter}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </ScrollView>
-      </View>
+
+      {activeFiltersCount > 0 ? (
+        <View style={styles.activeFiltersRow}>
+          {priceBand !== 'all' ? (
+            <View style={styles.activeFilterChip}>
+              <Text style={styles.activeFilterChipText}>{getPriceBandLabel(priceBand)}</Text>
+            </View>
+          ) : null}
+          {minRating > 0 ? (
+            <View style={styles.activeFilterChip}>
+              <Text style={styles.activeFilterChipText}>{minRating}+ ★</Text>
+            </View>
+          ) : null}
+          {sortBy !== 'relevance' ? (
+            <View style={styles.activeFilterChip}>
+              <Text style={styles.activeFilterChipText}>{sortLabel}</Text>
+            </View>
+          ) : null}
+          <Pressable onPress={resetAppliedFilters} style={styles.clearFiltersInlineBtn}>
+            <Text style={styles.clearFiltersInlineText}>Clear</Text>
+          </Pressable>
+        </View>
+      ) : null}
 
       {/* ── Results ── */}
       <ScrollView
@@ -410,9 +502,9 @@ export function LuxurySearchResultsScreen() {
             <Text style={styles.resultCountText}>
               {results.length} product{results.length === 1 ? '' : 's'} found
             </Text>
-            <Pressable style={styles.sortBtn}>
+            <Pressable style={styles.sortBtn} onPress={openFilterModal}>
               <Ionicons name="swap-vertical-outline" size={14} color={SEARCH_COLORS.muted} />
-              <Text style={styles.sortText}>Sort</Text>
+              <Text style={styles.sortText}>{sortLabel}</Text>
             </Pressable>
           </View>
         )}
@@ -445,12 +537,12 @@ export function LuxurySearchResultsScreen() {
             </View>
             <Text style={styles.emptyTitle}>No products found</Text>
             <Text style={styles.emptySubtitle}>
-              Try adjusting your search or explore a different category.
+              Try adjusting your search term or filter settings.
             </Text>
             <Pressable
               onPress={() => {
                 setSearchQuery('');
-                setActiveFilter('All Product');
+                resetAppliedFilters();
               }}
               style={styles.emptyResetBtn}>
               <Text style={styles.emptyResetText}>Clear filters</Text>
@@ -490,6 +582,115 @@ export function LuxurySearchResultsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <Modal
+        visible={isFilterModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsFilterModalVisible(false)}>
+        <View style={styles.modalBackdrop}>
+          <Pressable style={styles.modalDismissLayer} onPress={() => setIsFilterModalVisible(false)} />
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter & Sort</Text>
+              <Pressable onPress={() => setIsFilterModalVisible(false)} style={styles.modalCloseBtn}>
+                <Ionicons name="close" size={16} color={SEARCH_COLORS.text} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.modalContent}>
+              <View style={styles.filterSection}>
+                <Text style={styles.sectionTitle}>Sort by</Text>
+                <View style={styles.optionList}>
+                  {SORT_OPTIONS.map((option) => {
+                    const active = draftSortBy === option;
+                    return (
+                      <Pressable
+                        key={option}
+                        onPress={() => setDraftSortBy(option)}
+                        style={[styles.optionRow, active ? styles.optionRowActive : null]}>
+                        <Text style={[styles.optionRowText, active ? styles.optionRowTextActive : null]}>
+                          {getSortLabel(option)}
+                        </Text>
+                        {active ? <Ionicons name="checkmark-circle" size={16} color={SEARCH_COLORS.accent} /> : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.sectionTitle}>Price</Text>
+                <View style={styles.bandGrid}>
+                  {PRICE_BANDS.map((band) => {
+                    const active = draftPriceBand === band;
+                    return (
+                      <Pressable
+                        key={band}
+                        onPress={() => setDraftPriceBand(band)}
+                        style={[styles.bandChip, active ? styles.bandChipActive : null]}>
+                        <Text style={[styles.bandChipText, active ? styles.bandChipTextActive : null]}>
+                          {getPriceBandLabel(band)}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {draftPriceBand === 'custom' ? (
+                  <View style={styles.customPriceRow}>
+                    <TextInput
+                      value={draftMinPriceInput}
+                      onChangeText={setDraftMinPriceInput}
+                      placeholder="Min"
+                      keyboardType="numeric"
+                      style={styles.customPriceInput}
+                      placeholderTextColor={SEARCH_COLORS.muted}
+                    />
+                    <Text style={styles.customPriceDash}>-</Text>
+                    <TextInput
+                      value={draftMaxPriceInput}
+                      onChangeText={setDraftMaxPriceInput}
+                      placeholder="Max"
+                      keyboardType="numeric"
+                      style={styles.customPriceInput}
+                      placeholderTextColor={SEARCH_COLORS.muted}
+                    />
+                  </View>
+                ) : null}
+              </View>
+
+              <View style={styles.filterSection}>
+                <Text style={styles.sectionTitle}>Customer rating</Text>
+                <View style={styles.ratingChipsRow}>
+                  {RATING_OPTIONS.map((rating) => {
+                    const active = draftMinRating === rating;
+                    const label = rating === 0 ? 'All' : `${rating}+ ★`;
+                    return (
+                      <Pressable
+                        key={label}
+                        onPress={() => setDraftMinRating(rating)}
+                        style={[styles.ratingChip, active ? styles.ratingChipActive : null]}>
+                        <Text style={[styles.ratingChipText, active ? styles.ratingChipTextActive : null]}>
+                          {label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <Pressable onPress={resetDraftFilters} style={styles.resetBtn}>
+                <Text style={styles.resetBtnText}>Reset</Text>
+              </Pressable>
+              <Pressable onPress={applyFilters} style={styles.applyBtn}>
+                <Text style={styles.applyBtnText}>Apply Filters</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -538,6 +739,25 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: SEARCH_COLORS.soft,
+  },
+  filtersBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    minWidth: 15,
+    height: 15,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SEARCH_COLORS.accent,
+  },
+  filtersBadgeText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.sans,
+    fontSize: 9,
+    fontWeight: '700',
+    lineHeight: 11,
   },
 
   /* ── Search Bar ── */
@@ -602,6 +822,41 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 0.1,
+  },
+  activeFiltersRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.xs,
+  },
+  activeFilterChip: {
+    borderRadius: radius.pill,
+    backgroundColor: SEARCH_COLORS.soft,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+  },
+  activeFilterChipText: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  clearFiltersInlineBtn: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    backgroundColor: '#FFFFFF',
+  },
+  clearFiltersInlineText: {
+    color: SEARCH_COLORS.muted,
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '600',
   },
 
   /* ── Results scroll ── */
@@ -722,6 +977,199 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  modalBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  modalDismissLayer: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  modalCard: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    backgroundColor: '#FFFFFF',
+    paddingTop: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    maxHeight: '78%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  modalTitle: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.serif,
+    fontSize: 24,
+    fontWeight: '700',
+  },
+  modalCloseBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SEARCH_COLORS.soft,
+  },
+  modalContent: {
+    paddingBottom: spacing.md,
+    gap: spacing.md,
+  },
+  filterSection: {
+    gap: spacing.sm,
+  },
+  sectionTitle: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  optionList: {
+    gap: 8,
+  },
+  optionRow: {
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  optionRowActive: {
+    borderColor: SEARCH_COLORS.accent,
+    backgroundColor: SEARCH_COLORS.accentSoft,
+  },
+  optionRowText: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  optionRowTextActive: {
+    fontWeight: '700',
+  },
+  bandGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  bandChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  bandChipActive: {
+    borderColor: SEARCH_COLORS.accent,
+    backgroundColor: SEARCH_COLORS.accentSoft,
+  },
+  bandChipText: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  bandChipTextActive: {
+    fontWeight: '700',
+  },
+  customPriceRow: {
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  customPriceInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    color: SEARCH_COLORS.text,
+    backgroundColor: '#FFFFFF',
+  },
+  customPriceDash: {
+    color: SEARCH_COLORS.muted,
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  ratingChipsRow: {
+    flexDirection: 'row',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  ratingChip: {
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  ratingChipActive: {
+    borderColor: SEARCH_COLORS.accent,
+    backgroundColor: SEARCH_COLORS.accentSoft,
+  },
+  ratingChipText: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  ratingChipTextActive: {
+    fontWeight: '700',
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: SEARCH_COLORS.line,
+    marginTop: spacing.xs,
+  },
+  resetBtn: {
+    flex: 1,
+    height: 44,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: SEARCH_COLORS.line,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+  },
+  resetBtnText: {
+    color: SEARCH_COLORS.text,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  applyBtn: {
+    flex: 1.4,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: SEARCH_COLORS.accent,
+  },
+  applyBtnText: {
+    color: '#FFFFFF',
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    fontWeight: '700',
   },
 
   /* ── Grid ── */
