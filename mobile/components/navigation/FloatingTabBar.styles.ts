@@ -3,8 +3,6 @@ import { StyleSheet } from 'react-native';
 import { Fonts } from '@/constants/theme';
 
 type FloatingTabBarColors = {
-  card: string;
-  border: string;
   text: string;
   mutedText: string;
 };
@@ -23,19 +21,15 @@ export function createFloatingTabBarStyles(
     },
     bar: {
       height: barHeight,
-      borderRadius: 34,
-      backgroundColor: colors.card,
-      borderWidth: 0,
+      borderRadius: 999,
       paddingHorizontal: 10,
       paddingVertical: 9,
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.11,
-      shadowRadius: 16,
-      elevation: 8,
+    },
+    barGlass: {
+      borderRadius: 999,
     },
     tabButton: {
       flex: 1,
@@ -46,6 +40,7 @@ export function createFloatingTabBarStyles(
       minHeight: 56,
       paddingHorizontal: 2,
       gap: 2,
+      zIndex: 1,
     },
     label: {
       color: colors.mutedText,

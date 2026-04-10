@@ -19,6 +19,7 @@ import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { ThemedText } from '@/components/themed-text';
 import { ProductItem } from '@/data/luxuryHomeData';
 import { Fonts } from '@/constants/theme';
 import { useHomeStore } from '@/store/home-store';
@@ -62,6 +63,7 @@ export function LuxuryHomeScreen() {
   const background = HOME_COLORS.background;
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [hasUnreadNotifications] = useState(true);
 
   useEffect(() => {
     void loadHome();
@@ -126,6 +128,26 @@ export function LuxuryHomeScreen() {
               colors={[HOME_COLORS.text]}
             />
           }>
+          <View style={styles.homeHeaderRow}>
+            <View>
+              <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
+              <ThemedText type="title" style={styles.homeHeaderTitle}>
+                SmartCart
+              </ThemedText>
+            </View>
+            <View style={styles.homeHeaderActions}>
+              <Pressable style={styles.headerIconButton} accessibilityRole="button" accessibilityLabel="Profile">
+                <Ionicons name="person-outline" size={18} color={HOME_COLORS.text} />
+              </Pressable>
+              <Pressable
+                style={styles.headerIconButton}
+                accessibilityRole="button"
+                accessibilityLabel="Notifications">
+                <Ionicons name="notifications-outline" size={18} color={HOME_COLORS.text} />
+                {hasUnreadNotifications ? <View style={styles.notificationDot} /> : null}
+              </Pressable>
+            </View>
+          </View>
           <View
             style={[
               styles.promoRow,
@@ -294,6 +316,50 @@ const styles = StyleSheet.create({
   },
   root: {
     flex: 1,
+  },
+  homeHeaderRow: {
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  homeHeaderEyebrow: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    lineHeight: 18,
+    color: HOME_COLORS.mutedText,
+  },
+  homeHeaderTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 30,
+    lineHeight: 34,
+    color: HOME_COLORS.text,
+    fontWeight: '700',
+  },
+  homeHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  headerIconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    borderWidth: 1,
+    borderColor: HOME_COLORS.line,
+    backgroundColor: HOME_COLORS.elevated,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF5A5F',
   },
   promoRow: {
     marginHorizontal: spacing.lg,

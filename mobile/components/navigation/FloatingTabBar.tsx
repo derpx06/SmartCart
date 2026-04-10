@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Pressable, View } from 'react-native';
+import { Animated, Easing, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GlassCard } from '@/components/glass/GlassCard';
+import { useGlassTheme } from '@/components/glass/glassTheme';
 import { ThemedText } from '@/components/themed-text';
 import { createFloatingTabBarStyles } from '@/components/navigation/FloatingTabBar.styles';
 import { useThemeColor } from '@/hooks/use-theme-color';
@@ -36,13 +38,12 @@ export function getFloatingTabBarBottomOffset(insetBottom: number) {
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomOffset = getFloatingTabBarBottomOffset(insets.bottom);
-  const card = useThemeColor({}, 'card');
-  const border = useThemeColor({}, 'border');
   const text = useThemeColor({}, 'text');
   const mutedText = useThemeColor({}, 'mutedText');
+  const glassTheme = useGlassTheme();
   const styles = useMemo(
-    () => createFloatingTabBarStyles(bottomOffset, { card, border, text, mutedText }, FLOATING_TAB_BAR_HEIGHT),
-    [bottomOffset, card, border, text, mutedText]
+    () => createFloatingTabBarStyles(bottomOffset, { text, mutedText }, FLOATING_TAB_BAR_HEIGHT),
+    [bottomOffset, text, mutedText]
   );
 
   const animationState = useRef<Record<string, Animated.Value>>({});
@@ -68,7 +69,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
       Animated.timing(animationState.current[route.key], {
         toValue: active ? 1 : 0,
-        duration: 220,
+        duration: 180,
+        easing: Easing.out(Easing.cubic),
         useNativeDriver: true,
       }).start();
     });
@@ -76,8 +78,15 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
   return (
     <View pointerEvents="box-none" style={styles.root}>
-      <View style={styles.bar}>
-        {visibleRoutes.map((route) => {
+      <GlassCard
+        style={styles.barGlass}
+        radius={FLOATING_TAB_BAR_HEIGHT / 2}
+        intensity={32}
+        tint={glassTheme.mode}
+        glow
+      >
+        <View style={styles.bar}>
+          {visibleRoutes.map((route) => {
           const routeName = route.name as TabRouteName;
           const meta = TAB_META[routeName];
           const routeIndex = state.routes.findIndex((tabRoute) => tabRoute.key === route.key);
@@ -92,11 +101,13 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
 
           const activeAnim = animationState.current[route.key];
           const pressAnim = pressState.current[route.key];
-          const activeScale = activeAnim.interpolate({
-            inputRange: [0, 1],
-            outputRange: [1, 1.05],
-          });
-          const iconScale = Animated.multiply(activeScale, pressAnim);
+          const iconScale = Animated.multiply(
+            pressAnim,
+            activeAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [1, 1.02],
+            }),
+          );
           const onPress = () => {
             const event = navigation.emit({
               type: 'tabPress',
@@ -159,8 +170,9 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
               <ThemedText style={[styles.label, isFocused && styles.labelActive]}>{meta.label}</ThemedText>
             </Pressable>
           );
-        })}
-      </View>
+          })}
+        </View>
+      </GlassCard>
     </View>
   );
 }
