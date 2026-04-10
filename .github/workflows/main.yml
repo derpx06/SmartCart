@@ -1,0 +1,30 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/ec2-user/backend
+
+            git pull origin main
+
+            docker stop app1 app2 app3 || true
+            docker rm app1 app2 app3 || true
+
+            docker build -t smartcart .
+
+            docker run -d -p 3001:3000 --env-file .env --name app1 smartcart
+            docker run -d -p 3002:3000 --env-file .env --name app2 smartcart
+            docker run -d -p 3003:3000 --env-file .env --name app3 smartcart
