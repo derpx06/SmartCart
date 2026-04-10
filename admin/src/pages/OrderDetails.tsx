@@ -22,10 +22,10 @@ export default function OrderDetails() {
 
   const getStatusColor = (status: Order['status']) => {
     switch (status) {
-      case 'Pending': return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
-      case 'Shipped': return { bg: 'rgba(109, 64, 255, 0.1)', color: 'var(--accent-base)' };
+      case 'Ordered': return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
+      case 'On the way': return { bg: 'rgba(109, 64, 255, 0.1)', color: 'var(--accent-base)' };
       case 'Delivered': return { bg: 'rgba(0, 210, 133, 0.1)', color: 'var(--success)' };
-      case 'Cancelled': return { bg: 'rgba(255, 74, 90, 0.1)', color: 'var(--danger)' };
+      case 'Failed': return { bg: 'rgba(255, 74, 90, 0.1)', color: 'var(--danger)' };
       default: return { bg: 'rgba(255, 255, 255, 0.1)', color: 'var(--text-primary)' };
     }
   };
@@ -61,10 +61,10 @@ export default function OrderDetails() {
             boxShadow: 'var(--shadow-sm)'
           }}
         >
-          <option value="Pending" style={{ color: 'black' }}>Pending</option>
-          <option value="Shipped" style={{ color: 'black' }}>Shipped</option>
+          <option value="Ordered" style={{ color: 'black' }}>Ordered</option>
+          <option value="On the way" style={{ color: 'black' }}>On the way</option>
           <option value="Delivered" style={{ color: 'black' }}>Delivered</option>
-          <option value="Cancelled" style={{ color: 'black' }}>Cancelled</option>
+          <option value="Failed" style={{ color: 'black' }}>Failed</option>
         </select>
       </div>
 

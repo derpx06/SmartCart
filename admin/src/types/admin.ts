@@ -19,7 +19,7 @@ export interface Order {
   id: string;
   customerName: string;
   total: number;
-  status: 'Pending' | 'Shipped' | 'Delivered' | 'Cancelled';
+  status: 'Ordered' | 'On the way' | 'Delivered' | 'Failed';
   date: string;
   items: OrderItem[];
 }

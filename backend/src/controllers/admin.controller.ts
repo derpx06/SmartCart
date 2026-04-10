@@ -48,7 +48,7 @@ export const getAdminDashboard = async (req: Request, res: Response): Promise<vo
 
     res.json({
       totalSales,
-      pendingOrders: orders.filter((order) => order.status === 'Pending').length,
+      pendingOrders: orders.filter((order) => order.status === 'Ordered').length,
       popularProduct: products[0] ? toAdminProduct(products[0]) : null,
       leastSoldProduct: products[products.length - 1] ? toAdminProduct(products[products.length - 1]) : null,
     });
@@ -174,12 +174,12 @@ export const getAdminOrderById = async (req: Request, res: Response): Promise<vo
       customerName: user?.name || 'Demo User',
       total: Number(order.totalAmount ?? 0),
       status:
-        order.status === 'pending'
-          ? 'Pending'
-          : order.status === 'shipped'
-            ? 'Shipped'
-            : order.status === 'cancelled'
-              ? 'Cancelled'
+        order.status === 'ordered'
+          ? 'Ordered'
+          : order.status === 'on_the_way'
+            ? 'On the way'
+            : order.status === 'failed'
+              ? 'Failed'
               : 'Delivered',
       date: new Date(order.createdAt).toISOString().slice(0, 10),
       items: order.items.map((item: any) => ({
@@ -195,12 +195,10 @@ export const getAdminOrderById = async (req: Request, res: Response): Promise<vo
 };
 
 export const updateAdminOrderStatus = async (req: Request, res: Response): Promise<void> => {
-  const rawStatus = String(req.body?.status ?? '').toLowerCase();
-  const status = rawStatus === 'pending' || rawStatus === 'shipped' || rawStatus === 'cancelled' || rawStatus === 'completed'
+  const rawStatus = String(req.body?.status ?? '').toLowerCase().replace(/ /g, '_');
+  const status = rawStatus === 'ordered' || rawStatus === 'on_the_way' || rawStatus === 'failed' || rawStatus === 'delivered'
     ? rawStatus
-    : rawStatus === 'delivered'
-      ? 'completed'
-      : null;
+    : null;
 
   if (!status) {
     res.status(400).json({ error: 'Invalid status' });
