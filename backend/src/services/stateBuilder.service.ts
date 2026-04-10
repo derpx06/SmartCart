@@ -26,6 +26,7 @@ export async function buildSmartCartState(req: Request): Promise<SmartCartState>
 
         return {
             productId: item.productId.toString(),
+            slug: typeof product?.slug === 'string' ? product.slug : '',
             name: product?.name || 'Unknown',
             category: product?.category || 'unknown',
             price: product?.price?.selling || 0,
@@ -41,10 +42,20 @@ export async function buildSmartCartState(req: Request): Promise<SmartCartState>
         0
     );
 
-    // 4. Build Inventory State — cart lines are treated as available (demo storefront; no stock gate on checkout)
+    // 4. Inventory from product stock (updates after checkout decrements)
     const inventory: SmartCartState['inventory'] = {};
     enrichedItems.forEach((item) => {
-        inventory[item.productId] = 'IN_STOCK';
+        const p = productMap.get(item.productId);
+        if (!p) {
+            inventory[item.productId] = 'OUT_OF_STOCK';
+            return;
+        }
+        if (p.stock?.status === 'OUT_OF_STOCK') {
+            inventory[item.productId] = 'OUT_OF_STOCK';
+            return;
+        }
+        const qty = Number(p.stock?.quantity ?? 0);
+        inventory[item.productId] = qty > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK';
     });
 
     // 5. Extract Session Signals

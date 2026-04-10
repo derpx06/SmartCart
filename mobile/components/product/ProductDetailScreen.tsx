@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -71,11 +71,44 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
     return Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100);
   }, [product.originalPrice, product.price]);
 
+  const available = product.inStock !== false;
+  const stockCap =
+    typeof product.stockQuantity === 'number' && Number.isFinite(product.stockQuantity)
+      ? Math.max(0, Math.floor(product.stockQuantity))
+      : null;
+
+  const maxSelectable = useMemo(() => {
+    if (!available) {
+      return 1;
+    }
+    if (stockCap != null) {
+      return Math.max(1, stockCap);
+    }
+    return 999;
+  }, [available, stockCap]);
+
+  useEffect(() => {
+    setQuantity((q) => {
+      if (!available) {
+        return 1;
+      }
+      if (stockCap != null) {
+        return Math.min(Math.max(1, q), Math.max(1, stockCap));
+      }
+      return q;
+    });
+  }, [product.id, product.slug, available, stockCap]);
+
   const total = quantity * product.price;
 
   const handleAddToCart = async () => {
     if (!product.id) {
       Alert.alert('Unavailable', 'This product is not synced with the backend yet.');
+      return;
+    }
+
+    if (!available) {
+      Alert.alert('Out of stock', 'This item is not available right now.');
       return;
     }
 
@@ -217,9 +250,19 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                 <ThemedText style={[styles.ratingCount, { color: palette.mutedText }]}>({product.reviewCount})</ThemedText>
               </View>
 
-              <View style={[styles.stockChip, { backgroundColor: palette.subtleGlow }]}>
-                <View style={[styles.stockDot, { backgroundColor: '#4CA47A' }]} />
-                <ThemedText style={[styles.stockText, { color: palette.text }]}>In stock</ThemedText>
+              <View
+                style={[
+                  styles.stockChip,
+                  {
+                    backgroundColor: available ? palette.subtleGlow : 'rgba(197, 43, 43, 0.12)',
+                  },
+                ]}>
+                <View
+                  style={[styles.stockDot, { backgroundColor: available ? '#4CA47A' : '#c52b2b' }]}
+                />
+                <ThemedText style={[styles.stockText, { color: palette.text }]} numberOfLines={2}>
+                  {product.badge}
+                </ThemedText>
               </View>
             </View>
 
@@ -508,7 +551,10 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                 <Ionicons name="remove" size={18} color={palette.text} />
               </Pressable>
               <ThemedText style={[styles.qtyValue, { color: palette.text }]}>{quantity}</ThemedText>
-              <Pressable style={styles.qtyButton} onPress={() => setQuantity((q) => q + 1)}>
+              <Pressable
+                style={styles.qtyButton}
+                disabled={!available || quantity >= maxSelectable}
+                onPress={() => setQuantity((q) => Math.min(maxSelectable, q + 1))}>
                 <Ionicons name="add" size={18} color={palette.text} />
               </Pressable>
             </View>
@@ -517,12 +563,17 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
               onPress={() => {
                 void handleAddToCart();
               }}
-              disabled={saving}
-              style={[styles.addButton, { backgroundColor: palette.text, opacity: saving ? 0.75 : 1 }]}
-            >
+              disabled={saving || !available}
+              style={[
+                styles.addButton,
+                {
+                  backgroundColor: palette.text,
+                  opacity: saving || !available ? 0.55 : 1,
+                },
+              ]}>
               <Ionicons name="bag-add-outline" size={16} color={palette.elevated} />
               <ThemedText style={[styles.addButtonText, { color: palette.elevated }]}>
-                {saving ? 'Adding...' : 'Add to cart'}
+                {saving ? 'Adding...' : available ? 'Add to cart' : 'Out of stock'}
               </ThemedText>
             </Pressable>
           </View>
@@ -724,6 +775,8 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 12,
     fontWeight: '700',
+    flexShrink: 1,
+    maxWidth: 148,
   },
   priceRow: {
     flexDirection: 'row',

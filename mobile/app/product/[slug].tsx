@@ -1,5 +1,6 @@
+import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useCallback } from 'react';
 import { ActivityIndicator, Pressable, View } from 'react-native';
 
 import { ProductDetailScreen } from '@/components/product/ProductDetailScreen';
@@ -20,12 +21,14 @@ export default function ProductDetailRoute() {
   const muted = useThemeColor({}, 'mutedText');
   const border = useThemeColor({}, 'border');
 
-  useEffect(() => {
-    void loadProduct(resolvedSlug);
-    return () => {
-      resetProduct();
-    };
-  }, [loadProduct, resetProduct, resolvedSlug]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadProduct(resolvedSlug);
+      return () => {
+        resetProduct();
+      };
+    }, [loadProduct, resetProduct, resolvedSlug]),
+  );
 
   return (
     <>

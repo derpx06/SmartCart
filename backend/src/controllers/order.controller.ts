@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 
 import Cart from '../models/Cart';
 import Order from '../models/Order';
+import Product from '../models/Product';
 
 export const getOrders = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -42,6 +43,33 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
     });
 
     await order.save();
+
+    for (const raw of cart.items) {
+      const item = raw as { productId: { _id?: unknown }; quantity?: number };
+      const pid = item.productId?._id;
+      if (!pid) {
+        continue;
+      }
+      const dec = Math.max(0, Math.floor(Number(item.quantity ?? 0)));
+      if (dec < 1) {
+        continue;
+      }
+      const doc = await Product.findById(pid);
+      if (!doc) {
+        continue;
+      }
+      const cur = Number(doc.stock?.quantity ?? 0);
+      const next = Math.max(0, cur - dec);
+      if (!doc.stock) {
+        doc.set('stock', { status: next <= 0 ? 'OUT_OF_STOCK' : 'IN_STOCK', quantity: next });
+      } else {
+        doc.stock.quantity = next;
+        doc.stock.status = next <= 0 ? 'OUT_OF_STOCK' : 'IN_STOCK';
+      }
+      doc.markModified('stock');
+      await doc.save();
+    }
+
     cart.set('items', []);
     await cart.save();
 

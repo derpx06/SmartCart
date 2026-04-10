@@ -1,4 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -27,6 +28,7 @@ function initials(name: string) {
 }
 
 export default function CartScreen() {
+  const router = useRouter();
   const { state, loading, error } = useSmartCartState();
   const updateCartQuantity = useSmartCartStore((store) => store.updateCartQuantity);
   const addToCart = useSmartCartStore((store) => store.addToCart);
@@ -136,6 +138,8 @@ export default function CartScreen() {
           <View style={styles.itemsWrap}>
             {items.map((item) => {
               const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
+              const slug = item.slug?.trim();
+              const canOpenProduct = Boolean(slug);
               return (
                 <View
                   key={item.productId}
@@ -143,57 +147,71 @@ export default function CartScreen() {
                     styles.itemCard,
                     { backgroundColor: card, borderColor: luxuryPalette.line },
                   ]}>
-                  <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
-                    <ThemedText style={[styles.itemMonogram, { color: text }]}>
-                      {initials(item.name)}
-                    </ThemedText>
-                  </View>
-
-                  <View style={styles.itemBody}>
-                    <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
-                      {item.category}
-                    </ThemedText>
-
-                    <View style={styles.itemTopLine}>
-                      <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
-                        {item.name}
-                      </ThemedText>
-                      <ThemedText style={[styles.itemPrice, { color: text }]}>
-                        {money(item.price)}
+                  <Pressable
+                    disabled={!canOpenProduct}
+                    onPress={() => slug && router.push(`/product/${encodeURIComponent(slug)}`)}
+                    style={({ pressed }) => [
+                      styles.itemPressableMain,
+                      canOpenProduct && pressed ? styles.itemPressablePressed : null,
+                    ]}
+                    accessibilityRole={canOpenProduct ? 'button' : undefined}
+                    accessibilityLabel={canOpenProduct ? `Open ${item.name}` : undefined}>
+                    <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt }]}>
+                      <ThemedText style={[styles.itemMonogram, { color: text }]}>
+                        {initials(item.name)}
                       </ThemedText>
                     </View>
 
-                    <View style={styles.itemBottom}>
-                      <View
-                        style={[
-                          styles.qtyPill,
-                          { borderColor: luxuryPalette.line, backgroundColor: softSurface },
-                        ]}>
-                        <Pressable
-                          style={styles.qtyBtn}
-                          onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
-                          <Ionicons name="remove" size={14} color={text} />
-                        </Pressable>
-                        <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
-                        <Pressable
-                          style={styles.qtyBtn}
-                          onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
-                          <Ionicons name="add" size={14} color={text} />
-                        </Pressable>
-                      </View>
+                    <View style={styles.itemBody}>
+                      <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
+                        {item.category}
+                      </ThemedText>
 
-                      <View style={styles.metaWrap}>
-                        <View style={styles.metaRow}>
-                          <Ionicons
-                            name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
-                            size={isOutOfStock ? 13 : 9}
-                            color={isOutOfStock ? danger : accent}
-                          />
-                          <ThemedText
-                            style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
-                            {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
-                          </ThemedText>
-                        </View>
+                      <View style={styles.itemTopLine}>
+                        <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
+                          {item.name}
+                        </ThemedText>
+                        <ThemedText style={[styles.itemPrice, { color: text }]}>
+                          {money(item.price)}
+                        </ThemedText>
+                      </View>
+                    </View>
+
+                    {canOpenProduct ? (
+                      <Ionicons name="chevron-forward" size={18} color={muted} />
+                    ) : null}
+                  </Pressable>
+
+                  <View style={styles.itemBottom}>
+                    <View
+                      style={[
+                        styles.qtyPill,
+                        { borderColor: luxuryPalette.line, backgroundColor: softSurface },
+                      ]}>
+                      <Pressable
+                        style={styles.qtyBtn}
+                        onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
+                        <Ionicons name="remove" size={14} color={text} />
+                      </Pressable>
+                      <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
+                      <Pressable
+                        style={styles.qtyBtn}
+                        onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
+                        <Ionicons name="add" size={14} color={text} />
+                      </Pressable>
+                    </View>
+
+                    <View style={styles.metaWrap}>
+                      <View style={styles.metaRow}>
+                        <Ionicons
+                          name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
+                          size={isOutOfStock ? 13 : 9}
+                          color={isOutOfStock ? danger : accent}
+                        />
+                        <ThemedText
+                          style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
+                          {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
+                        </ThemedText>
                       </View>
                     </View>
                   </View>
@@ -399,8 +417,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: radius.xl,
     padding: spacing.md,
+    gap: spacing.sm,
+  },
+  itemPressableMain: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
+  },
+  itemPressablePressed: {
+    opacity: 0.88,
   },
   itemImage: {
     width: 92,
