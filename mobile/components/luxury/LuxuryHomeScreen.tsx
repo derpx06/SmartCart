@@ -212,6 +212,7 @@ export function LuxuryHomeScreen() {
           style={styles.scrollView}
           keyboardShouldPersistTaps="always"
           keyboardDismissMode="on-drag"
+          stickyHeaderIndices={[0]}
           contentContainerStyle={{
             paddingBottom: 110,
           }}
@@ -224,47 +225,31 @@ export function LuxuryHomeScreen() {
               colors={[HOME_COLORS.text]}
             />
           }>
-          <View style={styles.homeHeaderRow}>
-            <View>
-              <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
-              <ThemedText type="title" style={styles.homeHeaderTitle}>
-                Williams Sonoma
-              </ThemedText>
-            </View>
-            <View style={styles.homeHeaderActions}>
-              <Pressable
-                style={styles.headerIconButton}
-                accessibilityRole="button"
-                accessibilityLabel="Profile"
-                onPress={() => router.push('/(tabs)/profile')}>
-                <Ionicons name="person-outline" size={18} color={HOME_COLORS.text} />
-              </Pressable>
-              <Pressable
-                style={styles.headerIconButton}
-                accessibilityRole="button"
-                accessibilityLabel="Wishlist"
-                onPress={() => router.push('/(tabs)/wishlist')}>
-                <Ionicons
-                  name={wishlistItemsCount > 0 ? 'heart' : 'heart-outline'}
-                  size={18}
-                  color={wishlistItemsCount > 0 ? '#D14862' : HOME_COLORS.text}
-                />
-                {wishlistItemsCount > 0 ? (
-                  <View style={styles.wishlistCountBadge}>
-                    <Text style={styles.wishlistCountText}>
-                      {wishlistItemsCount > 9 ? '9+' : `${wishlistItemsCount}`}
-                    </Text>
-                  </View>
-                ) : null}
-              </Pressable>
-              <Pressable
-                style={styles.headerIconButton}
-                accessibilityRole="button"
-                accessibilityLabel="Notifications"
-                onPress={() => router.push('/(tabs)/notifications')}>
-                <Ionicons name="notifications-outline" size={18} color={HOME_COLORS.text} />
-                {hasUnreadNotifications ? <View style={styles.notificationDot} /> : null}
-              </Pressable>
+          <View style={[styles.stickyHeaderContainer, { backgroundColor: background }]}>
+            <View style={styles.homeHeaderRow}>
+              <View>
+                <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
+                <ThemedText type="title" style={styles.homeHeaderTitle}>
+                  Williams Sonoma
+                </ThemedText>
+              </View>
+              <View style={styles.homeHeaderActions}>
+                <Pressable
+                  style={styles.headerIconButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Profile"
+                  onPress={() => router.push('/(tabs)/profile')}>
+                  <Ionicons name="person-outline" size={18} color={HOME_COLORS.text} />
+                </Pressable>
+                <Pressable
+                  style={styles.headerIconButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Notifications"
+                  onPress={() => router.push('/(tabs)/notifications')}>
+                  <Ionicons name="notifications-outline" size={18} color={HOME_COLORS.text} />
+                  {hasUnreadNotifications ? <View style={styles.notificationDot} /> : null}
+                </Pressable>
+              </View>
             </View>
           </View>
           {showInitialSkeleton ? (
@@ -481,6 +466,10 @@ const styles = StyleSheet.create({
   },
   root: {
     flex: 1,
+  },
+  stickyHeaderContainer: {
+    paddingBottom: spacing.xs,
+    zIndex: 2,
   },
   homeHeaderRow: {
     marginTop: spacing.sm,

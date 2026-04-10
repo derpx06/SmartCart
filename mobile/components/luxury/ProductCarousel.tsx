@@ -92,7 +92,7 @@ export function ProductCarousel({
                     backgroundColor: PRODUCT_COLORS.cardBg,
                     borderColor: PRODUCT_COLORS.line,
                   },
-                  luxuryShadow,
+                  
                 ]}>
                 <View style={styles.imageWrap}>
                   <Image
