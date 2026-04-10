@@ -114,7 +114,11 @@ async function persistSession(session: AuthSession | null) {
   const secureStore = getSecureStore();
   if (!session) {
     if (secureStore) {
-      await secureStore.deleteItemAsync(AUTH_STORAGE_KEY);
+      try {
+        await secureStore.deleteItemAsync(AUTH_STORAGE_KEY);
+      } catch {
+        // Ignore secure-store runtime mismatch; fallback to in-memory storage.
+      }
     }
     inMemorySession = null;
     return;
@@ -122,7 +126,11 @@ async function persistSession(session: AuthSession | null) {
 
   const serialized = JSON.stringify(session);
   if (secureStore) {
-    await secureStore.setItemAsync(AUTH_STORAGE_KEY, serialized);
+    try {
+      await secureStore.setItemAsync(AUTH_STORAGE_KEY, serialized);
+    } catch {
+      // Ignore secure-store runtime mismatch; fallback to in-memory storage.
+    }
   }
   inMemorySession = serialized;
 }
@@ -130,7 +138,17 @@ async function persistSession(session: AuthSession | null) {
 function getSecureStore(): SecureStoreLike | null {
   try {
     // Lazy import to avoid crashing if native module isn't in current binary yet.
-    return require('expo-secure-store') as SecureStoreLike;
+    const mod = require('expo-secure-store') as any;
+    const candidate = mod?.default ?? mod;
+    if (
+      candidate &&
+      typeof candidate.getItemAsync === 'function' &&
+      typeof candidate.setItemAsync === 'function' &&
+      typeof candidate.deleteItemAsync === 'function'
+    ) {
+      return candidate as SecureStoreLike;
+    }
+    return null;
   } catch {
     return null;
   }
@@ -150,7 +168,9 @@ export const useMobileAuthStore = create<AuthState>((set) => ({
   hydrateSession: async () => {
     try {
       const secureStore = getSecureStore();
-      const raw = secureStore ? await secureStore.getItemAsync(AUTH_STORAGE_KEY) : inMemorySession;
+      const raw = secureStore
+        ? await secureStore.getItemAsync(AUTH_STORAGE_KEY).catch(() => inMemorySession)
+        : inMemorySession;
       if (!raw) {
         api.setToken(null);
         set({

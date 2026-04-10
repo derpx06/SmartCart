@@ -9,10 +9,20 @@ const INTENT_SEEDS: Record<string, string[]> = {
         'pots pans and prep tools',
         'cook at home'
     ],
+    kitchen_setup: [
+        'kitchen setup essentials',
+        'kitchen tools and pantry basics',
+        'daily cooking essentials'
+    ],
     baking: [
         'baking tools and mixers',
         'bakeware and dessert prep',
         'cookies cakes pastries'
+    ],
+    bed_setup: [
+        'bedroom setup bedding and sleep comfort',
+        'bedsheets pillows blankets bedroom essentials',
+        'bed kit and sleep accessories'
     ],
     home_setup: [
         'home setup and decor',
@@ -27,6 +37,37 @@ const INTENT_SEEDS: Record<string, string[]> = {
 };
 
 let intentVectorCache: Record<string, number[]> | null = null;
+
+function normalize(s: string): string {
+    return String(s || '').toLowerCase();
+}
+
+function messageForCompletion(percent: number, intent: string): string {
+    const label = intent.replace(/_/g, ' ');
+    if (percent < 40) return `Your ${label} setup is still early. Add essentials first.`;
+    if (percent <= 70) return `You are making progress on ${label}. Add a couple of key items to strengthen it.`;
+    return `Your ${label} setup is almost complete. Finish with the final essentials.`;
+}
+
+function detectIntentFromCartText(state: SmartCartState): string | null {
+    const text = state.cart.items
+        .map(i => `${i.name} ${i.category}`)
+        .join(' ')
+        .toLowerCase();
+    const checks: Array<{ intent: string; keys: string[] }> = [
+        { intent: 'bed_setup', keys: ['bed', 'bedding', 'bedsheet', 'pillow', 'blanket', 'mattress', 'duvet'] },
+        { intent: 'kitchen_setup', keys: ['kitchen', 'pan', 'pot', 'cook', 'spatula', 'knife', 'board'] },
+        { intent: 'baking', keys: ['bake', 'whisk', 'oven', 'flour', 'sugar', 'tray', 'muffin'] },
+        { intent: 'cooking', keys: ['cook', 'ingredient', 'oil', 'spice', 'stove', 'prep'] },
+        { intent: 'home_setup', keys: ['decor', 'storage', 'shelf', 'lighting', 'furniture'] },
+    ];
+    let best: { intent: string; score: number } | null = null;
+    for (const c of checks) {
+        const score = c.keys.reduce((acc, k) => (text.includes(k) ? acc + 1 : acc), 0);
+        if (score > 0 && (!best || score > best.score)) best = { intent: c.intent, score };
+    }
+    return best?.intent || null;
+}
 
 async function getIntentVectors() {
     if (intentVectorCache) return intentVectorCache;
@@ -79,6 +120,13 @@ export async function getSemanticState(state: SmartCartState): Promise<SemanticS
         bestIntent = 'general';
     }
 
+    // Keyword/category heuristic override for stronger cart-context matches.
+    const heuristicIntent = detectIntentFromCartText(state);
+    if (heuristicIntent) {
+        bestIntent = heuristicIntent;
+        bestScore = Math.max(bestScore, 0.65);
+    }
+
     // 4. Compute missing needs
     const expectedNeeds = NEEDS_MAP[bestIntent] || [];
     const cartNamesLower = state.cart.items.map(i => i.name.toLowerCase());
@@ -88,6 +136,13 @@ export async function getSemanticState(state: SmartCartState): Promise<SemanticS
         need => !cartNamesLower.some(name => name.includes(need.toLowerCase())) &&
             !cartCategoriesLower.some(cat => cat.includes(need.toLowerCase()))
     );
+    const presentItems = expectedNeeds.filter((need) =>
+        cartNamesLower.some(name => name.includes(normalize(need))) ||
+        cartCategoriesLower.some(cat => cat.includes(normalize(need)))
+    );
+    const completionPercent = expectedNeeds.length
+        ? Math.max(0, Math.min(100, Math.round((presentItems.length / expectedNeeds.length) * 100)))
+        : 0;
 
     // 5. Stage detection
     let stage: 'exploring' | 'deciding' | 'ready' = 'exploring';
@@ -98,8 +153,8 @@ export async function getSemanticState(state: SmartCartState): Promise<SemanticS
 
     // 6. Risk detection
     let risk: 'low' | 'medium' | 'high' = 'low';
-    if (confidence < 0.4) risk = 'high';
-    else if (confidence < 0.7) risk = 'medium';
+    if (confidence < 0.4 || completionPercent < 35) risk = 'high';
+    else if (confidence < 0.7 || completionPercent < 70) risk = 'medium';
 
     // 7. Goal + summary
     const goal = GOAL_MAP[bestIntent] || 'browse products';
@@ -108,11 +163,15 @@ export async function getSemanticState(state: SmartCartState): Promise<SemanticS
         intent: [bestIntent],
         primary_intent: bestIntent,
         goal,
-        summary: `Based on your cart, you seem to be focusing on ${bestIntent.replace('_', ' ')}.`,
+        summary: messageForCompletion(completionPercent, bestIntent),
         intent_confidence: parseFloat(bestScore.toFixed(2)),
         stage,
         needs,
         risk,
+        completionPercent,
+        requiredItems: expectedNeeds,
+        presentItems,
+        missingItems: needs,
         vector: cartEmbedding,
     };
 }
@@ -127,6 +186,10 @@ function fallbackState(): SemanticState {
         stage: 'exploring',
         needs: [],
         risk: 'low',
+        completionPercent: 0,
+        requiredItems: [],
+        presentItems: [],
+        missingItems: [],
         vector: [],
     };
 }

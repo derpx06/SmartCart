@@ -15,6 +15,8 @@ import { useSmartCartState } from '@/hooks/use-smart-cart-state';
 import { useOrdersStore } from '@/store/orders-store';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { RecommendationSection } from '@/components/RecommendationSection';
+import { CartIntelligencePanel } from '@/components/CartIntelligencePanel';
+import { SmartBundleSection } from '@/components/SmartBundleSection';
 
 const CART_MONO = {
   white: '#FFFFFF',
@@ -268,6 +270,8 @@ export default function CartScreen() {
           </View>
         ) : null}
 
+        <CartIntelligencePanel panel={state?.intelligencePanel} />
+
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
             <Ionicons name={cartSearch ? 'search-outline' : 'bag-handle-outline'} size={30} color={muted} />
@@ -376,7 +380,14 @@ export default function CartScreen() {
           </View>
         )}
 
-        {state?.ranked && state.ranked.length > 0 && (
+        {state?.smartBundles && state.smartBundles.length > 0 && (
+          <SmartBundleSection
+            bundles={state.smartBundles}
+            onAdd={(pid) => addToCart(pid, 1)}
+          />
+        )}
+
+        {(!state?.smartBundles || state.smartBundles.length === 0) && state?.ranked && state.ranked.length > 0 && (
           <RecommendationSection
             ranked={state.ranked}
             onAdd={(pid) => addToCart(pid, 1)}
