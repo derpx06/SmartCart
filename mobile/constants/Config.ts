@@ -10,5 +10,5 @@ import { Platform } from 'react-native';
 //   }) ?? 'http://10.211.149.94:3001';
 
 export const Config = {
-  API_URL: 'http://98.93.190.17:3001',
+  API_URL: 'https://7592-27-63-22-178.ngrok-free.app',
 };

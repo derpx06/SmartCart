@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import fs from 'fs';
 import path from 'path';
 import pinoHttp from 'pino-http';
 
@@ -43,7 +44,10 @@ app.use(cors());
 app.use(express.json());
 app.use(globalLimiter);
 app.use(['/login', '/register', '/admin/login'], authLimiter);
-app.use('/images', express.static(path.join(process.cwd(), 'images')));
+const imagesDir = path.join(process.cwd(), 'images');
+if (fs.existsSync(imagesDir)) {
+  app.use('/images', express.static(imagesDir));
+}
 app.use(apiRoutes);
 
 export default app;
