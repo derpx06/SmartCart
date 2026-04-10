@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import React, { useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
   KeyboardAvoidingView,
@@ -13,9 +14,11 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { ChatProductCard } from '@/components/chat/ChatProductCard';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
+import { api, type ChatProductSummary } from '@/lib/api';
 
 type MessageRole = 'user' | 'assistant';
 
@@ -24,6 +27,11 @@ interface Message {
   role: MessageRole;
   text: string;
   time: string;
+  products?: ChatProductSummary[];
+  intent?: string;
+  needs?: string[];
+  isStreaming?: boolean;
+  isError?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -82,17 +90,28 @@ const INITIAL_MESSAGES: Message[] = [
   {
     id: 'welcome',
     role: 'assistant',
-    text: "Welcome to your culinary concierge. Ask for pairings, gifting picks, or a full kitchen plan and I'll curate it for you.",
+    text: "Welcome to SmartCart AI. Tell me what you're shopping for, and I'll recommend products that match your needs and budget.",
     time: now(),
   },
 ];
 
 function MessageBubble({
   msg,
+  onPressProduct,
 }: {
   msg: Message;
+  onPressProduct?: (product: ChatProductSummary) => void;
 }) {
   const isUser = msg.role === 'user';
+  const hasProducts = !isUser && (msg.products?.length ?? 0) > 0;
+  const subtitle = useMemo(() => {
+    if (isUser) return null;
+    if (!msg.intent && (!msg.needs || msg.needs.length === 0)) return null;
+    const intentLine = msg.intent ? `Intent: ${msg.intent.replaceAll('_', ' ')}` : '';
+    const needsLine = msg.needs?.length ? `Needs: ${msg.needs.join(', ')}` : '';
+    return [intentLine, needsLine].filter(Boolean).join(' • ');
+  }, [isUser, msg.intent, msg.needs]);
+
   return (
     <View style={[styles.bubbleRow, isUser && styles.bubbleRowUser]}>
       {!isUser && (
@@ -100,25 +119,46 @@ function MessageBubble({
           <Ionicons name="sparkles" size={13} color={CHAT_COLORS.assistantAvatarIcon} />
         </View>
       )}
-      <View
-        style={[
-          styles.bubble,
-          isUser ? styles.bubbleUserWrap : styles.bubbleAssistantWrap,
-          isUser
-            ? [styles.bubbleUser, { backgroundColor: CHAT_COLORS.userBubbleBg, borderColor: CHAT_COLORS.userBubbleBorder }]
-            : [styles.bubbleAssistant, { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: CHAT_COLORS.assistantBubbleBorder }],
-        ]}>
-        <ThemedText style={[styles.bubbleText, { color: isUser ? CHAT_COLORS.userText : CHAT_COLORS.assistantText }]}>
-          {msg.text}
-        </ThemedText>
-        <View style={styles.bubbleMeta}>
-          {!isUser && (
-            <ThemedText style={[styles.bubbleRole, { color: CHAT_COLORS.assistantRole }]}>Concierge</ThemedText>
-          )}
-          <ThemedText style={[styles.bubbleTime, { color: isUser ? CHAT_COLORS.userTime : CHAT_COLORS.assistantTime }]}>
-            {msg.time}
+      <View style={isUser ? styles.bubbleUserWrap : styles.bubbleAssistantWrap}>
+        <View
+          style={[
+            styles.bubble,
+            isUser
+              ? [styles.bubbleUser, { backgroundColor: CHAT_COLORS.userBubbleBg, borderColor: CHAT_COLORS.userBubbleBorder }]
+              : [
+                  styles.bubbleAssistant,
+                  { backgroundColor: CHAT_COLORS.assistantBubbleBg, borderColor: msg.isError ? 'rgba(197, 43, 43, 0.35)' : CHAT_COLORS.assistantBubbleBorder },
+                ],
+          ]}>
+          <ThemedText style={[styles.bubbleText, { color: isUser ? CHAT_COLORS.userText : CHAT_COLORS.assistantText }]}>
+            {msg.text}
           </ThemedText>
+
+          {subtitle ? (
+            <ThemedText style={[styles.bubbleSubtitle, { color: CHAT_COLORS.assistantTime }]} numberOfLines={2}>
+              {subtitle}
+            </ThemedText>
+          ) : null}
+
+          <View style={styles.bubbleMeta}>
+            {!isUser && (
+              <ThemedText style={[styles.bubbleRole, { color: CHAT_COLORS.assistantRole }]}>
+                {msg.isError ? 'Concierge (error)' : 'Concierge'}
+              </ThemedText>
+            )}
+            <ThemedText style={[styles.bubbleTime, { color: isUser ? CHAT_COLORS.userTime : CHAT_COLORS.assistantTime }]}>
+              {msg.isStreaming ? 'Streaming…' : msg.time}
+            </ThemedText>
+          </View>
         </View>
+
+        {hasProducts ? (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.productRail}>
+            {msg.products?.map((p) => (
+              <ChatProductCard key={p.id} product={p} onPress={onPressProduct} />
+            ))}
+          </ScrollView>
+        ) : null}
       </View>
     </View>
   );
@@ -176,39 +216,129 @@ function TypingIndicator() {
 }
 
 export default function ChatScreen() {
+  const router = useRouter();
   const insets = useSafeAreaInsets();
   const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
 
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [input, setInput] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const scrollRef = useRef<ScrollView>(null);
+  const abortRef = useRef<null | (() => void)>(null);
 
-  const sendMessage = (text: string) => {
+  const onPressProduct = useCallback(
+    (product: ChatProductSummary) => {
+      if (product.slug) {
+        router.push(`/product/${product.slug}`);
+        return;
+      }
+      // slug is required by the product route; if missing, do nothing rather than navigating incorrectly
+    },
+    [router]
+  );
+
+  useEffect(() => {
+    return () => {
+      abortRef.current?.();
+      abortRef.current = null;
+    };
+  }, []);
+
+  const sendMessage = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
 
+    if (isSending) return;
+
+    abortRef.current?.();
+    abortRef.current = null;
+
     const userMsg: Message = { id: `u-${Date.now()}`, role: 'user', text: trimmed, time: now() };
-    setMessages((prev) => [...prev, userMsg]);
+    const assistantId = `a-${Date.now()}`;
+    const assistantPlaceholder: Message = {
+      id: assistantId,
+      role: 'assistant',
+      text: '',
+      time: now(),
+      isStreaming: true,
+    };
+
+    setMessages((prev) => [...prev, userMsg, assistantPlaceholder]);
     setInput('');
-    setIsTyping(true);
+    setIsSending(true);
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 50);
 
-    setTimeout(() => {
-      const botMsg: Message = {
-        id: `a-${Date.now()}`,
-        role: 'assistant',
-        text: 'Excellent choice. I can tailor recommendations by budget, style, and occasion. Share one detail to get a sharper shortlist.',
-        time: now(),
-      };
-      setMessages((prev) => [...prev, botMsg]);
-      setIsTyping(false);
-      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-    }, 1400);
+    try {
+      const result = await api.streamChatMessage(trimmed, sessionId ?? undefined, {
+        onMeta: (meta) => {
+          setSessionId(meta.sessionId);
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    products: meta.products,
+                    intent: meta.intent,
+                    needs: meta.needs,
+                  }
+                : m
+            )
+          );
+        },
+        onChunk: (chunk) => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    text: m.text ? `${m.text} ${chunk}` : chunk,
+                  }
+                : m
+            )
+          );
+        },
+        onDone: () => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId
+                ? {
+                    ...m,
+                    isStreaming: false,
+                    time: now(),
+                  }
+                : m
+            )
+          );
+        },
+        onError: () => {
+          // fallback path in api.streamChatMessage will still call onMeta/onChunk/onDone; we only surface hard errors here if needed.
+        },
+      });
 
-    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 80);
-  };
+      abortRef.current = result.abort;
+      if (result.sessionId) setSessionId(result.sessionId);
+    } catch {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                isStreaming: false,
+                isError: true,
+                text: m.text || 'Something went wrong while contacting the concierge. Please try again.',
+                time: now(),
+              }
+            : m
+        )
+      );
+    } finally {
+      setIsSending(false);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 60);
+    }
+  }, [isSending, sessionId]);
 
-  const canSend = Boolean(input.trim());
+  const canSend = Boolean(input.trim()) && !isSending;
 
   return (
     <SafeAreaView style={[styles.safeArea, { backgroundColor: CHAT_COLORS.screenBg }]} edges={['top', 'left', 'right']}>
@@ -231,6 +361,13 @@ export default function ChatScreen() {
         style={styles.flexOne}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}>
+        <View style={styles.header}>
+          <ThemedText style={styles.headerTitle}>AI Chat</ThemedText>
+          <ThemedText style={styles.headerSubtitle} numberOfLines={1}>
+            Ask for recommendations, comparisons, and cart help
+          </ThemedText>
+        </View>
+
         <View style={[styles.streamWrap, { backgroundColor: CHAT_COLORS.streamBg, borderColor: CHAT_COLORS.streamBorder }]}>
           <View style={[styles.dayChip, { backgroundColor: CHAT_COLORS.dayChipBg, borderColor: CHAT_COLORS.dayChipBorder }]}>
             <ThemedText style={[styles.dayChipText, { color: CHAT_COLORS.dayChipText }]}>Today</ThemedText>
@@ -243,9 +380,9 @@ export default function ChatScreen() {
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}>
             {messages.map((m) => (
-              <MessageBubble key={m.id} msg={m} />
+              <MessageBubble key={m.id} msg={m} onPressProduct={onPressProduct} />
             ))}
-            {isTyping && <TypingIndicator />}
+            {isSending && <TypingIndicator />}
           </ScrollView>
         </View>
 
@@ -290,6 +427,7 @@ export default function ChatScreen() {
             returnKeyType="send"
             multiline={false}
             maxLength={500}
+            editable={!isSending}
           />
           <Pressable
             onPress={() => sendMessage(input)}
@@ -309,6 +447,24 @@ const styles = StyleSheet.create({
   },
   flexOne: {
     flex: 1,
+  },
+  header: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+  },
+  headerTitle: {
+    fontFamily: Fonts.serif,
+    fontSize: 26,
+    lineHeight: 30,
+    fontWeight: '700',
+    color: CHAT_COLORS.ink,
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    color: 'rgba(28, 27, 31, 0.68)',
   },
   orb: {
     position: 'absolute',
@@ -390,6 +546,12 @@ const styles = StyleSheet.create({
     lineHeight: 21,
     flexShrink: 1,
   },
+  bubbleSubtitle: {
+    marginTop: 6,
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    lineHeight: 16,
+  },
   bubbleMeta: {
     marginTop: 6,
     flexDirection: 'row',
@@ -442,6 +604,13 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 13,
     maxWidth: 220,
+  },
+  productRail: {
+    paddingTop: 10,
+    paddingLeft: 38,
+    paddingBottom: 2,
+    gap: 10,
+    paddingRight: spacing.md,
   },
   inputHint: {
     marginTop: spacing.sm,

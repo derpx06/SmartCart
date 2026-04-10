@@ -469,13 +469,16 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
                         },
                       ]}
                       onPress={() => {
-                        // Assuming valid products have a predictable slug or ID pattern
-                        // For now, we'll try to find if the ID works for navigation
-                        router.push(`/product/${related.productId}`);
+                        const target = related.slug || related.productId;
+                        router.push(`/product/${target}`);
                       }}
                     >
                       <View style={[styles.relatedImagePlaceholder, { backgroundColor: palette.beige }]}>
-                        <Ionicons name="sparkles-outline" size={24} color={palette.gold} />
+                        {related.image ? (
+                          <Image source={{ uri: related.image }} style={StyleSheet.absoluteFill} contentFit="cover" />
+                        ) : (
+                          <Ionicons name="sparkles-outline" size={24} color={palette.gold} />
+                        )}
                         {related.reasons.length > 0 && (
                           <View style={styles.miniBadge}>
                             <ThemedText style={styles.miniBadgeText}>{related.reasons[0]}</ThemedText>

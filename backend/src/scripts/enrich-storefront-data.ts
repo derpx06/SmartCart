@@ -68,13 +68,13 @@ function slugify(value: string): string {
     .replace(/-{2,}/g, '-');
 }
 
-function normalize(value: string | undefined): string {
+function normalize(value: string | null | undefined): string {
   return (value || '').toLowerCase();
 }
 
 function choosePreset(product: {
   category?: string;
-  subCategory?: string;
+  subCategory?: string | null;
   name?: string;
 }): CategoryPreset | null {
   const text = `${normalize(product.category)} ${normalize(product.subCategory)} ${normalize(product.name)}`;
@@ -109,7 +109,7 @@ async function run(): Promise<void> {
       const currentPrice = Number((product as any).price?.selling ?? (product as any).price ?? 0);
       const safePrice = Number.isFinite(currentPrice) && currentPrice > 0 ? currentPrice : 99;
       const safeDescription =
-        product.description && product.description.length >= 40
+        typeof product.description === 'string' && product.description.length >= 40
           ? product.description
           : preset?.description || 'Premium design and quality crafted for modern homes.';
       const safeRatings = {

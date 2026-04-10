@@ -4,7 +4,6 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Animated,
-  Dimensions,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -23,10 +22,8 @@ const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'] as con
 
 const trendingSearches = ['Dutch Oven', 'Sofa', 'Espresso', 'Nightstand', 'Lamp'];
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CARD_GAP = 12;
 const GRID_PADDING = spacing.lg;
-const CARD_WIDTH = (SCREEN_WIDTH - GRID_PADDING * 2 - CARD_GAP) / 2;
 
 const SEARCH_COLORS = {
   background: '#FAF9F7',

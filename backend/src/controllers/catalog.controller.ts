@@ -9,6 +9,14 @@ import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
 import { ensureProductEmbedding } from '../services/productEmbedding.service';
 import redis from "../config/redis";
 
+function mediaUrl(req: Request, path: string): string {
+  if (!path) return '';
+  if (/^https?:\/\//i.test(path)) return path;
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`;
+  const imagePath = normalizedPath.startsWith('/images/') ? normalizedPath : `/images${normalizedPath}`;
+  return `${req.protocol}://${req.get('host')}${imagePath}`;
+}
+
 export const getFeed = async (_req: Request, res: Response): Promise<void> => {
   try {
     const cacheKey = "feed";
@@ -196,7 +204,23 @@ export const getProductRecommendations = async (req: Request, res: Response): Pr
       related,
     });
 
-    res.json(ranked);
+    const candidateById = new Map<string, any>();
+    for (const c of candidates) {
+      const id = c._id?.toString?.();
+      if (!id) continue;
+      candidateById.set(id, c);
+    }
+
+    res.json(
+      ranked.map((item) => {
+        const p = candidateById.get(item.productId);
+        return {
+          ...item,
+          slug: p?.slug,
+          image: mediaUrl(req, p?.images?.[0] || ''),
+        };
+      })
+    );
   } catch (error) {
     console.error('Recommendations failed:', error);
     res.status(500).json({ error: 'Server error' });

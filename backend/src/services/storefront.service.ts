@@ -46,7 +46,7 @@ function productSummary(req: Request, product: any) {
 }
 
 function productAvailableForSale(product: {
-  stock?: { status?: string; quantity?: number };
+  stock?: { status?: string; quantity?: number } | null;
 }): boolean {
   if (product?.stock?.status === 'OUT_OF_STOCK') {
     return false;

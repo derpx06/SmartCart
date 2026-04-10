@@ -153,17 +153,47 @@ export async function streamChatMessage(req: Request, sessionId: string, message
   return { response, chunks };
 }
 
-export async function getChatHistory(sessionId: string, limit = 50) {
+export async function getChatHistory(req: Request, sessionId: string, limit = 50) {
   const messages = await ChatMessage.find({ sessionId })
     .sort({ createdAt: 1 })
     .limit(limit)
     .lean();
-  return messages.map((msg) => ({
+
+  const productIds = new Set<string>();
+  for (const msg of messages) {
+    const refs: any[] = (msg as any).products || [];
+    for (const ref of refs) {
+      const pid = ref?.productId?.toString?.() || ref?.productId;
+      if (pid) productIds.add(pid);
+    }
+  }
+
+  const products = productIds.size
+    ? await Product.find({ _id: { $in: Array.from(productIds) } }).lean()
+    : [];
+  const summaryById = new Map<string, ReturnType<typeof productSummary>>();
+  for (const p of products) {
+    summaryById.set((p as any)._id.toString(), productSummary(req, p));
+  }
+
+  return messages.map((msg) => {
+    const refs: any[] = (msg as any).products || [];
+    const productSummaries = refs
+      .map((ref) => {
+        const pid = ref?.productId?.toString?.() || ref?.productId;
+        if (!pid) return null;
+        return summaryById.get(pid) || null;
+      })
+      .filter(Boolean);
+
+    return {
     id: msg._id.toString(),
     sessionId: msg.sessionId,
     role: msg.role,
     content: msg.content,
     products: msg.products || [],
+      productSummaries,
     createdAt: msg.createdAt,
-  }));
+    };
+  });
 }

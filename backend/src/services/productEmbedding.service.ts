@@ -2,12 +2,12 @@ import { embedText } from './embedding.service';
 
 export function buildEmbeddingText(product: {
   name?: string;
-  description?: string;
-  brand?: string;
+  description?: string | null;
+  brand?: string | null;
   category?: string;
-  subCategory?: string;
+  subCategory?: string | null;
   tags?: string[];
-  attributes?: Record<string, any>;
+  attributes?: Record<string, any> | null;
 }): string {
   const parts: string[] = [];
 
@@ -33,12 +33,12 @@ export function buildEmbeddingText(product: {
 
 export async function embedProduct(product: {
   name?: string;
-  description?: string;
-  brand?: string;
+  description?: string | null;
+  brand?: string | null;
   category?: string;
-  subCategory?: string;
+  subCategory?: string | null;
   tags?: string[];
-  attributes?: Record<string, any>;
+  attributes?: Record<string, any> | null;
 }): Promise<number[]> {
   const text = buildEmbeddingText(product);
   return embedText(text);
@@ -47,12 +47,12 @@ export async function embedProduct(product: {
 export async function ensureProductEmbedding(
   product: { embedding?: number[] } & {
     name?: string;
-    description?: string;
-    brand?: string;
+    description?: string | null;
+    brand?: string | null;
     category?: string;
-    subCategory?: string;
+    subCategory?: string | null;
     tags?: string[];
-    attributes?: Record<string, any>;
+    attributes?: Record<string, any> | null;
   }
 ): Promise<number[]> {
   if (Array.isArray(product.embedding) && product.embedding.length) {

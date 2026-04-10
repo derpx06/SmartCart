@@ -1,5 +1,6 @@
 import "dotenv/config";
-import Redis from "ioredis";
+
+const Redis = require("ioredis");
 
 // For local development on Windows without Redis installed, we mock the basic methods
 // if no explicit REDIS_URL is provided to prevent ECONNREFUSED crash loops.

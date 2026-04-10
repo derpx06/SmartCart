@@ -58,12 +58,13 @@ export const streamChat = async (req: Request, res: Response): Promise<void> => 
 
 export const chatHistory = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { sessionId } = req.params;
+    const rawSessionId = req.params.sessionId;
+    const sessionId = Array.isArray(rawSessionId) ? rawSessionId[0] : rawSessionId;
     if (!sessionId) {
       res.status(400).json({ error: 'Session ID is required' });
       return;
     }
-    const history = await getChatHistory(sessionId, 50);
+    const history = await getChatHistory(req, sessionId, 50);
     res.json({ sessionId, history });
   } catch (error) {
     console.error('Chat history failed:', error);

@@ -10,6 +10,40 @@ type RequestOptions = RequestInit & {
   skipAuth?: boolean;
 };
 
+export type ChatProductSummary = {
+  id: string;
+  slug: string;
+  name: string;
+  price: number;
+  image: string;
+  category: string;
+};
+
+export type ChatResponse = {
+  sessionId: string;
+  message: string;
+  products: ChatProductSummary[];
+  intent?: string;
+  needs?: string[];
+};
+
+export type ChatHistoryMessage = {
+  id: string;
+  sessionId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  createdAt: string;
+  // enriched by backend (recommended) OR can be empty
+  productSummaries?: ChatProductSummary[];
+};
+
+export type StreamChatHandlers = {
+  onMeta?: (meta: { sessionId: string; intent?: string; needs?: string[]; products: ChatProductSummary[] }) => void;
+  onChunk?: (chunk: string) => void;
+  onDone?: () => void;
+  onError?: (error: unknown) => void;
+};
+
 async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
   const headers = new Headers(options.headers);
 
@@ -36,6 +70,31 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   return response.json() as Promise<T>;
+}
+
+function parseSseFrames(buffer: string): { frames: string[]; rest: string } {
+  const parts = buffer.split('\n\n');
+  if (parts.length <= 1) return { frames: [], rest: buffer };
+  return { frames: parts.slice(0, -1), rest: parts[parts.length - 1] };
+}
+
+function readSseFrame(frame: string): { event?: string; data?: string } {
+  // SSE frame is "event: x\ndata: y\n\n" but we accept missing event.
+  const lines = frame.split('\n').map((l) => l.trimEnd());
+  let event: string | undefined;
+  const dataLines: string[] = [];
+  for (const line of lines) {
+    if (!line) continue;
+    if (line.startsWith('event:')) {
+      event = line.slice('event:'.length).trim();
+      continue;
+    }
+    if (line.startsWith('data:')) {
+      dataLines.push(line.slice('data:'.length).trimStart());
+      continue;
+    }
+  }
+  return { event, data: dataLines.length ? dataLines.join('\n') : undefined };
 }
 
 export const api = {
@@ -113,5 +172,108 @@ export const api = {
   },
   getProductRecommendations(productId: string) {
     return request<RankedItem[]>(`/products/${productId}/recommendations`);
+  },
+  sendChatMessage(message: string, sessionId?: string) {
+    return request<ChatResponse>('/chat/message', {
+      method: 'POST',
+      body: JSON.stringify({ message, sessionId }),
+    });
+  },
+  getChatHistory(sessionId: string) {
+    return request<{ sessionId: string; history: ChatHistoryMessage[] }>(`/chat/history/${encodeURIComponent(sessionId)}`);
+  },
+  async streamChatMessage(message: string, sessionId: string | undefined, handlers: StreamChatHandlers = {}) {
+    const controller = new AbortController();
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/json');
+    if (authToken) headers.set('Authorization', `Bearer ${authToken}`);
+
+    const url = `${Config.API_URL}/chat/stream`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ message, sessionId }),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      throw new Error(payload?.error || 'Chat stream failed');
+    }
+
+    // Some runtimes may not expose a readable body (or may not support streaming).
+    if (!response.body) {
+      const fallback = await api.sendChatMessage(message, sessionId);
+      handlers.onMeta?.({
+        sessionId: fallback.sessionId,
+        intent: fallback.intent,
+        needs: fallback.needs,
+        products: fallback.products,
+      });
+      handlers.onChunk?.(fallback.message);
+      handlers.onDone?.();
+      return { abort: () => controller.abort(), sessionId: fallback.sessionId };
+    }
+
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buf = '';
+    let resolvedSessionId = sessionId;
+
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+
+        const { frames, rest } = parseSseFrames(buf);
+        buf = rest;
+
+        for (const frame of frames) {
+          const { event, data } = readSseFrame(frame);
+          if (!event) continue;
+
+          if (event === 'meta' && data) {
+            const meta = JSON.parse(data) as { sessionId: string; intent?: string; needs?: string[]; products: ChatProductSummary[] };
+            resolvedSessionId = meta.sessionId;
+            handlers.onMeta?.(meta);
+            continue;
+          }
+
+          if (event === 'chunk' && data != null) {
+            handlers.onChunk?.(data);
+            continue;
+          }
+
+          if (event === 'done') {
+            handlers.onDone?.();
+            return { abort: () => controller.abort(), sessionId: resolvedSessionId };
+          }
+        }
+      }
+
+      handlers.onDone?.();
+      return { abort: () => controller.abort(), sessionId: resolvedSessionId };
+    } catch (err) {
+      handlers.onError?.(err);
+      // fallback to non-stream response if parsing/streaming fails
+      const fallback = await api.sendChatMessage(message, sessionId);
+      handlers.onMeta?.({
+        sessionId: fallback.sessionId,
+        intent: fallback.intent,
+        needs: fallback.needs,
+        products: fallback.products,
+      });
+      handlers.onChunk?.(fallback.message);
+      handlers.onDone?.();
+      return { abort: () => controller.abort(), sessionId: fallback.sessionId };
+    } finally {
+      try {
+        reader.releaseLock();
+      } catch {
+        // ignore
+      }
+    }
   },
 };
