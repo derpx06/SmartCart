@@ -1,18 +1,16 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  LayoutAnimation,
-  Platform,
+  Animated,
+  Easing,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
-  UIManager,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandStoryCard } from '@/components/luxury/BrandStoryCard';
 import { EditorialCollections } from '@/components/luxury/EditorialCollections';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
-import { RevealSection } from '@/components/luxury/RevealSection';
+import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { ThemedText } from '@/components/themed-text';
@@ -49,17 +47,54 @@ const HOME_COLORS = {
   text: HOME_MONO.ink,
   mutedText: 'rgba(28, 27, 31, 0.68)',
   line: 'rgba(28, 27, 31, 0.14)',
-  overlayTop: 'rgba(28, 27, 31, 0)',
-  overlayBottom: 'rgba(28, 27, 31, 0.74)',
+  overlayTop: 'rgba(28, 27, 31, 0.16)',
+  overlayBottom: 'transparent',
   panelBg: 'transparent',
   panelBorder: 'transparent',
   chipBg: 'rgba(255, 255, 255, 0.9)',
   skeleton: 'rgba(28, 27, 31, 0.12)',
 };
 
+function HomeLoadingSkeleton() {
+  return (
+    <View>
+      <View style={[styles.promoRow, styles.skeletonNoBorder, { marginTop: spacing.sm }]}>
+        <View style={styles.promoSkeletonInner}>
+          <SkeletonBlock width="88%" height={14} borderRadius={8} />
+        </View>
+      </View>
+
+      <View style={[styles.heroCard, styles.skeletonNoBorder]}>
+        <SkeletonBlock height={336} borderRadius={radius.xl} />
+      </View>
+
+      <View style={[styles.searchWrap, styles.skeletonNoBorder]}>
+        <SkeletonBlock width="100%" height={46} borderRadius={radius.pill} />
+      </View>
+
+      <View style={styles.filterRow}>
+        <SkeletonBlock width={90} height={14} borderRadius={6} style={styles.filterSkeletonItem} />
+        <SkeletonBlock width={96} height={14} borderRadius={6} style={styles.filterSkeletonItem} />
+        <SkeletonBlock width={84} height={14} borderRadius={6} style={styles.filterSkeletonItem} />
+      </View>
+
+      <View style={[styles.sectionWrap, styles.firstSectionWrap]}>
+        <SkeletonBlock width="100%" height={230} borderRadius={radius.xl} />
+      </View>
+      <View style={styles.sectionWrap}>
+        <SkeletonBlock width="100%" height={210} borderRadius={radius.xl} />
+      </View>
+      <View style={styles.sectionWrap}>
+        <SkeletonBlock width="100%" height={180} borderRadius={radius.xl} />
+      </View>
+    </View>
+  );
+}
+
 export function LuxuryHomeScreen() {
   const router = useRouter();
   const loading = useHomeStore((state) => state.loading);
+  const hasFetched = useHomeStore((state) => state.hasFetched);
   const refreshing = useHomeStore((state) => state.refreshing);
   const homeData = useHomeStore((state) => state.homeData);
   const loadHome = useHomeStore((state) => state.loadHome);
@@ -68,13 +103,18 @@ export function LuxuryHomeScreen() {
   const [activeFilter, setActiveFilter] = useState<string | null>(quickFilters[0] ?? null);
   const [searchQuery, setSearchQuery] = useState('');
   const [hasUnreadNotifications] = useState(true);
+  const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
+  const filterContentAnim = useRef(new Animated.Value(1)).current;
+  const filterUnderlineX = useRef(new Animated.Value(0)).current;
+  const filterUnderlineWidth = useRef(new Animated.Value(0)).current;
+  const [filterLayouts, setFilterLayouts] = useState<Record<string, { x: number; width: number }>>({});
+  const showInitialSkeleton = loading && !hasFetched;
 
   useEffect(() => {
-    if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
+    if (!hasFetched) {
+      void loadHome();
     }
-    void loadHome();
-  }, [loadHome]);
+  }, [hasFetched, loadHome]);
 
   const normalizeFilter = (filter: string | null) =>
     filter && filter !== 'All Product' ? filter : undefined;
@@ -112,11 +152,47 @@ export function LuxuryHomeScreen() {
     openSearchResults(trimmed, null);
   };
 
-  const handleSelectFilter = (filter: string) => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  const runFilterContentAnimation = (toValue: number, duration: number) =>
+    new Promise<void>((resolve) => {
+      Animated.timing(filterContentAnim, {
+        toValue,
+        duration,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start(() => resolve());
+    });
+
+  const handleSelectFilter = async (filter: string) => {
+    if (isFilterTransitioning || filter === activeFilter) return;
+    setIsFilterTransitioning(true);
+
+    await runFilterContentAnimation(0, 140);
     setActiveFilter(filter);
-    void loadHome(normalizeFilter(filter));
+    await loadHome(normalizeFilter(filter));
+    await runFilterContentAnimation(1, 220);
+    setIsFilterTransitioning(false);
   };
+
+  useEffect(() => {
+    if (!activeFilter) return;
+    const activeLayout = filterLayouts[activeFilter];
+    if (!activeLayout) return;
+
+    Animated.parallel([
+      Animated.timing(filterUnderlineX, {
+        toValue: activeLayout.x,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+      Animated.timing(filterUnderlineWidth, {
+        toValue: activeLayout.width,
+        duration: 240,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: false,
+      }),
+    ]).start();
+  }, [activeFilter, filterLayouts, filterUnderlineWidth, filterUnderlineX]);
 
   const heroImage = homeData.heroSlides[0]?.image;
 
@@ -164,167 +240,190 @@ export function LuxuryHomeScreen() {
               </Pressable>
             </View>
           </View>
-          <View
-            style={[
-              styles.promoRow,
-              {
-                marginTop: spacing.sm,
-                backgroundColor: HOME_COLORS.surface,
-                borderColor: HOME_COLORS.line,
-              },
-            ]}>
-            <ScrollView
-              horizontal
-              keyboardShouldPersistTaps="always"
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.promoScroll}>
-              {promoMessages.map((message, index) => (
-                <View key={message} style={styles.promoItem}>
-                  <View style={styles.promoIconWrap}>
-                    <Ionicons name="sparkles-outline" size={11} color={HOME_COLORS.text} />
-                  </View>
-                  <Text style={[styles.promoText, { color: HOME_COLORS.text }]} numberOfLines={1}>
-                    {message}
-                  </Text>
-                  {index < promoMessages.length - 1 ? (
-                    <View style={[styles.promoDot, { backgroundColor: HOME_COLORS.mutedText }]} />
-                  ) : null}
-                </View>
-              ))}
-            </ScrollView>
-          </View>
-
-          <View style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-            {loading ? (
-              <View style={[styles.heroSkeleton, { backgroundColor: HOME_COLORS.skeleton }]} />
-            ) : (
-              <Image
-                source={{
-                  uri:
-                    heroImage ||
-                    'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
-                }}
-                style={styles.heroImage}
-                contentFit="cover"
-                transition={650}
-              />
-            )}
-            <LinearGradient
-              pointerEvents="none"
-              colors={[HOME_COLORS.overlayTop, 'rgba(28, 27, 31, 0.32)', HOME_COLORS.overlayBottom]}
-              locations={[0, 0.58, 1]}
-              style={styles.heroShadeBottom}
-            />
-
-            <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
-              <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
-              <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
-            </View>
-
-            <View
-              style={[
-                styles.heroCopyWrap,
-                { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
-              ]}>
-              <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
-              <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
-              <View style={styles.heroCtaRow}>
-                <Text style={styles.heroCtaText}>Shop featured picks</Text>
-                <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+          {showInitialSkeleton ? (
+            <HomeLoadingSkeleton />
+          ) : (
+            <>
+              <View
+                style={[
+                  styles.promoRow,
+                  {
+                    marginTop: spacing.sm,
+                    backgroundColor: HOME_COLORS.surface,
+                    borderColor: HOME_COLORS.line,
+                  },
+                ]}>
+                <ScrollView
+                  horizontal
+                  keyboardShouldPersistTaps="always"
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.promoScroll}>
+                  {promoMessages.map((message, index) => (
+                    <View key={message} style={styles.promoItem}>
+                      <View style={styles.promoIconWrap}>
+                        <Ionicons name="sparkles-outline" size={11} color={HOME_COLORS.text} />
+                      </View>
+                      <Text style={[styles.promoText, { color: HOME_COLORS.text }]} numberOfLines={1}>
+                        {message}
+                      </Text>
+                      {index < promoMessages.length - 1 ? (
+                        <View style={[styles.promoDot, { backgroundColor: HOME_COLORS.mutedText }]} />
+                      ) : null}
+                    </View>
+                  ))}
+                </ScrollView>
               </View>
-            </View>
-          </View>
 
-          <View style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
-            <Pressable onPress={handleSubmitSearch} style={styles.searchSubmitBtn}>
-              <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
-            </Pressable>
-            <TextInput
-              value={searchQuery}
-              editable
-              autoCorrect={false}
-              autoCapitalize="none"
-              spellCheck={false}
-              returnKeyType="go"
-              placeholder="Search anything..."
-              placeholderTextColor={HOME_COLORS.mutedText}
-              onChangeText={setSearchQuery}
-              onSubmitEditing={handleSubmitSearch}
-              style={[styles.searchInput, { color: HOME_COLORS.text }]}
-            />
-            {searchQuery.length > 0 ? (
-              <Pressable onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
-                <Ionicons name="close" size={14} color={HOME_COLORS.text} />
-              </Pressable>
-            ) : null}
-          </View>
+              <View style={[styles.heroCard, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
+                <Image
+                  source={{
+                    uri:
+                      heroImage ||
+                      'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
+                  }}
+                  style={styles.heroImage}
+                  contentFit="cover"
+                  transition={0}
+                />
+                <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
 
-          <ScrollView
-            horizontal
-            keyboardShouldPersistTaps="always"
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterRow}>
-            {quickFilters.map((filter) => {
-              const isActive = filter === activeFilter;
-              return (
-                <Pressable
-                  key={filter}
-                  onPress={() => handleSelectFilter(filter)}
-                  style={styles.filterItem}>
-                  <Text
-                    style={[
-                      styles.filterText,
-                      {
-                        color: isActive ? HOME_COLORS.text : HOME_COLORS.mutedText,
-                        fontWeight: isActive ? '700' : '500',
-                      },
-                    ]}>
-                    {filter}
-                  </Text>
-                  <View
-                    style={[
-                      styles.filterUnderline,
-                      { backgroundColor: isActive ? HOME_COLORS.text : 'transparent' },
-                    ]}
-                  />
+                <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
+                  <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
+                  <Text style={[styles.heroBadgeText, { color: HOME_COLORS.text }]}>NEW ARRIVALS</Text>
+                </View>
+
+                <View
+                  style={[
+                    styles.heroCopyWrap,
+                    { backgroundColor: HOME_COLORS.panelBg, borderColor: HOME_COLORS.panelBorder },
+                  ]}>
+                  <Text style={styles.heroTitle}>Find Furniture You&apos;ll Love.</Text>
+                  <Text style={styles.heroSubTitle}>Delivered to your door with curated picks for every room.</Text>
+                  <View style={styles.heroCtaRow}>
+                    <Text style={styles.heroCtaText}>Shop featured picks</Text>
+                    <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
+                  </View>
+                </View>
+              </View>
+
+              <View style={[styles.searchWrap, { backgroundColor: HOME_COLORS.elevated, borderColor: HOME_COLORS.line }]}>
+                <Pressable onPress={handleSubmitSearch} style={styles.searchSubmitBtn}>
+                  <Ionicons name="search" size={16} color={HOME_COLORS.mutedText} />
                 </Pressable>
-              );
-            })}
-          </ScrollView>
+                <TextInput
+                  value={searchQuery}
+                  editable
+                  autoCorrect={false}
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  returnKeyType="go"
+                  placeholder="Search anything..."
+                  placeholderTextColor={HOME_COLORS.mutedText}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={handleSubmitSearch}
+                  style={[styles.searchInput, { color: HOME_COLORS.text }]}
+                />
+                {searchQuery.length > 0 ? (
+                  <Pressable onPress={() => setSearchQuery('')} style={styles.searchClearBtn}>
+                    <Ionicons name="close" size={14} color={HOME_COLORS.text} />
+                  </Pressable>
+                ) : null}
+              </View>
 
-          <>
-            <RevealSection style={[styles.sectionWrap, styles.firstSectionWrap]} delay={140}>
-              <EditorialCollections collections={homeData.collections} loading={loading} />
-            </RevealSection>
+              <View style={styles.filterTabsContainer}>
+                {quickFilters.map((filter) => {
+                  const isActive = filter === activeFilter;
+                  return (
+                    <Pressable
+                      key={filter}
+                      onPress={() => handleSelectFilter(filter)}
+                      disabled={isFilterTransitioning}
+                      onLayout={(event) => {
+                        const { x, width } = event.nativeEvent.layout;
+                        setFilterLayouts((prev) => {
+                          const existing = prev[filter];
+                          if (existing && existing.x === x && existing.width === width) {
+                            return prev;
+                          }
+                          return { ...prev, [filter]: { x, width } };
+                        });
+                      }}
+                      style={styles.filterItem}>
+                      <Text
+                        style={[
+                          styles.filterText,
+                          {
+                            color: isActive ? HOME_COLORS.text : HOME_COLORS.mutedText,
+                            fontWeight: isActive ? '700' : '500',
+                          },
+                        ]}>
+                        {filter}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.filterUnderline,
+                    {
+                      backgroundColor: HOME_COLORS.text,
+                      transform: [{ translateX: filterUnderlineX }],
+                      width: filterUnderlineWidth,
+                    },
+                  ]}
+                />
+              </View>
 
-            <RevealSection style={styles.sectionWrap} delay={210}>
-              <ProductCarousel
-                title="Bestsellers"
-                caption="Most loved by modern hosts and home chefs."
-                products={homeData.bestsellers}
-                loading={loading}
-                onPressProduct={openProduct}
-              />
-            </RevealSection>
+              <Animated.View
+                style={[
+                  styles.filterContentWrap,
+                  {
+                    opacity: filterContentAnim,
+                    transform: [
+                      {
+                        translateY: filterContentAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [10, 0],
+                        }),
+                      },
+                    ],
+                  },
+                ]}>
+                <View style={[styles.sectionWrap, styles.firstSectionWrap]}>
+                  <EditorialCollections collections={homeData.collections} loading={false} />
+                </View>
 
-            <RevealSection style={styles.sectionWrap} delay={280}>
-              <SeasonalBanner loading={loading} />
-            </RevealSection>
+                <View style={styles.sectionWrap}>
+                  <ProductCarousel
+                    title="Bestsellers"
+                    caption="Most loved by modern hosts and home chefs."
+                    products={homeData.bestsellers}
+                    loading={false}
+                    onPressProduct={openProduct}
+                  />
+                </View>
 
-            <RevealSection style={styles.sectionWrap} delay={340}>
-              <ProductCarousel
-                title={`For Your ${activeFilter && activeFilter !== 'All Product' ? activeFilter : 'Kitchen'}`}
-                caption="Personalized picks based on your taste and recent browsing."
-                products={homeData.recommendedProducts}
-                loading={loading}
-                onPressProduct={openProduct}
-              />
-            </RevealSection>
+                <View style={styles.sectionWrap}>
+                  <SeasonalBanner loading={false} />
+                </View>
 
-            <RevealSection style={styles.sectionWrap} delay={400}>
-              <BrandStoryCard loading={loading} />
-            </RevealSection>
-          </>
+                <View style={styles.sectionWrap}>
+                  <ProductCarousel
+                    title={`For Your ${activeFilter && activeFilter !== 'All Product' ? activeFilter : 'Kitchen'}`}
+                    caption="Personalized picks based on your taste and recent browsing."
+                    products={homeData.recommendedProducts}
+                    loading={false}
+                    onPressProduct={openProduct}
+                  />
+                </View>
+
+                <View style={styles.sectionWrap}>
+                  <BrandStoryCard loading={false} />
+                </View>
+              </Animated.View>
+            </>
+          )}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -395,6 +494,14 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     alignItems: 'center',
   },
+  promoSkeletonInner: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 10,
+  },
+  skeletonNoBorder: {
+    borderWidth: 0,
+    backgroundColor: 'transparent',
+  },
   promoItem: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -434,12 +541,14 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  heroSkeleton: {
-    flex: 1,
+  heroShadeTop: {
+    ...StyleSheet.absoluteFillObject,
+    top: 0,
+    bottom: '46%',
   },
   heroShadeBottom: {
     ...StyleSheet.absoluteFillObject,
-    top: '36%',
+    top: '34%',
   },
   heroBadge: {
     position: 'absolute',
@@ -520,6 +629,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
     paddingBottom: spacing.xxs,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterSkeletonItem: {
+    marginRight: spacing.md,
   },
   filterItem: {
     marginRight: spacing.lg,
@@ -530,9 +644,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginBottom: spacing.xs,
   },
+  filterTabsContainer: {
+    marginTop: spacing.sm,
+    marginHorizontal: spacing.lg,
+    paddingBottom: spacing.xxs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'relative',
+  },
   filterUnderline: {
+    position: 'absolute',
+    left: 0,
+    bottom: 0,
     height: 2,
-    width: '100%',
     borderRadius: 2,
   },
   searchInput: {
@@ -550,6 +674,9 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  filterContentWrap: {
+    width: '100%',
   },
   sectionWrap: {
     paddingHorizontal: spacing.lg,
