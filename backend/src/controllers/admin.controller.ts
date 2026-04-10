@@ -7,6 +7,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import User from '../models/User';
 import { ensureCatalogSeededFromSkus, syncSingleProductFromSkuLikeInput } from '../services/catalogSync.service';
+import { embedProduct } from '../services/productEmbedding.service';
 import { listOrdersForUser } from '../services/storefront.service';
 
 function toAdminProduct(product: any) {
@@ -73,6 +74,15 @@ export const getAdminProductById = async (req: Request, res: Response): Promise<
     if (!product) {
       res.status(404).json({ error: 'Product not found' });
       return;
+    }
+
+    try {
+      const embedding = await embedProduct(product);
+      if (embedding.length) {
+        await Product.updateOne({ _id: product._id }, { $set: { embedding } });
+      }
+    } catch {
+      // Skip embedding updates if local embedding fails.
     }
 
     res.json(toAdminProduct(product));

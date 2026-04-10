@@ -5,6 +5,8 @@ import Product from '../models/Product';
 import Sku from '../models/Sku';
 import { getRelatedProducts } from '../services/relationship.service';
 import { rankItems } from '../services/ranking.service';
+import { ensureCatalogSeededFromSkus } from '../services/catalogSync.service';
+import { ensureProductEmbedding } from '../services/productEmbedding.service';
 
 export const getFeed = async (_req: Request, res: Response): Promise<void> => {
   try {
@@ -46,6 +48,18 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
       return;
     }
 
+    if (!product.embedding || product.embedding.length === 0) {
+      try {
+        const embedding = await ensureProductEmbedding(product);
+        if (embedding.length) {
+          await Product.updateOne({ _id: product._id }, { $set: { embedding } });
+          product.embedding = embedding;
+        }
+      } catch {
+        // Continue without embedding if it fails.
+      }
+    }
+
     res.json(product);
   } catch {
     res.status(500).json({ error: 'Server error' });
@@ -54,7 +68,7 @@ export const getProductById = async (req: Request, res: Response): Promise<void>
 
 export const getProductRecommendations = async (req: Request, res: Response): Promise<void> => {
   try {
-    console.log('Fetching recommendations for product ID:', req.params.id);
+    await ensureCatalogSeededFromSkus();
     const product = await Product.findById(req.params.id).lean();
     if (!product) {
       res.status(404).json({ error: 'Product not found' });
@@ -79,8 +93,20 @@ export const getProductRecommendations = async (req: Request, res: Response): Pr
       vector: product.embedding
     };
 
-    const candidates = await Product.find({ _id: { $ne: product._id } }).limit(20).lean();
-    const ranked = rankItems(candidates, { state: mockState, semantic: mockSemantic, related });
+    const candidates = await Product.find({ _id: { $ne: product._id } }).limit(30).lean();
+
+    const inventory: Record<string, 'IN_STOCK' | 'OUT_OF_STOCK'> = {};
+    candidates.forEach((item: any) => {
+      const productId = item._id?.toString?.() || item.productId;
+      if (!productId) return;
+      inventory[productId] = item.stock?.status === 'OUT_OF_STOCK' ? 'OUT_OF_STOCK' : 'IN_STOCK';
+    });
+
+    const ranked = rankItems(candidates, {
+      state: { ...mockState, inventory },
+      semantic: mockSemantic,
+      related,
+    });
 
     res.json(ranked);
   } catch (error) {

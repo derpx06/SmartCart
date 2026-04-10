@@ -8,6 +8,9 @@
     "build": "tsc",
     "start": "node dist/server.js",
     "seed": "tsx src/scripts/seed.ts",
+    "vectorize": "tsx src/scripts/vectorize-products.ts",
+    "rebuild:relationships": "tsx src/scripts/rebuild-relationships.ts",
+    "chat:seed": "tsx src/setup-test-data.ts",
     "enrich:storefront": "tsx src/scripts/enrich-storefront-data.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -16,6 +19,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@xenova/transformers": "^2.18.0",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^1.41.3",
     "cors": "^2.8.6",
