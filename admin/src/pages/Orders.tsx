@@ -49,7 +49,7 @@ export default function Orders() {
                     <td>{o.customerName}</td>
                     <td className="text-muted">{o.date}</td>
                     <td>{itemCount} {itemCount === 1 ? 'item' : 'items'}</td>
-                    <td style={{ fontWeight: 600 }}>₹{o.total.toFixed(2)}</td>
+                    <td style={{ fontWeight: 600 }}>${o.total.toFixed(2)}</td>
                     <td>
                       <span style={{
                         backgroundColor: scheme.bg,

@@ -198,7 +198,7 @@ export default function OrderDetails() {
           <div>
             <h3 style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Total Value</h3>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontWeight: 600, fontSize: '18px', color: 'var(--success)' }}>₹</span>
+              <span style={{ fontWeight: 600, fontSize: '18px', color: 'var(--success)' }}>$</span>
               <input 
                 type="number" 
                 className="input-field" 
@@ -223,7 +223,7 @@ export default function OrderDetails() {
             <tr style={{ borderBottom: '1px solid var(--border-color)', textAlign: 'left' }}>
               <th style={{ padding: '16px 24px' }}>Product</th>
               <th style={{ padding: '16px 24px' }}>Quantity</th>
-              <th style={{ padding: '16px 24px' }}>Unit Price (₹)</th>
+              <th style={{ padding: '16px 24px' }}>Unit Price ($)</th>
               <th style={{ padding: '16px 24px', textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>

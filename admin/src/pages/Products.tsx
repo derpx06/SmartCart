@@ -6,7 +6,7 @@ import { Plus, Edit2, Trash2, Package, Search, Boxes, Layers3, AlertTriangle } f
 const LOW_STOCK_THRESHOLD = 10;
 
 const formatCurrency = (amount: number) =>
-  amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export default function Products() {
   const { products, removeProduct } = useData();
@@ -116,7 +116,7 @@ export default function Products() {
           <div className="products-metric-label">Inventory Units</div>
           <div className="products-metric-value">{totalInventory}</div>
           <p className="text-muted products-metric-subtext">
-            Value: {'\u20B9'}
+            Value: $
             {formatCurrency(estimatedCatalogValue)}
           </p>
         </div>
@@ -206,7 +206,7 @@ export default function Products() {
                       <span className="products-category-pill">{product.category}</span>
                     </td>
                     <td className="products-price-cell">
-                      {'\u20B9'}
+                      $
                       {formatCurrency(product.price)}
                     </td>
                     <td>

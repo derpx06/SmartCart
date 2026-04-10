@@ -1,5 +1,5 @@
 import { useData } from '../contexts/DataContext';
-import { IndianRupee, TrendingUp, TrendingDown, Clock, AlertTriangle, Calculator, Package } from 'lucide-react';
+import { DollarSign, TrendingUp, TrendingDown, Clock, AlertTriangle, Calculator, Package } from 'lucide-react';
 
 export default function Dashboard() {
   const { getInsights, orders } = useData();
@@ -20,11 +20,11 @@ export default function Dashboard() {
         <div className="glass-card">
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
             <div style={{ padding: '8px', background: 'rgba(0, 210, 133, 0.1)', borderRadius: '8px', color: 'var(--success)' }}>
-              <IndianRupee size={24} />
+              <DollarSign size={24} />
             </div>
             <h3 className="text-muted" style={{ fontSize: '15px' }}>Overall Sales</h3>
           </div>
-          <p style={{ fontSize: '32px', fontWeight: 'bold' }}>₹{insights.totalSales.toLocaleString()}</p>
+          <p style={{ fontSize: '32px', fontWeight: 'bold' }}>${insights.totalSales.toLocaleString()}</p>
           <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '4px' }}>
             <TrendingUp size={14} /> Driven by {insights.totalOrdersCount} total orders
           </div>
@@ -86,7 +86,7 @@ export default function Dashboard() {
             </div>
             <h3 className="text-muted" style={{ fontSize: '15px' }}>Average Order Value</h3>
           </div>
-          <p style={{ fontSize: '32px', fontWeight: 'bold' }}>₹{Math.round(insights.averageOrderValue).toLocaleString()}</p>
+          <p style={{ fontSize: '32px', fontWeight: 'bold' }}>${Math.round(insights.averageOrderValue).toLocaleString()}</p>
           <div style={{ marginTop: '8px', fontSize: '13px', color: 'var(--text-secondary)' }}>
             Across {insights.totalOrdersCount} orders
           </div>

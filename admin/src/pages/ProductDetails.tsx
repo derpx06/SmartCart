@@ -252,7 +252,7 @@ function ProductDetailsForm({
 
             <div style={{ display: 'flex', gap: '16px' }}>
               <div style={{ flex: 1 }}>
-                <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Price (₹)</label>
+                <label className="text-muted" style={{ fontSize: '13px', display: 'block', marginBottom: '8px' }}>Price ($)</label>
                 <input
                   type="number"
                   step="0.01"
