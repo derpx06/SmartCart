@@ -1,8 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View, Modal, Animated } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
@@ -59,8 +59,11 @@ export default function CartScreen() {
   const fetchOrders = useOrdersStore((store) => store.fetchOrders);
   const homeData = useHomeStore((state) => state.homeData);
   const scrollRef = useRef<ScrollView>(null);
-  const [placingOrder, setPlacingOrder] = useState(false);
+  
   const [cartSearchQuery, setCartSearchQuery] = useState('');
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [paymentStep, setPaymentStep] = useState<'loading' | 'form' | 'processing' | 'success'>('loading');
+  const [placingOrder, setPlacingOrder] = useState(false);
   const insets = useSafeAreaInsets();
   const background = CART_COLORS.screenBg;
   const card = CART_COLORS.cardBg;
@@ -101,22 +104,38 @@ export default function CartScreen() {
   const total = subtotal - discount;
   const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
 
-  const handlePlaceOrder = async () => {
-    if (!items.length || placingOrder) {
-      return;
-    }
+  const handleOpenPayment = () => {
+    if (!items.length) return;
+    setShowPaymentModal(true);
+    setPaymentStep('loading');
+    setTimeout(() => {
+      setPaymentStep('form');
+    }, 1200);
+  };
+
+  const handleProcessPayment = async () => {
+    setPaymentStep('processing');
+    setPlacingOrder(true);
+    
+    // Simulate network delay for payment
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
     try {
-      setPlacingOrder(true);
       await checkout();
       await fetchOrders();
-      Alert.alert(
-        'Order placed',
-        'Your order is saved to your account. No payment step is required in this build.',
-      );
+      setPaymentStep('success');
+      setTimeout(() => {
+        setShowPaymentModal(false);
+        setPlacingOrder(false);
+        Alert.alert(
+          'Order placed successfully!',
+          'Your order has been saved and your payment was processed.'
+        );
+      }, 1500);
     } catch (err: any) {
-      Alert.alert('Could not place order', err?.message || 'Please sign in and try again.');
-    } finally {
       setPlacingOrder(false);
+      setShowPaymentModal(false);
+      Alert.alert('Could not process payment', err?.message || 'Please try again.');
     }
   };
 
@@ -350,8 +369,8 @@ export default function CartScreen() {
         </View>
 
         <Pressable
-          onPress={handlePlaceOrder}
-          disabled={!items.length || placingOrder}
+          onPress={handleOpenPayment}
+          disabled={!items.length || placingOrder || showPaymentModal}
           style={[
             styles.billButtonInline,
             {

@@ -45,9 +45,9 @@ const HOME_COLORS = {
   mutedText: 'rgba(28, 27, 31, 0.68)',
   line: 'rgba(28, 27, 31, 0.14)',
   overlayTop: 'rgba(28, 27, 31, 0.16)',
-  overlayBottom: 'rgba(28, 27, 31, 0.62)',
-  panelBg: 'rgba(28, 27, 31, 0.38)',
-  panelBorder: 'rgba(255, 255, 255, 0.34)',
+  overlayBottom: 'transparent',
+  panelBg: 'transparent',
+  panelBorder: 'transparent',
   chipBg: 'rgba(255, 255, 255, 0.9)',
   skeleton: 'rgba(28, 27, 31, 0.12)',
 };
@@ -172,7 +172,6 @@ export function LuxuryHomeScreen() {
               />
             )}
             <View style={[styles.heroShadeTop, { backgroundColor: HOME_COLORS.overlayTop }]} />
-            <View style={[styles.heroShadeBottom, { backgroundColor: HOME_COLORS.overlayBottom }]} />
 
             <View style={[styles.heroBadge, { backgroundColor: HOME_COLORS.chipBg }]}>
               <Ionicons name="cube-outline" size={12} color={HOME_COLORS.text} />
