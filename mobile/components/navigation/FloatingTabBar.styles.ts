@@ -9,7 +9,11 @@ type FloatingTabBarColors = {
   mutedText: string;
 };
 
-export function createFloatingTabBarStyles(bottomOffset: number, colors: FloatingTabBarColors) {
+export function createFloatingTabBarStyles(
+  bottomOffset: number,
+  colors: FloatingTabBarColors,
+  barHeight: number = 76
+) {
   return StyleSheet.create({
     root: {
       position: 'absolute',
@@ -18,7 +22,7 @@ export function createFloatingTabBarStyles(bottomOffset: number, colors: Floatin
       bottom: bottomOffset,
     },
     bar: {
-      height: 76,
+      height: barHeight,
       borderRadius: 34,
       backgroundColor: colors.card,
       borderWidth: 0,
