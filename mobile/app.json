@@ -6,12 +6,19 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "mobile",
+    "jsEngine": "jsc",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.muneerabass.mobile",
-      "appleTeamId": "U2G3J7555N"
+      "appleTeamId": "U2G3J7555N",
+      "infoPlist": {
+        "NSCameraUsageDescription": "We need camera access for AR",
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use your microphone"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +28,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.muneerabass.mobile"
     },
     "web": {
       "output": "static",
@@ -29,6 +37,7 @@
     },
     "plugins": [
       "expo-router",
+      "@reactvision/react-viro",
       [
         "expo-splash-screen",
         {
@@ -44,7 +53,7 @@
     ],
     "experiments": {
       "typedRoutes": true,
-      "reactCompiler": true
+      "reactCompiler": false
     }
   }
 }

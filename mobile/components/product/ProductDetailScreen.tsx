@@ -12,6 +12,7 @@ import { ProductDetail } from '@/data/product/productDetails';
 import { api } from '@/lib/api';
 import { useSmartCartStore } from '@/store/smart-cart-store';
 import { useProductRecommendations } from '@/hooks/use-product-recommendations';
+import ARBtn from '@/src/features/ar/componenets/arBtn';
 
 type ProductDetailScreenProps = {
   product: ProductDetail;
@@ -279,6 +280,10 @@ export function ProductDetailScreen({ product }: ProductDetailScreenProps) {
             </View>
 
             <ThemedText style={[styles.description, { color: palette.mutedText }]}>{product.description}</ThemedText>
+
+            <View style={styles.arButtonRow}>
+              <ARBtn />
+            </View>
 
             <View style={[styles.trustGrid, { borderTopColor: palette.line, borderBottomColor: palette.line }]}>
               <View style={styles.trustItem}>
@@ -817,6 +822,10 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 14,
     lineHeight: 22,
+  },
+  arButtonRow: {
+    marginTop: spacing.md,
+    alignSelf: 'flex-start',
   },
   trustGrid: {
     marginTop: spacing.md,
