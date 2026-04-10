@@ -19,7 +19,7 @@ export function CategoryScroller({ categories, loading = false }: CategoryScroll
 
   return (
     <View>
-      <SectionTitle title="Shop By Category" caption="Curated essentials for the heart of your home." />
+      <SectionTitle title="Shop by Category" caption="Find pieces for every room in your home." />
 
       {loading ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.loadingRow}>

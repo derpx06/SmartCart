@@ -1,21 +1,21 @@
-import { Feather, Ionicons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-  Animated,
   Pressable,
   RefreshControl,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandStoryCard } from '@/components/luxury/BrandStoryCard';
 import { CategoryScroller } from '@/components/luxury/CategoryScroller';
 import { EditorialCollections } from '@/components/luxury/EditorialCollections';
-import { HeroCarousel } from '@/components/luxury/HeroCarousel';
 import { ProductCarousel } from '@/components/luxury/ProductCarousel';
 import { RevealSection } from '@/components/luxury/RevealSection';
 import { SeasonalBanner } from '@/components/luxury/SeasonalBanner';
@@ -25,10 +25,16 @@ import { Fonts } from '@/constants/theme';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useHomeStore } from '@/store/home-store';
 
+const promoMessages = [
+  'Save 10% off full-price items*',
+  'Free delivery on orders above $99',
+  'New spring arrivals just dropped',
+];
+
+const quickFilters = ['All Product', 'Living Room', 'Bedroom', 'Kitchen'];
+
 export function LuxuryHomeScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
-  const scrollY = useRef(new Animated.Value(0)).current;
   const loading = useHomeStore((state) => state.loading);
   const refreshing = useHomeStore((state) => state.refreshing);
   const homeData = useHomeStore((state) => state.homeData);
@@ -36,6 +42,7 @@ export function LuxuryHomeScreen() {
   const refreshHome = useHomeStore((state) => state.refreshHome);
   const background = useThemeColor({}, 'background');
   const palette = useLuxuryPalette();
+  const [activeFilter, setActiveFilter] = useState(quickFilters[0]);
 
   useEffect(() => {
     void loadHome();
@@ -45,111 +52,21 @@ export function LuxuryHomeScreen() {
     await refreshHome();
   };
 
-  const headerBorder = scrollY.interpolate({
-    inputRange: [0, 90],
-    outputRange: [0, 0.9],
-    extrapolate: 'clamp',
-  });
-
-  const headerShadow = scrollY.interpolate({
-    inputRange: [0, 90],
-    outputRange: [0, 0.18],
-    extrapolate: 'clamp',
-  });
-
   const openProduct = (product: ProductItem) => {
     router.push(`/product/${product.slug || 'signature-enameled-cast-iron-dutch-oven'}`);
   };
 
+  const heroImage = homeData.heroSlides[0]?.image;
+
   return (
-    <SafeAreaView edges={['left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
+    <SafeAreaView edges={['top', 'left', 'right']} style={[styles.safeArea, { backgroundColor: background }]}>
       <View style={[styles.root, { backgroundColor: background }]}>
-        <Animated.View
-          style={[
-            styles.stickyHeader,
-            {
-              paddingTop: insets.top + 10,
-              shadowColor: '#140E08',
-              shadowOpacity: headerShadow,
-            },
-          ]}>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.headerBackdrop,
-              {
-                backgroundColor: palette.surface,
-                borderBottomColor: palette.line,
-                borderBottomWidth: headerBorder,
-                opacity: 1,
-              },
-            ]}
-          />
-
-          <View style={styles.headerTopRow}>
-            <View style={styles.brandWrap}>
-              <View
-                style={[
-                  styles.logoDot,
-                  { backgroundColor: palette.gold, borderColor: palette.surface },
-                ]}
-              />
-              <View>
-                <Text style={[styles.brandEyebrow, { color: palette.mutedText }]}>AURELIA ATELIER</Text>
-                <Text style={[styles.brand, { color: palette.text }]}>Luxury Home</Text>
-              </View>
-            </View>
-            <View style={styles.iconRow}>
-              <Pressable
-                style={[
-                  styles.iconButton,
-                  { backgroundColor: palette.elevated, borderColor: palette.line },
-                ]}>
-                <Feather name="heart" size={17} color={palette.text} />
-              </Pressable>
-              <Pressable
-                style={[
-                  styles.iconButton,
-                  { backgroundColor: palette.elevated, borderColor: palette.line },
-                ]}>
-                <Feather name="shopping-bag" size={17} color={palette.text} />
-              </Pressable>
-              <Pressable
-                onPress={() => router.push('/(auth)/sign-in')}
-                hitSlop={10}
-                style={[
-                  styles.iconButton,
-                  { backgroundColor: palette.elevated, borderColor: palette.line },
-                ]}>
-                <Feather name="user" size={17} color={palette.text} />
-              </Pressable>
-            </View>
-          </View>
-
-          <View style={[styles.searchWrap, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
-            <Ionicons name="search" size={16} color={palette.mutedText} />
-            <TextInput
-              value=""
-              editable={false}
-              placeholder="Search cookware, furniture, decor..."
-              placeholderTextColor={palette.mutedText}
-              style={[styles.searchInput, { color: palette.text }]}
-            />
-          </View>
-        </Animated.View>
-
-        <Animated.ScrollView
+        <ScrollView
           style={styles.scrollView}
           contentContainerStyle={{
-            paddingTop: insets.top + 116,
             paddingBottom: 110,
           }}
           showsVerticalScrollIndicator={false}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-            { useNativeDriver: false },
-          )}
-          scrollEventThrottle={16}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -158,16 +75,90 @@ export function LuxuryHomeScreen() {
               colors={[palette.text]}
             />
           }>
-          <View pointerEvents="none" style={styles.atmosphereLayer}>
-            <View style={[styles.orbOne, { backgroundColor: palette.orbOne }]} />
-            <View style={[styles.orbTwo, { backgroundColor: palette.orbTwo }]} />
+          <View
+            style={[
+              styles.promoRow,
+              {
+                marginTop: spacing.sm,
+                backgroundColor: palette.champagne,
+                borderColor: palette.line,
+              },
+            ]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.promoScroll}>
+              {promoMessages.map((message) => (
+                <View key={message} style={styles.promoItem}>
+                  <Text style={[styles.promoText, { color: palette.text }]} numberOfLines={1}>
+                    {message}
+                  </Text>
+                  <View style={[styles.promoDot, { backgroundColor: palette.mutedText }]} />
+                </View>
+              ))}
+            </ScrollView>
           </View>
 
-          <RevealSection style={styles.heroWrap}>
-            <HeroCarousel slides={homeData.heroSlides} loading={loading} />
-          </RevealSection>
+          <View style={[styles.heroCard, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+            {loading ? (
+              <View style={[styles.heroSkeleton, { backgroundColor: palette.skeleton }]} />
+            ) : (
+              <Image
+                source={{
+                  uri:
+                    heroImage ||
+                    'https://images.unsplash.com/photo-1484101403633-562f891dc89a?auto=format&fit=crop&w=1400&q=80',
+                }}
+                style={styles.heroImage}
+                contentFit="cover"
+                transition={650}
+              />
+            )}
+            <View style={[styles.heroShade, { backgroundColor: palette.overlay }]} />
+            <Text style={styles.heroCopy}>Find Furniture You&apos;ll Love - Delivered to Your Door.</Text>
+          </View>
 
-          <RevealSection style={styles.sectionWrap} delay={70}>
+          <View style={[styles.searchWrap, { backgroundColor: palette.elevated, borderColor: palette.line }]}>
+            <Ionicons name="search" size={16} color={palette.mutedText} />
+            <TextInput
+              value=""
+              editable={false}
+              placeholder="Search anything..."
+              placeholderTextColor={palette.mutedText}
+              style={[styles.searchInput, { color: palette.text }]}
+            />
+          </View>
+
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.filterRow}>
+            {quickFilters.map((filter) => {
+              const isActive = filter === activeFilter;
+              return (
+                <Pressable
+                  key={filter}
+                  onPress={() => setActiveFilter(filter)}
+                  style={styles.filterItem}>
+                  <Text
+                    style={[
+                      styles.filterText,
+                      {
+                        color: isActive ? palette.text : palette.mutedText,
+                        fontWeight: isActive ? '700' : '500',
+                      },
+                    ]}>
+                    {filter}
+                  </Text>
+                  <View
+                    style={[
+                      styles.filterUnderline,
+                      { backgroundColor: isActive ? palette.text : 'transparent' },
+                    ]}
+                  />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
+
+          <RevealSection style={[styles.sectionWrap, styles.firstSectionWrap]} delay={60}>
             <CategoryScroller categories={homeData.categories} loading={loading} />
           </RevealSection>
 
@@ -202,7 +193,7 @@ export function LuxuryHomeScreen() {
           <RevealSection style={styles.sectionWrap} delay={400}>
             <BrandStoryCard loading={loading} />
           </RevealSection>
-        </Animated.ScrollView>
+        </ScrollView>
       </View>
     </SafeAreaView>
   );
@@ -215,96 +206,69 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
   },
-  atmosphereLayer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 340,
-  },
-  orbOne: {
-    position: 'absolute',
-    width: 290,
-    height: 290,
-    borderRadius: 290,
-    left: -118,
-    top: 28,
-    opacity: 0.56,
-  },
-  orbTwo: {
-    position: 'absolute',
-    width: 240,
-    height: 240,
-    borderRadius: 240,
-    right: -94,
-    top: 138,
-    opacity: 0.48,
-  },
-  stickyHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-    borderBottomWidth: 0,
-    shadowColor: 'transparent',
-    shadowOffset: { width: 0, height: 14 },
-    shadowRadius: 18,
-    elevation: 10,
-  },
-  headerBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: -1,
-    borderBottomWidth: 0,
-  },
-  headerTopRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  brandWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandEyebrow: {
-    fontFamily: Fonts.sans,
-    letterSpacing: 1.2,
-    fontSize: 10,
-    textTransform: 'uppercase',
-    marginBottom: 2,
-    fontWeight: '700',
-  },
-  logoDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 16,
-    backgroundColor: 'transparent',
-    borderWidth: 4,
-    borderColor: 'transparent',
-  },
-  brand: {
-    fontFamily: Fonts.serif,
-    letterSpacing: 0.5,
-    fontSize: 16,
-  },
-  iconRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  iconButton: {
-    borderRadius: 999,
+  promoRow: {
+    marginHorizontal: spacing.lg,
+    borderRadius: radius.md,
     borderWidth: 1,
-    width: 34,
-    height: 34,
-    alignItems: 'center',
+    overflow: 'hidden',
+    height: 38,
     justifyContent: 'center',
   },
+  promoScroll: {
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+  },
+  promoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  promoText: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  promoDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 5,
+    marginLeft: spacing.md,
+    opacity: 0.55,
+  },
+  heroCard: {
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
+    height: 310,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    borderWidth: 1,
+    ...luxuryShadow,
+  },
+  heroImage: {
+    width: '100%',
+    height: '100%',
+  },
+  heroSkeleton: {
+    flex: 1,
+  },
+  heroShade: {
+    ...StyleSheet.absoluteFillObject,
+    top: '42%',
+  },
+  heroCopy: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.lg,
+    color: '#FFF9F3',
+    fontFamily: Fonts.sans,
+    fontSize: 35,
+    lineHeight: 42,
+    fontWeight: '700',
+  },
   searchWrap: {
+    marginTop: spacing.md,
+    marginHorizontal: spacing.lg,
     borderRadius: radius.pill,
     borderWidth: 1,
     flexDirection: 'row',
@@ -312,7 +276,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     height: 46,
     gap: spacing.xs,
-    ...luxuryShadow,
+  },
+  filterRow: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.sm,
+    paddingBottom: spacing.xxs,
+  },
+  filterItem: {
+    marginRight: spacing.lg,
+    alignItems: 'center',
+  },
+  filterText: {
+    fontFamily: Fonts.sans,
+    fontSize: 13,
+    marginBottom: spacing.xs,
+  },
+  filterUnderline: {
+    height: 2,
+    width: '100%',
+    borderRadius: 2,
   },
   searchInput: {
     flex: 1,
@@ -326,7 +308,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginTop: 44,
   },
-  heroWrap: {
-    marginTop: spacing.lg,
+  firstSectionWrap: {
+    marginTop: spacing.md,
   },
 });
