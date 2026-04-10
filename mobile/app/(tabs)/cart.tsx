@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput,
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { ThemedText } from '@/components/themed-text';
 import { Fonts } from '@/constants/theme';
@@ -65,6 +66,7 @@ export default function CartScreen() {
   const [paymentStep, setPaymentStep] = useState<'loading' | 'form' | 'processing' | 'success'>('loading');
   const [placingOrder, setPlacingOrder] = useState(false);
   const insets = useSafeAreaInsets();
+  const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
   const background = CART_COLORS.screenBg;
   const card = CART_COLORS.cardBg;
   const text = CART_COLORS.text;
@@ -84,8 +86,77 @@ export default function CartScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={[styles.safeArea, { backgroundColor: background, justifyContent: 'center', alignItems: 'center' }]}>
-        <ThemedText>Loading your SmartCart...</ThemedText>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + 92 }]}
+          showsVerticalScrollIndicator={false}>
+          <View pointerEvents="none" style={styles.atmosphereLayer}>
+            <View style={[styles.orbOne, { backgroundColor: CART_COLORS.orbOne }]} />
+            <View style={[styles.orbTwo, { backgroundColor: CART_COLORS.orbTwo }]} />
+          </View>
+
+          <View style={styles.topRow}>
+            <View style={styles.topCopy}>
+              <SkeletonBlock height={12} width={90} borderRadius={radius.pill} />
+              <SkeletonBlock height={42} width={220} borderRadius={radius.md} />
+              <SkeletonBlock height={14} width="88%" />
+            </View>
+            <SkeletonBlock height={44} width={44} borderRadius={22} />
+          </View>
+
+          <View style={[styles.cartSearchWrap, styles.skeletonSearchWrap, { backgroundColor: CART_COLORS.cardBg }]}>
+            <SkeletonBlock height={16} width={16} borderRadius={8} />
+            <SkeletonBlock height={14} width="75%" />
+          </View>
+
+          <View style={styles.skeletonItemsWrap}>
+            {[0, 1].map((idx) => (
+              <View
+                key={`cart-skeleton-${idx}`}
+                style={[
+                  styles.itemCard,
+                  styles.skeletonItemCard,
+                  { backgroundColor: CART_COLORS.cardBg },
+                ]}>
+                <View style={styles.itemPressableMain}>
+                  <SkeletonBlock height={112} width={92} borderRadius={radius.lg} />
+                  <View style={styles.skeletonItemBody}>
+                    <SkeletonBlock height={11} width="34%" />
+                    <SkeletonBlock height={20} width="92%" />
+                    <SkeletonBlock height={17} width="48%" />
+                  </View>
+                </View>
+                <View style={styles.itemBottom}>
+                  <SkeletonBlock height={36} width={108} borderRadius={radius.pill} />
+                  <SkeletonBlock height={12} width={84} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          <View style={[styles.summaryCard, styles.skeletonSummaryCard, { backgroundColor: card }]}>
+            <SkeletonBlock height={12} width={100} />
+            <SkeletonBlock height={30} width={130} />
+            <SkeletonBlock height={16} width="100%" />
+            <SkeletonBlock height={16} width="100%" />
+            <SkeletonBlock height={16} width="100%" />
+            <SkeletonBlock height={46} width="100%" borderRadius={radius.md} />
+            <SkeletonBlock height={1} width="100%" />
+            <SkeletonBlock height={34} width="58%" />
+          </View>
+        </ScrollView>
+
+        <View
+          style={[
+            styles.checkoutWrap,
+            styles.skeletonCheckoutWrap,
+            { bottom: tabBarClearance },
+            { backgroundColor: CART_COLORS.cardBg },
+            luxuryShadow,
+          ]}>
+          <SkeletonBlock height={20} width={110} />
+          <SkeletonBlock height={38} width={128} borderRadius={radius.pill} />
+        </View>
       </SafeAreaView>
     );
   }
@@ -102,7 +173,6 @@ export default function CartScreen() {
   const subtotal = state?.cart.totalValue || 0;
   const discount = subtotal * 0.1;
   const total = subtotal - discount;
-  const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
 
   const handleOpenPayment = () => {
     if (!items.length) return;
@@ -475,6 +545,9 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
     ...luxuryShadow,
   },
+  skeletonSearchWrap: {
+    borderWidth: 0,
+  },
   cartSearchInput: {
     flex: 1,
     fontFamily: Fonts.sans,
@@ -536,11 +609,22 @@ const styles = StyleSheet.create({
   itemsWrap: {
     gap: spacing.md,
   },
+  skeletonItemsWrap: {
+    gap: spacing.md,
+  },
   itemCard: {
     borderWidth: 1,
     borderRadius: radius.xl,
     padding: spacing.md,
     gap: spacing.sm,
+  },
+  skeletonItemCard: {
+    borderWidth: 0,
+    ...luxuryShadow,
+  },
+  skeletonItemBody: {
+    flex: 1,
+    gap: spacing.xs,
   },
   itemPressableMain: {
     flexDirection: 'row',
@@ -633,6 +717,10 @@ const styles = StyleSheet.create({
     padding: spacing.lg,
     gap: spacing.sm,
   },
+  skeletonSummaryCard: {
+    borderWidth: 0,
+    ...luxuryShadow,
+  },
   summaryTitle: {
     fontFamily: Fonts.serif,
     fontSize: 24,
@@ -701,6 +789,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 10,
+  },
+  skeletonCheckoutWrap: {
+    borderWidth: 0,
+    justifyContent: 'space-between',
   },
   checkoutMetaInline: {
     flexDirection: 'row',

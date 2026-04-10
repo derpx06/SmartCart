@@ -1,12 +1,71 @@
 import { useFocusEffect } from '@react-navigation/native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import React, { useCallback } from 'react';
-import { ActivityIndicator, Pressable, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
+import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
+import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
 import { ProductDetailScreen } from '@/components/product/ProductDetailScreen';
 import { ThemedText } from '@/components/themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useProductStore } from '@/store/product-store';
+
+function ProductDetailSkeleton({ background }: { background: string }) {
+  return (
+    <View style={[styles.skeletonRoot, { backgroundColor: background }]}>
+      <View style={styles.skeletonHeaderRow}>
+        <SkeletonBlock height={44} width={44} borderRadius={22} />
+        <View style={styles.skeletonHeaderActions}>
+          <SkeletonBlock height={40} width={40} borderRadius={20} />
+          <SkeletonBlock height={40} width={40} borderRadius={20} />
+        </View>
+      </View>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.skeletonContent}
+      >
+        <View style={styles.skeletonHeroCard}>
+          <SkeletonBlock height={380} borderRadius={radius.xl} />
+        </View>
+
+        <View style={styles.skeletonThumbRail}>
+          {[0, 1, 2, 3].map((idx) => (
+            <SkeletonBlock key={`thumb-${idx}`} height={74} width={74} borderRadius={radius.md} />
+          ))}
+        </View>
+
+        <View style={styles.skeletonDetailsCard}>
+          <SkeletonBlock height={12} width={90} />
+          <SkeletonBlock height={34} width="78%" />
+          <SkeletonBlock height={30} width={180} borderRadius={radius.pill} />
+          <SkeletonBlock height={36} width={170} />
+          <SkeletonBlock height={15} width="100%" />
+          <SkeletonBlock height={15} width="84%" />
+          <SkeletonBlock height={52} width="100%" borderRadius={radius.md} />
+          <SkeletonBlock height={68} width="100%" borderRadius={radius.md} />
+          <SkeletonBlock height={12} width={84} />
+          <View style={styles.skeletonColorRow}>
+            {[0, 1, 2, 3].map((idx) => (
+              <SkeletonBlock key={`color-${idx}`} height={40} width={40} borderRadius={20} />
+            ))}
+          </View>
+          <SkeletonBlock height={12} width={66} />
+          <View style={styles.skeletonSizeRow}>
+            {[0, 1, 2, 3].map((idx) => (
+              <SkeletonBlock key={`size-${idx}`} height={42} width="23%" borderRadius={radius.md} />
+            ))}
+          </View>
+        </View>
+      </ScrollView>
+
+      <View style={[styles.skeletonBottomBar, luxuryShadow]}>
+        <SkeletonBlock height={16} width={120} />
+        <SkeletonBlock height={46} width="44%" borderRadius={radius.pill} />
+      </View>
+    </View>
+  );
+}
 
 export default function ProductDetailRoute() {
   const { slug } = useLocalSearchParams<{ slug?: string }>();
@@ -34,9 +93,7 @@ export default function ProductDetailRoute() {
     <>
       <Stack.Screen options={{ headerShown: false }} />
       {loading ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: background }}>
-          <ActivityIndicator />
-        </View>
+        <ProductDetailSkeleton background={background} />
       ) : error || !product ? (
         <View
           style={{
@@ -71,3 +128,60 @@ export default function ProductDetailRoute() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  skeletonRoot: {
+    flex: 1,
+  },
+  skeletonHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
+  skeletonHeaderActions: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  skeletonContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: 170,
+    gap: spacing.sm,
+  },
+  skeletonHeroCard: {
+    borderRadius: radius.xl,
+    padding: spacing.xs,
+  },
+  skeletonThumbRail: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  skeletonDetailsCard: {
+    borderRadius: radius.xl,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  skeletonColorRow: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  skeletonSizeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  skeletonBottomBar: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.md,
+    borderRadius: radius.xl,
+    padding: spacing.sm,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+});

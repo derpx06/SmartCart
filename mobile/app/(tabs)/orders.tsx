@@ -2,7 +2,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -13,6 +12,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ThemedText } from '@/components/themed-text';
 import { luxuryShadow, radius, spacing } from '@/components/luxury/design';
+import { SkeletonBlock } from '@/components/luxury/SkeletonBlock';
 import { FLOATING_TAB_BAR_HEIGHT, getFloatingTabBarBottomOffset } from '@/components/navigation/FloatingTabBar';
 import { Fonts } from '@/constants/theme';
 import { useOrdersStore } from '@/store/orders-store';
@@ -224,11 +224,64 @@ export default function OrdersScreen() {
 
   if (loading && orders.length === 0 && !error) {
     return (
-      <SafeAreaView
-        style={[styles.safeArea, { backgroundColor: background, justifyContent: 'center', alignItems: 'center' }]}
-        edges={['top', 'left', 'right']}>
-        <ActivityIndicator size="large" color={text} />
-        <ThemedText style={[styles.loadingCaption, { color: mutedText }]}>Loading your orders…</ThemedText>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: background }]} edges={['top', 'left', 'right']}>
+        <ScrollView
+          contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance }]}
+          showsVerticalScrollIndicator={false}
+          bounces>
+          <View pointerEvents="none" style={styles.atmosphereLayer}>
+            <View style={[styles.orbOne, { backgroundColor: ORDERS_COLORS.orbOne }]} />
+            <View style={[styles.orbTwo, { backgroundColor: ORDERS_COLORS.orbTwo }]} />
+          </View>
+
+          <View style={styles.topRow}>
+            <View style={styles.topCopy}>
+              <SkeletonBlock height={12} width={84} borderRadius={radius.pill} />
+              <SkeletonBlock height={40} width={170} />
+              <SkeletonBlock height={14} width="86%" />
+            </View>
+            <SkeletonBlock height={44} width={44} borderRadius={22} />
+          </View>
+
+          <View style={styles.listSection}>
+            <SkeletonBlock height={11} width={58} />
+            {[0, 1, 2].map((idx) => (
+              <View
+                key={`order-skeleton-${idx}`}
+                style={[styles.orderCard, styles.skeletonOrderCard, { backgroundColor: card }, luxuryShadow]}>
+                <View style={styles.orderCardTop}>
+                  <View style={styles.orderIdBlock}>
+                    <SkeletonBlock height={11} width={54} />
+                    <SkeletonBlock height={24} width={106} />
+                  </View>
+                  <SkeletonBlock height={28} width={96} borderRadius={radius.pill} />
+                </View>
+
+                <View style={styles.skeletonMetaRow}>
+                  <SkeletonBlock height={13} width={124} />
+                  <SkeletonBlock height={13} width={82} />
+                </View>
+
+                <View style={[styles.itemsBlock, styles.skeletonItemsBlock]}>
+                  <SkeletonBlock height={11} width={44} />
+                  {[0, 1].map((itemIdx) => (
+                    <View
+                      key={`order-item-skeleton-${idx}-${itemIdx}`}
+                      style={[styles.itemRow, styles.skeletonItemRow, { backgroundColor: ORDERS_COLORS.softSurface }]}>
+                      <SkeletonBlock height={14} width="62%" />
+                      <SkeletonBlock height={24} width={54} borderRadius={radius.pill} />
+                    </View>
+                  ))}
+                </View>
+
+                <View style={[styles.totalRow, styles.skeletonTotalRow]}>
+                  <SkeletonBlock height={14} width={48} />
+                  <SkeletonBlock height={24} width={88} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
       </SafeAreaView>
     );
   }
@@ -387,11 +440,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  loadingCaption: {
-    marginTop: spacing.md,
-    fontFamily: Fonts.sans,
-    fontSize: 14,
-  },
   errorCard: {
     borderWidth: 1,
     borderRadius: radius.xl,
@@ -468,6 +516,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.xs,
   },
+  skeletonOrderCard: {
+    borderWidth: 0,
+  },
   orderCardTop: {
     flexDirection: 'row',
     alignItems: 'flex-start',
@@ -518,10 +569,19 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.sans,
     fontSize: 13,
   },
+  skeletonMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   itemsBlock: {
     borderTopWidth: 1,
     paddingTop: spacing.sm,
     gap: spacing.xs,
+  },
+  skeletonItemsBlock: {
+    borderTopWidth: 0,
+    paddingTop: spacing.xs,
   },
   itemsHeading: {
     fontFamily: Fonts.sans,
@@ -537,6 +597,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingVertical: 10,
     paddingHorizontal: spacing.sm,
+  },
+  skeletonItemRow: {
+    borderWidth: 0,
+    justifyContent: 'space-between',
   },
   itemRowPressed: {
     opacity: 0.88,
@@ -573,6 +637,10 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingTop: spacing.sm,
     marginTop: 2,
+  },
+  skeletonTotalRow: {
+    borderTopWidth: 0,
+    paddingTop: spacing.xs,
   },
   totalLabel: {
     fontFamily: Fonts.sans,
