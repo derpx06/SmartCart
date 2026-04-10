@@ -231,3 +231,36 @@ export async function listOrdersForUser(req: Request) {
     })),
   }));
 }
+
+export async function listAllOrders() {
+  await ensureCatalogSeededFromSkus();
+  
+  const orders = await Order.find({}).populate('items.productId').sort({ createdAt: -1 }).lean();
+  
+  // We need to get all users to map names, or just fetch them dynamically
+  // For efficiency, fetch all users once
+  const users = await User.find({}).lean();
+  const userMap = new Map(users.map(u => [u.id, u.name]));
+
+  return orders.map((order: any) => ({
+    id: order._id.toString(),
+    customerName: userMap.get(order.userId) || 'Demo User',
+    total: Number(order.totalAmount ?? 0),
+    status:
+      order.status === 'pending'
+        ? 'Pending'
+        : order.status === 'shipped'
+          ? 'Shipped'
+          : order.status === 'cancelled'
+            ? 'Cancelled'
+            : 'Delivered',
+    date: new Date(order.createdAt).toISOString().slice(0, 10),
+    items: order.items.map((item: any) => ({
+      productId: item.productId?._id?.toString?.() || '',
+      slug: typeof item.productId?.slug === 'string' ? item.productId.slug : '',
+      name: item.productId?.name || 'Unknown Product',
+      quantity: Number(item.quantity ?? 0),
+      price: Number(item.priceAtPurchase ?? item.productId?.price?.selling ?? 0),
+    })),
+  }));
+}

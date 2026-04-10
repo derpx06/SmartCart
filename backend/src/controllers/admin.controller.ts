@@ -7,7 +7,7 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import User from '../models/User';
 import { ensureCatalogSeededFromSkus, syncSingleProductFromSkuLikeInput } from '../services/catalogSync.service';
-import { listOrdersForUser } from '../services/storefront.service';
+import { listAllOrders, listOrdersForUser } from '../services/storefront.service';
 
 function toAdminProduct(product: any) {
   return {
@@ -17,7 +17,7 @@ function toAdminProduct(product: any) {
     inventory: Number(product.stock?.quantity ?? 0),
     category: product.category,
     description: product.description || '',
-    imageUrl: product.images?.[0] || '',
+    images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
   };
 }
 
@@ -92,14 +92,14 @@ export const createAdminProduct = async (req: Request, res: Response): Promise<v
 
 export const updateAdminProduct = async (req: Request, res: Response): Promise<void> => {
   try {
-    const { name, category, description, imageUrl, inventory, price } = req.body ?? {};
+    const { name, category, description, images, inventory, price } = req.body ?? {};
     const product = await Product.findByIdAndUpdate(
       req.params.id,
       {
         ...(name ? { name } : {}),
         ...(category ? { category, subCategory: category } : {}),
         ...(description !== undefined ? { description } : {}),
-        ...(imageUrl !== undefined ? { images: imageUrl ? [imageUrl] : [] } : {}),
+        ...(images !== undefined ? { images } : {}),
         ...(inventory !== undefined
           ? {
               stock: {
@@ -135,7 +135,7 @@ export const deleteAdminProduct = async (req: Request, res: Response): Promise<v
 
 export const getAdminOrders = async (req: Request, res: Response): Promise<void> => {
   try {
-    res.json(await listOrdersForUser(req));
+    res.json(await listAllOrders());
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
