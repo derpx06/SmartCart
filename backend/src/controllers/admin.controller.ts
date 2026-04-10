@@ -21,6 +21,12 @@ function toAdminProduct(product: any) {
     description: product.description || '',
     images: Array.isArray(product.images) ? product.images : (product.images ? [product.images] : []),
     tags: Array.isArray(product.tags) ? product.tags : [],
+    model3D: product.model3D?.url ? {
+      url: product.model3D.url,
+      publicId: product.model3D.publicId,
+      format: product.model3D.format,
+      size: Number(product.model3D.size ?? 0),
+    } : null,
   };
 }
 
@@ -241,6 +247,62 @@ export const updateAdminOrderStatus = async (req: Request, res: Response): Promi
 };
 
 import mongoose from 'mongoose';
+import cloudinary from '../config/cloudinary';
+
+export const uploadProductModel3D = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const file = (req as any).file;
+    if (!file) {
+      res.status(400).json({ error: 'No file uploaded' });
+      return;
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      {
+        model3D: {
+          url: file.path,
+          publicId: file.filename,
+          format: file.originalname?.split('.').pop()?.toLowerCase() || 'glb',
+          size: file.size,
+        },
+      },
+      { new: true },
+    ).lean();
+
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    res.json(toAdminProduct(product));
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const deleteProductModel3D = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const product = await Product.findById(req.params.id).lean();
+    if (!product) {
+      res.status(404).json({ error: 'Product not found' });
+      return;
+    }
+
+    if ((product as any).model3D?.publicId) {
+      try {
+        await cloudinary.uploader.destroy((product as any).model3D.publicId, { resource_type: 'raw' });
+      } catch {
+        // Ignore Cloudinary cleanup errors
+      }
+    }
+
+    await Product.findByIdAndUpdate(req.params.id, { $unset: { model3D: 1 } });
+    res.json({ success: true });
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
 
 export const updateAdminOrder = async (req: Request, res: Response): Promise<void> => {
   try {
