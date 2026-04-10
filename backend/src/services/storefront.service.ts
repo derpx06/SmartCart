@@ -184,7 +184,6 @@ async function getProductDetailById(req: Request, productId: string) {
 }
 
 export async function getHomeContent(req: Request) {
-  await ensureCatalogSeededFromSkus();
   const tag = req.query.tag as string;
 
   let filterQuery = {};
@@ -235,7 +234,6 @@ export async function getHomeContent(req: Request) {
 }
 
 export async function getProductDetail(req: Request, slug: string) {
-  await ensureCatalogSeededFromSkus();
   const product = await Product.findOne({ slug }).lean();
 
   if (!product) {

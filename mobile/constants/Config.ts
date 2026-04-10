@@ -38,5 +38,5 @@ function resolveApiUrl(): string {
 }
 
 export const Config = {
-  API_URL: resolveApiUrl(),
+  API_URL: 'http://98.93.190.17:3001',
 };

@@ -15,8 +15,8 @@ export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <SafeAreaProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <SafeAreaProvider>
         <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
           <Stack>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
@@ -26,7 +26,7 @@ export default function RootLayout() {
           </Stack>
           <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
         </ThemeProvider>
-      </AuthProvider>
-    </SafeAreaProvider>
+      </SafeAreaProvider>
+    </AuthProvider>
   );
 }

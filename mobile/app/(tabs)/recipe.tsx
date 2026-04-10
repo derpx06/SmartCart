@@ -267,19 +267,21 @@ const styles = StyleSheet.create({
     ...luxuryShadow,
   },
   thumbWrap: {
-    width: 118,
+    width: 130,
     backgroundColor: palette.surface,
+    borderRightWidth: 1,
+    borderRightColor: palette.line,
   },
   thumbImage: {
     width: '100%',
     height: '100%',
-    minHeight: 158,
+    minHeight: 180,
   },
   cardContent: {
     flex: 1,
-    padding: spacing.sm,
-    justifyContent: 'space-between',
-    gap: spacing.xs,
+    padding: spacing.md,
+    justifyContent: 'center',
+    minWidth: 200, // Ensure enough room for text
   },
   metaRowTop: {
     flexDirection: 'row',

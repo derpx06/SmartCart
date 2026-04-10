@@ -48,13 +48,13 @@ if (Viro) {
 
   ViroMaterials.createMaterials({
     reticleMaterial: {
-      diffuseColor: 'rgba(255, 255, 255, 0.8)',
+      diffuseColor: 'rgba(0, 255, 255, 0.8)',
     },
     shadowMaterial: {
       diffuseColor: 'rgba(0, 0, 0, 0.4)',
     },
     gridOverlay: {
-      diffuseColor: 'rgba(255, 255, 255, 0.08)',
+      diffuseColor: 'rgba(0, 255, 255, 0.15)',
       lightingModel: 'Constant',
     }
   });
@@ -67,9 +67,7 @@ interface PlacedObject {
 }
 
 function RecipeARPlacementScene(props: any) {
-  const { placedObjects, setPlacedObjects, modelUrl } = props.arSceneNavigator.viroAppProps;
-  const [trackingState, setTrackingState] = useState<any>(null);
-  const [reticleFound, setReticleFound] = useState(false);
+  const { placedObjects, setPlacedObjects, modelUrl, setTrackingState, setReticleFound, reticleFound } = props.arSceneNavigator.viroAppProps;
   const [reticlePosition, setReticlePosition] = useState<number[]>([0, 0, -1]);
   const arSceneRef = useRef<any>(null);
 
@@ -100,6 +98,7 @@ function RecipeARPlacementScene(props: any) {
   }, []);
 
   const _onReticleTap = useCallback(async () => {
+    console.log('[ViroAR] Reticle Tap - reticleFound:', reticleFound, 'pos:', reticlePosition);
     if (!reticleFound) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newId = Date.now();
@@ -124,7 +123,7 @@ function RecipeARPlacementScene(props: any) {
       ref={arSceneRef}
       onTrackingUpdated={_onTrackingUpdated}
       onCameraTransformUpdate={_onCameraTransformUpdate}
-      anchorDetectionTypes={['planesHorizontal']}
+      anchorDetectionTypes={['planesHorizontal', 'planesVertical']}
     >
       <ViroAmbientLight color="#ffffff" intensity={500} />
       <ViroSpotLight
@@ -140,26 +139,35 @@ function RecipeARPlacementScene(props: any) {
       />
 
       {/* Global Click Surface for 'Tap Anywhere' placement */}
-      {reticleFound && trackingState === ViroTrackingStateConstants.TRACKING_NORMAL && (
+      {/* Scene-wide Click Surface for 'Tap Anywhere' placement */}
+      {reticleFound && (
+        <ViroQuad
+          position={reticlePosition}
+          rotation={[-90, 0, 0]}
+          scale={[100, 100, 1]}
+          opacity={0}
+          onClick={_onReticleTap}
+        />
+      )}
+
+      {reticleFound && (
         <ViroNode position={reticlePosition}>
-          <ViroQuad
-            rotation={[-90, 0, 0]}
-            scale={[20, 20, 1]}
-            opacity={0}
-            onClick={_onReticleTap}
-          />
-          <ViroQuad
-            rotation={[-90, 0, 0]}
-            scale={[0.08, 0.08, 0.08]}
-            materials={['reticleMaterial']}
-          />
-          {[-0.2, -0.1, 0, 0.1, 0.2].map(x =>
-            [-0.2, -0.1, 0, 0.1, 0.2].map(z => (
+          <ViroNode
+            animation={{ name: 'reticlePulse', run: true, loop: true }}
+          >
+            <ViroQuad
+              rotation={[-90, 0, 0]}
+              scale={[0.08, 0.08, 0.08]}
+              materials={['reticleMaterial']}
+            />
+          </ViroNode>
+          {[-0.3, -0.15, 0, 0.15, 0.3].map(x =>
+            [-0.3, -0.15, 0, 0.15, 0.3].map(z => (
               <ViroQuad
                 key={`${x}-${z}`}
                 position={[x, -0.001, z]}
                 rotation={[-90, 0, 0]}
-                scale={[0.095, 0.095, 0.095]}
+                scale={[0.12, 0.12, 0.12]}
                 materials={['gridOverlay']}
               />
             ))
@@ -199,6 +207,8 @@ function RecipeARPlacementScene(props: any) {
 
 export default function ARScene({ modelUrl }: { modelUrl?: string }) {
   const [placedObjects, setPlacedObjects] = useState<PlacedObject[]>([]);
+  const [trackingState, setTrackingState] = useState<any>(null);
+  const [reticleFound, setReticleFound] = useState(false);
 
   const adjustAllScales = (factor: number) => {
     setPlacedObjects((prev) => prev.map(obj => {
@@ -230,7 +240,7 @@ export default function ARScene({ modelUrl }: { modelUrl?: string }) {
     <View style={styles.container}>
       <ViroARSceneNavigator
         initialScene={{ scene: RecipeARPlacementScene }}
-        viroAppProps={{ placedObjects, setPlacedObjects, modelUrl }}
+        viroAppProps={{ placedObjects, setPlacedObjects, modelUrl, setTrackingState, setReticleFound, reticleFound }}
         style={styles.navigator}
         autofocus={true}
       />
@@ -259,6 +269,20 @@ export default function ARScene({ modelUrl }: { modelUrl?: string }) {
           <View style={styles.glowLine} />
         </View>
       </View>
+
+      {/* Surface Tracking Guide Overlay */}
+      {trackingState === ViroTrackingStateConstants.TRACKING_NORMAL && !reticleFound && placedObjects.length === 0 && (
+        <View style={styles.trackingGuideOverlay}>
+          <View style={styles.guideCard}>
+            <ActivityIndicator color="#fff" style={{ marginBottom: 16 }} />
+            <Text style={styles.guideTitle}>SEARCHING FOR SURFACE</Text>
+            <Text style={styles.guideText}>Move your phone slowly over the ground or table</Text>
+            <View style={styles.pulseContainer}>
+              <View style={styles.pulseDot} />
+            </View>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -273,10 +297,54 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    bottom: 100,
+    bottom: 40,
     left: 20,
     right: 20,
     alignItems: 'center',
+  },
+  trackingGuideOverlay: {
+    position: 'absolute',
+    top: '35%',
+    left: 20,
+    right: 20,
+    alignItems: 'center',
+  },
+  guideCard: {
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 28,
+    paddingVertical: 32,
+    borderRadius: 30,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    width: '100%',
+  },
+  guideTitle: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 2,
+    marginBottom: 8,
+  },
+  guideText: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 13,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  pulseContainer: {
+    marginTop: 20,
+    width: 60,
+    height: 4,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  pulseDot: {
+    width: '40%',
+    height: '100%',
+    backgroundColor: '#fff',
+    borderRadius: 2,
   },
   glassCard: {
     backgroundColor: 'rgba(25, 25, 25, 0.75)',
