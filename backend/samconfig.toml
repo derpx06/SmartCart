@@ -1,0 +1,19 @@
+# SAM uses AWS credentials from the AWS CLI — not from backend/.env.
+# Put keys/profiles in ~/.aws/credentials and ~/.aws/config (`aws configure`).
+# Optional: uncomment profile below to use a named ~/.aws profile.
+
+version = 0.1
+
+[default.global.parameters]
+stack_name = "smartcart-api"
+region = "us-east-1"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+# profile = "my-profile"
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true

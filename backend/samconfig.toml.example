@@ -1,0 +1,19 @@
+# Copy to samconfig.toml and adjust. Deploy with: sam deploy
+#
+# Prereqs: AWS SAM CLI (brew install aws-sam-cli). No Docker required for this template
+# (SAM bundles with esbuild).
+
+version = 0.1
+
+[default.global.parameters]
+stack_name = "smartcart-api"
+region = "us-east-1"
+
+[default.build.parameters]
+cached = true
+parallel = true
+
+[default.deploy.parameters]
+capabilities = "CAPABILITY_IAM"
+confirm_changeset = true
+resolve_s3 = true

@@ -401,7 +401,7 @@ export function LuxuryHomeScreen() {
           <View style={[styles.stickyHeaderContainer, { backgroundColor: background }]}>
             <View style={styles.homeHeaderRow}>
               <View style={styles.homeHeaderCopy}>
-                <ThemedText style={styles.homeHeaderEyebrow}>Welcome back</ThemedText>
+                
                 <ThemedText type="title" style={styles.homeHeaderTitle}>
                   Williams Sonoma
                 </ThemedText>

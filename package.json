@@ -1,0 +1,8 @@
+{
+  "name": "smartcart",
+  "private": true,
+  "scripts": {
+    "sam:build": "cd backend && sam build",
+    "sam:deploy:env": "cd backend && node scripts/sam-deploy-from-env.cjs"
+  }
+}

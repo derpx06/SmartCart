@@ -1,0 +1,135 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: SmartCart API on Lambda + HTTP API (Node.js zip; Makefile + esbuild,
+  no Docker).
+Globals:
+  Function:
+    Timeout: 60
+    MemorySize: 2048
+    EphemeralStorage:
+      Size: 1024
+    Environment:
+      Variables:
+        NODE_ENV: production
+        TRANSFORMERS_CACHE: /tmp/transformers_cache
+Parameters:
+  MongoUri:
+    Type: String
+    NoEcho: true
+    Description: MongoDB connection string (e.g. Atlas).
+  JwtSecret:
+    Type: String
+    NoEcho: true
+    Description: Secret for signing JWTs.
+  RedisUrl:
+    Type: String
+    NoEcho: true
+    Description: Redis URL (e.g. Upstash rediss://...). Required by the app in production.
+  QdrantUrl:
+    Type: String
+    Default: ''
+  QdrantApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  GroqApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  CloudinaryCloudName:
+    Type: String
+    Default: ''
+  CloudinaryApiKey:
+    Type: String
+    Default: ''
+    NoEcho: true
+  CloudinaryApiSecret:
+    Type: String
+    Default: ''
+    NoEcho: true
+Conditions:
+  HasQdrantUrl:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: QdrantUrl
+      - ''
+  HasGroqKey:
+    Fn::Not:
+    - Fn::Equals:
+      - Ref: GroqApiKey
+      - ''
+Resources:
+  SmartCartApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins:
+        - '*'
+        AllowHeaders:
+        - '*'
+        AllowMethods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+  SmartCartFunction:
+    Type: AWS::Serverless::Function
+    Metadata:
+      BuildMethod: makefile
+      SamResourceId: SmartCartFunction
+    Properties:
+      CodeUri: SmartCartFunction
+      Handler: lambda.handler
+      Runtime: nodejs20.x
+      Architectures:
+      - x86_64
+      Events:
+        ApiProxy:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: SmartCartApi
+            Path: /{proxy+}
+            Method: ANY
+        ApiRoot:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: SmartCartApi
+            Path: /
+            Method: ANY
+      Environment:
+        Variables:
+          MONGO_URI:
+            Ref: MongoUri
+          JWT_SECRET:
+            Ref: JwtSecret
+          REDIS_URL:
+            Ref: RedisUrl
+          QDRANT_URL:
+            Fn::If:
+            - HasQdrantUrl
+            - Ref: QdrantUrl
+            - ''
+          QDRANT_API_KEY:
+            Ref: QdrantApiKey
+          GROQ_API_KEY:
+            Fn::If:
+            - HasGroqKey
+            - Ref: GroqApiKey
+            - ''
+          CLOUDINARY_CLOUD_NAME:
+            Ref: CloudinaryCloudName
+          CLOUDINARY_API_KEY:
+            Ref: CloudinaryApiKey
+          CLOUDINARY_API_SECRET:
+            Ref: CloudinaryApiSecret
+Outputs:
+  ApiUrl:
+    Description: Base URL for the HTTP API
+    Value:
+      Fn::GetAtt:
+      - SmartCartApi
+      - ApiEndpoint
