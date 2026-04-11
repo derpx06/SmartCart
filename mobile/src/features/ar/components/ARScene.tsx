@@ -64,6 +64,7 @@ interface PlacedObject {
   position: number[];
   id: number;
   scale: number[];
+  loadFailed?: boolean;
 }
 
 function RecipeARPlacementScene(props: any) {
@@ -109,11 +110,11 @@ function RecipeARPlacementScene(props: any) {
     const finalPos = reticleFound ? [...reticlePosition] : [0, -0.5, -1];
 
     const newId = Date.now();
-    // Increase default scale to [0.2, 0.2, 0.2] for better visibility
+    // Use smaller default scale for better fit
     setPlacedObjects((prev: PlacedObject[]) => [...prev, {
       position: finalPos,
       id: newId,
-      scale: [0.2, 0.2, 0.2]
+      scale: [0.15, 0.15, 0.15]
     }]);
 
     console.log('[ViroAR] Placed object at:', finalPos);
@@ -193,18 +194,33 @@ function RecipeARPlacementScene(props: any) {
           key={obj.id}
           position={obj.position}
           onPinch={_onPinch}
+          dragType="FixedToWorld"
+          onDrag={() => { }}
         >
-          <Viro3DObject
-            source={modelUrl ? { uri: modelUrl } : require('../../../res/pan_of_borshch.glb')}
-            type="GLB"
-            position={[0, 0.05, 0]}
-            scale={obj.scale}
-            opacity={1}
-            rotation={[0, 0, 0]}
-            animation={{ name: 'scaleIn', run: true }}
-            dragType="FixedToWorld"
-            onDrag={() => { }}
-          />
+          {obj.loadFailed ? (
+            <ViroQuad
+              rotation={[-90, 0, 0]}
+              scale={[0.3, 0.3, 1]}
+              materials={['gridOverlay']}
+            />
+          ) : (
+            <Viro3DObject
+              source={modelUrl ? { uri: modelUrl } : require('../../../res/pan_of_borshch.glb')}
+              type="GLB"
+              position={[0, 0.05, 0]}
+              scale={obj.scale}
+              opacity={1}
+              rotation={[0, 0, 0]}
+              animation={{ name: 'scaleIn', run: true }}
+              onError={(e: any) => {
+                console.error('[ViroAR] Load error:', e.nativeEvent.error);
+                setPlacedObjects((prev: PlacedObject[]) => prev.map(o =>
+                  o.id === obj.id ? { ...o, loadFailed: true } : o
+                ));
+              }}
+            />
+          )}
+
           <ViroQuad
             rotation={[-90, 0, 0]}
             scale={[obj.scale[0] * 6, obj.scale[1] * 6, obj.scale[2] * 6]}
