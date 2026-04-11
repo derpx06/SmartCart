@@ -36,7 +36,8 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.muneerabass.mobile"
+      "package": "com.muneerabass.mobile",
+      "usesCleartextTraffic": true
     },
     "web": {
       "output": "static",

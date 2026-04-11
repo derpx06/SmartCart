@@ -1,8 +1,8 @@
 export const WEIGHTS = {
-    intent: 0.45,
-    relationship: 0.30,
-    session: 0.10,
-    inventory: 0.10,
-    diversity: 0.05,
-    bias: 0.05,
+    intent: 0.442,
+    relationship: 0.318,
+    session: 0.089,
+    inventory: 0.097,
+    diversity: 0.043,
+    bias: 0.011,
 };

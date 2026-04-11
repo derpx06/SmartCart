@@ -98,11 +98,25 @@ function RecipeARPlacementScene(props: any) {
   }, []);
 
   const _onReticleTap = useCallback(async () => {
-    console.log('[ViroAR] Reticle Tap - reticleFound:', reticleFound, 'pos:', reticlePosition);
-    if (!reticleFound) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    console.log('[ViroAR] Attempting Place - Found:', reticleFound, 'Pos:', reticlePosition);
+
+    // Provide haptic feedback for the tap itself
+    try {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    } catch (e) { /* ignore haptic errors */ }
+
+    // Use current reticle position or a fallback if briefly lost
+    const finalPos = reticleFound ? [...reticlePosition] : [0, -0.5, -1];
+
     const newId = Date.now();
-    setPlacedObjects((prev: PlacedObject[]) => [...prev, { position: [...reticlePosition], id: newId, scale: [0.1, 0.1, 0.1] }]);
+    // Increase default scale to [0.2, 0.2, 0.2] for better visibility
+    setPlacedObjects((prev: PlacedObject[]) => [...prev, {
+      position: finalPos,
+      id: newId,
+      scale: [0.2, 0.2, 0.2]
+    }]);
+
+    console.log('[ViroAR] Placed object at:', finalPos);
   }, [reticleFound, reticlePosition, setPlacedObjects]);
 
   const _onPinch = useCallback((pinchState: any, scaleFactor: number, source: any) => {
@@ -138,17 +152,14 @@ function RecipeARPlacementScene(props: any) {
         shadowOpacity={0.8}
       />
 
-      {/* Global Click Surface for 'Tap Anywhere' placement */}
       {/* Scene-wide Click Surface for 'Tap Anywhere' placement */}
-      {reticleFound && (
-        <ViroQuad
-          position={reticlePosition}
-          rotation={[-90, 0, 0]}
-          scale={[100, 100, 1]}
-          opacity={0}
-          onClick={_onReticleTap}
-        />
-      )}
+      <ViroQuad
+        position={reticleFound ? reticlePosition : [0, -0.5, -1]}
+        rotation={[-90, 0, 0]}
+        scale={[100, 100, 1]}
+        opacity={0}
+        onClick={_onReticleTap}
+      />
 
       {reticleFound && (
         <ViroNode position={reticlePosition}>
