@@ -17,9 +17,9 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         lazy: false,
-        detachInactiveScreens: false,
-        freezeOnBlur: true,
-        animation: 'shift',
+        // `shift` can flash empty/black frames while scenes move; `freezeOnBlur` can leave a tab blank after refocus.
+        freezeOnBlur: false,
+        animation: 'fade',
       }}
       tabBar={(props) => <FloatingTabBar {...props} />}>
       <Tabs.Screen

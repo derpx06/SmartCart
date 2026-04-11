@@ -1,4 +1,4 @@
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 
 import { Fonts } from '@/constants/theme';
 
@@ -77,5 +77,22 @@ export function createFloatingTabBarStyles(
       color: colors.text,
       fontWeight: '700',
     },
+    iosTabBarShadow: Platform.select({
+      ios: {
+        borderRadius: 999,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.22,
+        shadowRadius: 18,
+      },
+      default: {},
+    }),
+    iosTabBarBlur: Platform.select({
+      ios: {
+        overflow: 'hidden',
+        borderWidth: StyleSheet.hairlineWidth * 2,
+      },
+      default: {},
+    }),
   });
 }
