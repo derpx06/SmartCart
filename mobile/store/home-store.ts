@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { api } from '@/lib/api';
+import { createPerfTrace, getPerfNow, measureUiCommit } from '@/lib/perf';
 import {
   bestsellers,
   categories,
@@ -89,9 +90,11 @@ export const useHomeStore = create<HomeStore>((set) => ({
   refreshing: false,
   error: null,
   loadHome: async (tag?: string) => {
+    const trace = createPerfTrace('UI Home load', { tag: tag || 'all' });
     try {
       set((state) => ({ loading: !state.hasFetched, error: null }));
       const data = await api.getHome(tag);
+      trace.mark('home-payload-received');
       const rowResults = await Promise.all(
         HOME_ROW_ORDER.map(async ({ id }) => {
           set((s) => ({ rowLoading: { ...s.rowLoading, [id]: true }, rowError: { ...s.rowError, [id]: null } }));
@@ -123,6 +126,7 @@ export const useHomeStore = create<HomeStore>((set) => ({
           const minItems = cfg?.minItems ?? 3;
           return (row.items?.length ?? 0) >= minItems;
         });
+      const responseReceivedAt = getPerfNow();
 
       set({
         homeData: {
@@ -139,7 +143,10 @@ export const useHomeStore = create<HomeStore>((set) => ({
         hasFetched: true,
         error: null,
       });
+      measureUiCommit('UI Home load', responseReceivedAt, { rowsLoaded: rows.length });
+      trace.end('complete', { rowsLoaded: rows.length });
     } catch {
+      trace.end('failed');
       set({
         homeData: fallbackHomeData,
         homeRows: [],
@@ -151,9 +158,11 @@ export const useHomeStore = create<HomeStore>((set) => ({
   },
   refreshHome: async (tag?: string, options?: { silent?: boolean }) => {
     const silent = Boolean(options?.silent);
+    const trace = createPerfTrace('UI Home refresh', { tag: tag || 'all', silent });
     try {
       set(silent ? { error: null } : { refreshing: true, error: null });
       const data = await api.getHome(tag);
+      trace.mark('home-payload-received');
       const rowResults = await Promise.all(
         HOME_ROW_ORDER.map(async ({ id }) => {
           if (!silent) {
@@ -191,6 +200,7 @@ export const useHomeStore = create<HomeStore>((set) => ({
           const minItems = cfg?.minItems ?? 3;
           return (row.items?.length ?? 0) >= minItems;
         });
+      const responseReceivedAt = getPerfNow();
 
       set({
         homeData: {
@@ -206,7 +216,10 @@ export const useHomeStore = create<HomeStore>((set) => ({
         refreshing: false,
         error: null,
       });
+      measureUiCommit('UI Home refresh', responseReceivedAt, { rowsLoaded: rows.length, silent });
+      trace.end('complete', { rowsLoaded: rows.length, silent });
     } catch {
+      trace.end('failed', { silent });
       set({
         homeData: fallbackHomeData,
         homeRows: [],

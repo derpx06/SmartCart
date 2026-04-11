@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { api, type WishlistApiResponse } from '@/lib/api';
+import { createPerfTrace, getPerfNow, measureUiCommit } from '@/lib/perf';
 
 export type WishlistItem = {
   productId: string;
@@ -79,6 +80,7 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
   error: null,
   fetchWishlist: async (options) => {
     const silent = options?.silent === true;
+    const trace = createPerfTrace('UI Wishlist fetch', { silent });
 
     try {
       if (!silent) {
@@ -88,13 +90,21 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
       }
 
       const payload = await api.getWishlist();
+      const items = normalizeWishlistItems(payload);
+      const responseReceivedAt = getPerfNow();
       set({
-        items: normalizeWishlistItems(payload),
+        items,
         loading: false,
         hasLoaded: true,
         error: null,
       });
+      measureUiCommit('UI Wishlist fetch', responseReceivedAt, {
+        items: items.length,
+        silent,
+      });
+      trace.end('complete', { items: items.length, silent });
     } catch (error: any) {
+      trace.end('failed', { silent, message: error?.message });
       set({
         loading: false,
         hasLoaded: true,
@@ -104,6 +114,7 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
   },
   addWishlistItem: async (productId) => {
     if (!productId) return;
+    const trace = createPerfTrace('UI Wishlist add', { productId });
 
     set((state) => ({
       syncingIds: state.syncingIds.includes(productId) ? state.syncingIds : [...state.syncingIds, productId],
@@ -111,12 +122,17 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
     }));
     try {
       const payload = await api.addToWishlist(productId);
+      const items = normalizeWishlistItems(payload);
+      const responseReceivedAt = getPerfNow();
       set({
-        items: normalizeWishlistItems(payload),
+        items,
         hasLoaded: true,
         error: null,
       });
+      measureUiCommit('UI Wishlist add', responseReceivedAt, { productId });
+      trace.end('complete', { productId });
     } catch (error: any) {
+      trace.end('failed', { productId, message: error?.message });
       set({ error: error?.message || 'Unable to update wishlist' });
       throw error;
     } finally {
@@ -125,6 +141,7 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
   },
   removeWishlistItem: async (productId) => {
     if (!productId) return;
+    const trace = createPerfTrace('UI Wishlist remove', { productId });
 
     set((state) => ({
       syncingIds: state.syncingIds.includes(productId) ? state.syncingIds : [...state.syncingIds, productId],
@@ -132,12 +149,17 @@ export const useWishlistStore = create<WishlistStore>((set, get) => ({
     }));
     try {
       const payload = await api.removeFromWishlist(productId);
+      const items = normalizeWishlistItems(payload);
+      const responseReceivedAt = getPerfNow();
       set({
-        items: normalizeWishlistItems(payload),
+        items,
         hasLoaded: true,
         error: null,
       });
+      measureUiCommit('UI Wishlist remove', responseReceivedAt, { productId });
+      trace.end('complete', { productId });
     } catch (error: any) {
+      trace.end('failed', { productId, message: error?.message });
       set({ error: error?.message || 'Unable to update wishlist' });
       throw error;
     } finally {

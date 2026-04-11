@@ -158,9 +158,6 @@ export default function CartScreen() {
   const handleAddRecommendation = async (productId: string) => {
     try {
       await addToCart(productId, 1);
-      // Explicitly force a fresh state fetch to update the intelligence panel immediately
-      const fetchCart = useSmartCartStore.getState().fetchCart;
-      await fetchCart({ silent: true });
     } catch (err: any) {
       const message = err?.message || 'Please try again.';
       if (typeof message === 'string' && message.toLowerCase().includes('unauthorized')) {

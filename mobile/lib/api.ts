@@ -3,6 +3,7 @@ import type { TabDemoContent } from '@/data/tabDemoContent';
 import type { ProductDetail } from '@/data/product/productDetails';
 import type { CategoryItem, CollectionItem, HeroSlide, ProductItem } from '@/data/luxuryHomeData';
 import type { RankedItem } from '@/types/smart-cart';
+import { createPerfTrace, getPerfNow } from '@/lib/perf';
 
 let authToken: string | null = null;
 let deviceId: string | null = null;
@@ -144,6 +145,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const headers = new Headers(options.headers);
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15000);
+  const method = (options.method || 'GET').toUpperCase();
+  const trace = createPerfTrace(`API ${method} ${path}`);
 
   if (!headers.has('Content-Type') && options.body && !(options.body instanceof FormData)) {
     headers.set('Content-Type', 'application/json');
@@ -155,12 +158,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
 
   // Device id enables personalization when unauthenticated.
   if (!headers.has('x-device-id')) {
+    const deviceIdStartAt = getPerfNow();
     const id = await getDeviceId();
     headers.set('x-device-id', id);
+    trace.mark('device-id-ready', { durationMs: Math.round((getPerfNow() - deviceIdStartAt) * 100) / 100 });
   }
 
   let response: Response;
   try {
+    trace.mark('fetch-dispatched', { apiBaseUrl: Config.API_URL });
     response = await fetch(`${Config.API_URL}${path}`, {
       ...options,
       headers,
@@ -168,23 +174,34 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
     });
   } catch (error: any) {
     clearTimeout(timeout);
+    trace.end('fetch-error', { errorName: error?.name, message: error?.message });
     if (error?.name === 'AbortError') {
       throw new Error('Request timed out. Check backend URL/network and try again.');
     }
     throw error;
   }
   clearTimeout(timeout);
+  trace.mark('response-received', {
+    status: response.status,
+    ok: response.ok,
+    contentLength: response.headers.get('content-length') || undefined,
+  });
 
   if (!response.ok) {
     const payload = await response.json().catch(() => null);
+    trace.end('request-failed', { error: payload?.error || 'Request failed' });
     throw new Error(payload?.error || 'Request failed');
   }
 
   if (response.status === 204) {
+    trace.end('request-complete', { responseKind: 'empty' });
     return undefined as T;
   }
 
-  return response.json() as Promise<T>;
+  const parseStartAt = getPerfNow();
+  const payload = (await response.json()) as T;
+  trace.end('request-complete', { parseMs: Math.round((getPerfNow() - parseStartAt) * 100) / 100 });
+  return payload;
 }
 
 function parseSseFrames(buffer: string): { frames: string[]; rest: string } {
