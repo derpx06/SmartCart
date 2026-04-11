@@ -138,6 +138,7 @@ function RecipeARPlacementScene(props: any) {
       onTrackingUpdated={_onTrackingUpdated}
       onCameraTransformUpdate={_onCameraTransformUpdate}
       anchorDetectionTypes={['planesHorizontal', 'planesVertical']}
+      onClick={_onReticleTap}
     >
       <ViroAmbientLight color="#ffffff" intensity={500} />
       <ViroSpotLight

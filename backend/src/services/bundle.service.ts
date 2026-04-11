@@ -12,7 +12,7 @@ type RankedLike = {
 };
 
 type CartLikeItem = SmartCartState['cart']['items'][number];
-type Intent = 'bed_setup' | 'dining_setup' | 'kitchen_setup' | 'baking' | 'cooking' | 'general';
+type Intent = 'bed_setup' | 'dining_setup' | 'kitchen_setup' | 'baking' | 'cooking' | 'home_setup' | 'gifting' | 'general';
 
 function normalize(v: string): string {
   return String(v || '').toLowerCase();
@@ -29,11 +29,13 @@ function titleCase(v: string): string {
 
 function classifyItemIntent(item: CartLikeItem): string {
   const text = `${item.name} ${item.category}`.toLowerCase();
-  if (/(bed|bedding|bedsheet|pillow|blanket|duvet|mattress)/.test(text)) return 'bed_setup';
-  if (/(dining|dinner|table|chair|cutlery|placemat)/.test(text)) return 'dining_setup';
-  if (/(kitchen|pan|pot|spatula|knife|cutting board|cook)/.test(text)) return 'kitchen_setup';
-  if (/(bake|whisk|flour|sugar|muffin|tray|oven)/.test(text)) return 'baking';
-  if (/(cook|ingredient|oil|spice|stove|prep)/.test(text)) return 'cooking';
+  if (/(bed|bedding|bedsheet|pillow|blanket|duvet|mattress|sleeping)/.test(text)) return 'bed_setup';
+  if (/(dining|dinner|table|chair|cutlery|placemat|plate|bowl|glass)/.test(text)) return 'dining_setup';
+  if (/(kitchen|pan|pot|spatula|knife|cutting board|cookware|fry|stove)/.test(text)) return 'kitchen_setup';
+  if (/(bake|whisk|flour|sugar|muffin|tray|oven|pastry|dessert)/.test(text)) return 'baking';
+  if (/(cook|ingredient|oil|spice|stove|prep|garlic|onion|seasoning)/.test(text)) return 'cooking';
+  if (/(decor|lighting|storage|shelf|furniture|lamp|rug|home)/.test(text)) return 'home_setup';
+  if (/(gift|wrap|ribbon|bag|card|present)/.test(text)) return 'gifting';
   return 'general';
 }
 
@@ -49,10 +51,12 @@ const COMPLEMENT_HINTS: Record<string, string[]> = {
 
 function intentKeywords(intent: string): string[] {
   if (intent === 'bed_setup') return ['bed', 'bedding', 'sheet', 'pillow', 'blanket', 'duvet', 'mattress'];
-  if (intent === 'dining_setup') return ['dining', 'table', 'chair', 'cutlery', 'placemat', 'dinner'];
-  if (intent === 'kitchen_setup') return ['kitchen', 'pan', 'pot', 'spatula', 'knife', 'board', 'cook'];
+  if (intent === 'dining_setup') return ['dining', 'table', 'chair', 'cutlery', 'placemat', 'dinner', 'plate', 'bowl'];
+  if (intent === 'kitchen_setup') return ['kitchen', 'pan', 'pot', 'spatula', 'knife', 'board', 'cookware'];
   if (intent === 'baking') return ['bake', 'whisk', 'flour', 'sugar', 'tray', 'muffin', 'oven'];
   if (intent === 'cooking') return ['cook', 'ingredient', 'oil', 'spice', 'stove', 'prep'];
+  if (intent === 'home_setup') return ['decor', 'lighting', 'storage', 'shelf', 'furniture', 'lamp'];
+  if (intent === 'gifting') return ['gift', 'wrap', 'ribbon', 'bag', 'card'];
   return [];
 }
 
@@ -75,41 +79,48 @@ function buildKitId(intent: string, index: number): string {
 
 function defaultNeeds(intent: Intent): string[] {
   if (intent === 'bed_setup') return ['bedsheet', 'pillow', 'blanket', 'pillow cover'];
-  if (intent === 'dining_setup') return ['dining table', 'chairs', 'cutlery', 'placemat'];
+  if (intent === 'dining_setup') return ['dining table', 'chairs', 'cutlery', 'placemat', 'plate'];
   if (intent === 'kitchen_setup') return ['pan', 'oil', 'spatula', 'knife', 'cutting board'];
   if (intent === 'baking') return ['flour', 'sugar', 'whisk', 'bowl'];
-  if (intent === 'cooking') return ['pan', 'oil', 'spatula', 'ingredients'];
+  if (intent === 'cooking') return ['pan', 'oil', 'spatula', 'ingredients', 'spice'];
+  if (intent === 'home_setup') return ['lighting', 'storage', 'shelf', 'decor'];
+  if (intent === 'gifting') return ['card', 'gift wrap', 'ribbon'];
   return ['essential item'];
 }
 
-function deriveDynamicNeeds(intent: Intent, items: CartLikeItem[], ranked: RankedLike[]): string[] {
-  const bag = items.map((i) => `${normalize(i.name)} ${normalize(i.category)}`).join(' ');
-  const dynamic = new Set<string>();
+function deriveDynamicTargetSet(intent: Intent, items: CartLikeItem[], ranked: RankedLike[]): string[] {
+  // Returns the FULL list of items that SHOULD be in this kit (Present + Missing)
+  const targetSet = new Set<string>();
 
-  // 1) infer direct complements from what user already has
+  // 1) Add items already in the bag (that belong to this intent)
+  items.forEach(i => targetSet.add(normalize(i.name)));
+
+  // 2) Add direct complements from hints
   for (const item of items) {
     const text = normalize(item.name);
     for (const [key, vals] of Object.entries(COMPLEMENT_HINTS)) {
       if (text.includes(normalize(key))) {
-        vals.forEach((v) => dynamic.add(v));
+        vals.forEach((v) => targetSet.add(v));
       }
     }
   }
 
-  // 2) infer missing concepts from top AI-ranked candidates
+  // 3) Add missing concepts from top AI-ranked candidates
   const keys = intentKeywords(intent);
   const rankedForIntent = ranked.filter((r) => {
     const txt = `${normalize(r.name)} ${normalize(r.category)}`;
     return keys.some((k) => txt.includes(normalize(k)));
   });
-  for (const r of rankedForIntent.slice(0, 20)) {
+  for (const r of rankedForIntent.slice(0, 15)) {
     const txt = `${normalize(r.name)} ${normalize(r.category)}`;
     const mapped = defaultNeeds(intent).filter((need) => txt.includes(normalize(need)));
-    mapped.forEach((m) => dynamic.add(m));
+    mapped.forEach((m) => targetSet.add(m));
   }
 
-  const combined = [...dynamic, ...defaultNeeds(intent)];
-  return combined.filter((need) => !bag.includes(normalize(need)));
+  // 4) Ensure defaults are included
+  defaultNeeds(intent).forEach(d => targetSet.add(d));
+
+  return [...targetSet];
 }
 
 export function buildIntelligenceAndBundles(args: {
@@ -156,15 +167,11 @@ export function buildIntelligenceAndBundles(args: {
 
   sourceEntries.forEach(([intent, items], idx) => {
     const kitId = buildKitId(intent, idx);
-    const required = (semantic.primary_intent === intent ? semantic.requiredItems : undefined) || [];
-    const defaults = required.length > 0 ? required : defaultNeeds(intent as Intent);
-    const inferredMissing = deriveDynamicNeeds(intent as Intent, items, ranked);
-    const dynamicNeeds = [...new Set([...inferredMissing, ...defaults])];
-
-    const bag = items.map((i) => `${normalize(i.name)} ${normalize(i.category)}`).join(' ');
-    const present = dynamicNeeds.filter((k) => bag.includes(normalize(k)));
-    const missing = dynamicNeeds.filter((k) => !present.includes(k));
-    const completionPercent = dynamicNeeds.length ? Math.round((present.length / dynamicNeeds.length) * 100) : 0;
+    const targetSet = deriveDynamicTargetSet(intent as Intent, items, ranked);
+    const bag = items.map((i) => `${normalize(i.name)} ${normalize(i.category)}`).join(' | ');
+    const present = targetSet.filter((k) => bag.includes(normalize(k)));
+    const missing = targetSet.filter((k) => !present.includes(k));
+    const completionPercent = targetSet.length ? Math.max(10, Math.min(100, Math.round((present.length / targetSet.length) * 100))) : 0;
 
     const kitRisk: 'low' | 'medium' | 'high' =
       completionPercent < 35 || state.session.confidence < 0.4

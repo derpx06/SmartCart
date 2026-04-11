@@ -133,19 +133,20 @@ export async function getSemanticState(state: SmartCartState): Promise<SemanticS
         bestScore = Math.max(bestScore, 0.65);
     }
 
-    // 4. Compute missing needs
+    // 4. Compute missing needs with logic that checks for synonyms/broad categories
     const expectedNeeds = NEEDS_MAP[bestIntent] || [];
-    const cartNamesLower = state.cart.items.map(i => i.name.toLowerCase());
-    const cartCategoriesLower = state.cart.items.map(i => i.category.toLowerCase());
+    const cartText = state.cart.items
+        .map(i => `${normalize(i.name)} ${normalize(i.category)}`)
+        .join(' | ');
 
-    const needs = expectedNeeds.filter(
-        need => !cartNamesLower.some(name => name.includes(need.toLowerCase())) &&
-            !cartCategoriesLower.some(cat => cat.includes(need.toLowerCase()))
-    );
-    const presentItems = expectedNeeds.filter((need) =>
-        cartNamesLower.some(name => name.includes(normalize(need))) ||
-        cartCategoriesLower.some(cat => cat.includes(normalize(need)))
-    );
+    const presentItems = expectedNeeds.filter((need) => {
+        const normalizedNeed = normalize(need);
+        // Fuzzy match: if the need keyword is contained anywhere in the cart's combined text
+        return cartText.includes(normalizedNeed);
+    });
+
+    const needs = expectedNeeds.filter(need => !presentItems.includes(need));
+
     const completionPercent = expectedNeeds.length
         ? Math.max(0, Math.min(100, Math.round((presentItems.length / expectedNeeds.length) * 100)))
         : 0;

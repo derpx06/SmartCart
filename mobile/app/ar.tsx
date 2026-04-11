@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import * as FileSystem from 'expo-file-system/legacy';
 
 import ARScene from '@/src/features/ar/components/ARScene';
 import { ThemedText } from '@/components/themed-text';
@@ -14,47 +15,9 @@ export default function ARScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function prepareModel() {
-      if (!modelUrl) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Expo 55+ API: use Paths and File classes
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { File, Paths } = require('expo-file-system');
-
-        const filename = modelUrl.split('/').pop()?.split('?')[0] || 'model.glb';
-        const modelFile = new File(Paths.cache, filename);
-
-        // Check if file already exists locally
-        // Note: in the new API, we can check exists via the file instance or Paths.info
-        const info = await Paths.info(modelFile.uri);
-
-        if (info.exists) {
-          const uri = modelFile.uri.startsWith('file://') ? modelFile.uri : `file://${modelFile.uri}`;
-          console.log('[AR] Using cached model:', uri);
-          setLocalUri(uri);
-        } else {
-          console.log('[AR] Downloading model from:', modelUrl);
-          const download = await File.downloadFileAsync(modelUrl, modelFile);
-          const uri = download.uri.startsWith('file://') ? download.uri : `file://${download.uri}`;
-          console.log('[AR] Download complete:', uri);
-          setLocalUri(uri);
-        }
-      } catch (err) {
-        console.error('[AR] Pre-load failed:', err);
-        setError('Failed to download 3D model. Please check your connection.');
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    void prepareModel();
+    // TEMPORARY: Bypass native FileSystem pre-loading to avoid native crash on some Android devices.
+    // The model will be loaded directly from the remote URL by the ARScene (Viro engine).
+    setLoading(false);
   }, [modelUrl]);
 
   if (loading) {

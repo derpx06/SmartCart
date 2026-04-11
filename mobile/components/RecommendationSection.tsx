@@ -64,7 +64,7 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                             )}
 
                             <View style={styles.badgeContainer}>
-                                {item.reasons.slice(0, 2).map((reason, idx) => (
+                                {item.reasons.slice(0, 1).map((reason, idx) => (
                                     <View
                                         key={idx}
                                         style={[styles.reasonBadge, { backgroundColor: REC_COLORS.badgeBg }]}
@@ -72,6 +72,12 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
                                         <ThemedText style={styles.reasonText}>{reason}</ThemedText>
                                     </View>
                                 ))}
+                                <View style={[styles.affinityBadge, { backgroundColor: '#f0f0f0' }]}>
+                                    <Ionicons name="flash" size={10} color={REC_COLORS.text} />
+                                    <ThemedText style={[styles.affinityText, { color: REC_COLORS.text }]}>
+                                        {Math.round(item.score * 100)}% Match
+                                    </ThemedText>
+                                </View>
                             </View>
                         </View>
 
@@ -162,6 +168,21 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
+    },
+    affinityBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: radius.pill,
+        borderWidth: StyleSheet.hairlineWidth,
+        borderColor: 'rgba(28,27,31,0.08)',
+    },
+    affinityText: {
+        fontSize: 10,
+        fontWeight: '700',
+        fontFamily: Fonts.sans,
     },
     cardBody: {
         padding: spacing.md,

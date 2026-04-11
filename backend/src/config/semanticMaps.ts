@@ -1,11 +1,11 @@
 export const NEEDS_MAP: Record<string, string[]> = {
-    cooking: ['oil', 'spatula', 'ingredients', 'pan', 'knife'],
-    kitchen_setup: ['pan', 'oil', 'spatula', 'knife', 'cutting board'],
-    dining_setup: ['dining table', 'chairs', 'cutlery', 'placemat'],
-    baking: ['flour', 'sugar', 'whisk', 'muffin tin', 'bowl'],
-    bed_setup: ['bedsheet', 'pillow', 'blanket', 'pillow cover', 'mattress protector'],
-    home_setup: ['decor', 'lighting', 'storage', 'shelf'],
-    gifting: ['card', 'gift_wrap', 'ribbon', 'bag'],
+    cooking: ['oil', 'spatula', 'ingredients', 'pan', 'knife', 'cutting board', 'spice', 'garlic'],
+    kitchen_setup: ['pan', 'oil', 'spatula', 'knife', 'cutting board', 'pot', 'cookware'],
+    dining_setup: ['dining table', 'chairs', 'cutlery', 'placemat', 'plate', 'bowl', 'glass'],
+    baking: ['flour', 'sugar', 'whisk', 'muffin tin', 'bowl', 'tray', 'oven'],
+    bed_setup: ['bedsheet', 'pillow', 'blanket', 'pillow cover', 'mattress protector', 'duvet'],
+    home_setup: ['decor', 'lighting', 'storage', 'shelf', 'lamp', 'furniture'],
+    gifting: ['card', 'gift wrap', 'ribbon', 'bag', 'gift'],
 };
 
 export const GOAL_MAP: Record<string, string> = {

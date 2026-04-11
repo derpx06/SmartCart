@@ -66,7 +66,7 @@ export default function CartScreen() {
   const fetchOrders = useOrdersStore((store) => store.fetchOrders);
   const homeData = useHomeStore((state) => state.homeData);
   const scrollRef = useRef<ScrollView>(null);
-  
+
   const [cartSearchQuery, setCartSearchQuery] = useState('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [paymentStep, setPaymentStep] = useState<'loading' | 'form' | 'processing' | 'success'>('loading');
@@ -93,6 +93,9 @@ export default function CartScreen() {
   const handleAddRecommendation = async (productId: string) => {
     try {
       await addToCart(productId, 1);
+      // Explicitly force a fresh state fetch to update the intelligence panel immediately
+      const fetchCart = useSmartCartStore.getState().fetchCart;
+      await fetchCart({ silent: true });
     } catch (err: any) {
       const message = err?.message || 'Please try again.';
       if (typeof message === 'string' && message.toLowerCase().includes('unauthorized')) {
@@ -188,10 +191,10 @@ export default function CartScreen() {
   const cartSearch = cartSearchQuery.trim().toLowerCase();
   const items = cartSearch
     ? allItems.filter(
-        (item) =>
-          item.name.toLowerCase().includes(cartSearch) ||
-          (item.category && item.category.toLowerCase().includes(cartSearch)),
-      )
+      (item) =>
+        item.name.toLowerCase().includes(cartSearch) ||
+        (item.category && item.category.toLowerCase().includes(cartSearch)),
+    )
     : allItems;
   const hasCartItems = allItems.length > 0;
   const subtotal = state?.cart.totalValue || 0;
@@ -210,10 +213,10 @@ export default function CartScreen() {
   const handleProcessPayment = async () => {
     setPaymentStep('processing');
     setPlacingOrder(true);
-    
+
     // Simulate network delay for payment
     await new Promise(resolve => setTimeout(resolve, 2000));
-    
+
     try {
       await checkout();
       await fetchOrders();
