@@ -1,11 +1,13 @@
 import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
+import React, { useCallback } from 'react';
+import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 
 import { FloatingTabBar } from '@/components/navigation/FloatingTabBar';
 import { useAuth } from '@/context/AuthContext';
 
 export default function TabLayout() {
   const { isAuthenticated, isHydrated } = useAuth();
+  const renderTabBar = useCallback((props: BottomTabBarProps) => <FloatingTabBar {...props} />, []);
 
   if (!isHydrated) return null;
   if (!isAuthenticated) {
@@ -16,12 +18,13 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        lazy: false,
+        // Mount each tab on first visit so inactive tabs do not run effects or subscribe until opened.
+        lazy: true,
         // `shift` can flash empty/black frames while scenes move; `freezeOnBlur` can leave a tab blank after refocus.
         freezeOnBlur: false,
         animation: 'fade',
       }}
-      tabBar={(props) => <FloatingTabBar {...props} />}>
+      tabBar={renderTabBar}>
       <Tabs.Screen
         name="index"
         options={{ title: 'Home' }}

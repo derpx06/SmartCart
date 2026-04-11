@@ -140,10 +140,11 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
   kicker: {
     fontSize: 11,
+    lineHeight: 14,
     fontFamily: Fonts.sans,
     textTransform: 'uppercase',
     letterSpacing: 1.4,
@@ -152,6 +153,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 31,
+    lineHeight: 40,
     fontFamily: Fonts.serif,
     color: RECIPE_COLORS.text,
     marginBottom: spacing.xs,
@@ -160,12 +162,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: Fonts.sans,
     color: RECIPE_COLORS.muted,
-    lineHeight: 19,
+    lineHeight: 20,
   },
   content: {
     paddingHorizontal: spacing.md,
     gap: spacing.md,
-    paddingTop: spacing.sm,
+    paddingTop: spacing.xs,
   },
   featuredCard: {
     borderRadius: radius.lg,
@@ -218,6 +220,7 @@ const styles = StyleSheet.create({
   },
   featuredTitle: {
     fontSize: 24,
+    lineHeight: 30,
     fontFamily: Fonts.serif,
     color: '#FFFFFF',
     marginBottom: spacing.xs,
@@ -230,8 +233,8 @@ const styles = StyleSheet.create({
     paddingRight: spacing.md,
   },
   sectionHeaderRow: {
-    marginTop: spacing.sm,
-    marginBottom: spacing.xs,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xxs,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -267,21 +270,24 @@ const styles = StyleSheet.create({
     ...luxuryShadow,
   },
   thumbWrap: {
-    width: 130,
+    width: 104,
+    minHeight: 108,
+    alignSelf: 'stretch',
     backgroundColor: palette.surface,
     borderRightWidth: 1,
     borderRightColor: palette.line,
+    position: 'relative',
   },
   thumbImage: {
-    width: '100%',
-    height: '100%',
-    minHeight: 180,
+    ...StyleSheet.absoluteFillObject,
   },
   cardContent: {
     flex: 1,
-    padding: spacing.md,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     justifyContent: 'center',
-    minWidth: 200, // Ensure enough room for text
+    gap: 4,
+    minWidth: 0,
   },
   metaRowTop: {
     flexDirection: 'row',
@@ -312,19 +318,19 @@ const styles = StyleSheet.create({
     color: RECIPE_COLORS.accent,
   },
   recipeTitle: {
-    fontSize: 20,
+    fontSize: 17,
     fontFamily: Fonts.serif,
     color: RECIPE_COLORS.text,
-    lineHeight: 25,
+    lineHeight: 22,
   },
   recipeDescription: {
-    fontSize: 13,
+    fontSize: 12,
     fontFamily: Fonts.sans,
     color: RECIPE_COLORS.muted,
-    lineHeight: 18,
+    lineHeight: 16,
   },
   bottomMetaRow: {
-    marginTop: spacing.xs,
+    marginTop: 2,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,

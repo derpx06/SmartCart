@@ -156,16 +156,22 @@ export const useHomeStore = create<HomeStore>((set) => ({
       const data = await api.getHome(tag);
       const rowResults = await Promise.all(
         HOME_ROW_ORDER.map(async ({ id }) => {
-          set((s) => ({ rowLoading: { ...s.rowLoading, [id]: true }, rowError: { ...s.rowError, [id]: null } }));
+          if (!silent) {
+            set((s) => ({ rowLoading: { ...s.rowLoading, [id]: true }, rowError: { ...s.rowError, [id]: null } }));
+          }
           try {
             const row = await api.getHomeRow(id, 10);
-            set((s) => ({ rowLoading: { ...s.rowLoading, [id]: false } }));
+            if (!silent) {
+              set((s) => ({ rowLoading: { ...s.rowLoading, [id]: false } }));
+            }
             return row;
           } catch (e: any) {
-            set((s) => ({
-              rowLoading: { ...s.rowLoading, [id]: false },
-              rowError: { ...s.rowError, [id]: e?.message || 'Row failed' },
-            }));
+            if (!silent) {
+              set((s) => ({
+                rowLoading: { ...s.rowLoading, [id]: false },
+                rowError: { ...s.rowError, [id]: e?.message || 'Row failed' },
+              }));
+            }
             return null;
           }
         })

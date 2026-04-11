@@ -36,7 +36,7 @@ export function getFloatingTabBarBottomOffset(insetBottom: number) {
   return Math.max(insetBottom, FLOATING_TAB_BAR_MIN_BOTTOM_INSET) + FLOATING_TAB_BAR_GAP;
 }
 
-export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+function FloatingTabBarInner({ state, descriptors, navigation }: BottomTabBarProps) {
   const isAndroid = Platform.OS === 'android';
   const isIOS = Platform.OS === 'ios';
   const colorScheme = useColorScheme() ?? 'light';
@@ -198,3 +198,5 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     </View>
   );
 }
+
+export const FloatingTabBar = React.memo(FloatingTabBarInner);

@@ -231,16 +231,22 @@ export function LuxuryHomeScreen() {
   const filterUnderlineX = useRef(new Animated.Value(0)).current;
   const filterUnderlineWidth = useRef(new Animated.Value(0)).current;
   const [filterLayouts, setFilterLayouts] = useState<Record<string, { x: number; width: number }>>({});
-  const [focusSkeleton, setFocusSkeleton] = useState(false);
   const homeFirstFocusRef = useRef(true);
+  const lastBackgroundRefreshRef = useRef(0);
   const showInitialSkeleton = loading && !hasFetched;
-  const showHomeSkeleton = showInitialSkeleton || focusSkeleton;
+  const showHomeSkeleton = showInitialSkeleton;
 
   useEffect(() => {
     if (!hasFetched) {
       void loadHome();
     }
   }, [hasFetched, loadHome]);
+
+  useEffect(() => {
+    if (hasFetched) {
+      lastBackgroundRefreshRef.current = Date.now();
+    }
+  }, [hasFetched]);
 
   useEffect(() => {
     if (wishlistLoaded) return;
@@ -259,22 +265,26 @@ export function LuxuryHomeScreen() {
       if (!hasFetched) {
         return undefined;
       }
-      let active = true;
-      setFocusSkeleton(true);
+      const staleMs = 3 * 60 * 1000;
+      const now = Date.now();
+      if (now - lastBackgroundRefreshRef.current < staleMs) {
+        return undefined;
+      }
+      let cancelled = false;
       void refreshHome(normalizeFilter(activeFilter), { silent: true }).finally(() => {
-        if (active) {
-          setFocusSkeleton(false);
+        if (!cancelled) {
+          lastBackgroundRefreshRef.current = Date.now();
         }
       });
       return () => {
-        active = false;
-        setFocusSkeleton(false);
+        cancelled = true;
       };
     }, [hasFetched, activeFilter, refreshHome]),
   );
 
   const onRefresh = async () => {
     await refreshHome(normalizeFilter(activeFilter));
+    lastBackgroundRefreshRef.current = Date.now();
   };
 
   const openProduct = (product: ProductItem) => {
