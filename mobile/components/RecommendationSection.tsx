@@ -37,7 +37,7 @@ export function RecommendationSection({ ranked, onAdd }: RecommendationSectionPr
         <View style={styles.container}>
             <View style={styles.header}>
                 <ThemedText style={[styles.kicker, { color: REC_COLORS.text }]}>Suggested for you</ThemedText>
-                <ThemedText style={[styles.title, { color: REC_COLORS.text }]}>Selected complementary pieces</ThemedText>
+                <ThemedText style={[styles.title, { color: REC_COLORS.text }]}>Selected pieces for your cart</ThemedText>
             </View>
 
             <ScrollView

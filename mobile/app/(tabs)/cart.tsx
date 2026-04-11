@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import React, { useRef, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,6 +17,7 @@ import { useSmartCartStore } from '@/store/smart-cart-store';
 import { RecommendationSection } from '@/components/RecommendationSection';
 import { CartIntelligencePanel } from '@/components/CartIntelligencePanel';
 import { SmartBundleSection } from '@/components/SmartBundleSection';
+import type { SmartCartItem } from '@/types/smart-cart';
 
 const CART_MONO = {
   white: '#FFFFFF',
@@ -57,6 +58,56 @@ function normalizeKey(value?: string) {
   return (value || '').trim().toLowerCase();
 }
 
+function titleCaseLabel(value: string) {
+  return value
+    .split(' ')
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+/** Categories with this many separate cart lines become a collapsible folder with their own checkout. */
+const FOLDER_LINE_THRESHOLD = 3;
+
+type CartDisplayGroup =
+  | { kind: 'folder'; categoryKey: string; categoryLabel: string; items: SmartCartItem[] }
+  | { kind: 'line'; item: SmartCartItem };
+
+function buildCartDisplayGroups(cartItems: SmartCartItem[]): CartDisplayGroup[] {
+  if (!cartItems.length) return [];
+  const byCat = new Map<string, SmartCartItem[]>();
+  for (const item of cartItems) {
+    const key = normalizeKey(item.category) || '__uncategorized';
+    if (!byCat.has(key)) byCat.set(key, []);
+    byCat.get(key)!.push(item);
+  }
+  const categoryOrder: string[] = [];
+  for (const item of cartItems) {
+    const key = normalizeKey(item.category) || '__uncategorized';
+    if (!categoryOrder.includes(key)) {
+      categoryOrder.push(key);
+    }
+  }
+  const groups: CartDisplayGroup[] = [];
+  for (const key of categoryOrder) {
+    const list = byCat.get(key)!;
+    const label =
+      titleCaseLabel((list[0]?.category || '').trim() || (key === '__uncategorized' ? 'Other' : key));
+    if (list.length >= FOLDER_LINE_THRESHOLD) {
+      groups.push({ kind: 'folder', categoryKey: key, categoryLabel: label, items: list });
+    } else {
+      for (const line of list) {
+        groups.push({ kind: 'line', item: line });
+      }
+    }
+  }
+  return groups;
+}
+
+function folderSubtotal(lines: SmartCartItem[]) {
+  return lines.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
 export default function CartScreen() {
   const router = useRouter();
   const { state, loading, error } = useSmartCartState();
@@ -68,9 +119,9 @@ export default function CartScreen() {
   const scrollRef = useRef<ScrollView>(null);
 
   const [cartSearchQuery, setCartSearchQuery] = useState('');
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentStep, setPaymentStep] = useState<'loading' | 'form' | 'processing' | 'success'>('loading');
   const [placingOrder, setPlacingOrder] = useState(false);
+  /** `key` omitted or true = expanded; false = collapsed */
+  const [expandedFolders, setExpandedFolders] = useState<Record<string, boolean>>({});
   const insets = useSafeAreaInsets();
   const tabBarClearance = getFloatingTabBarBottomOffset(insets.bottom) + FLOATING_TAB_BAR_HEIGHT + spacing.xs;
   const background = CART_COLORS.screenBg;
@@ -81,6 +132,20 @@ export default function CartScreen() {
   const accent = CART_COLORS.text;
   const softSurface = CART_COLORS.sectionSoftBg;
   const softSurfaceAlt = CART_COLORS.sectionSoftBg;
+  const allItems = state?.cart.items || [];
+  const cartSearch = cartSearchQuery.trim().toLowerCase();
+  const items = cartSearch
+    ? allItems.filter(
+      (item) =>
+        item.name.toLowerCase().includes(cartSearch) ||
+        (item.category && item.category.toLowerCase().includes(cartSearch)),
+    )
+    : allItems;
+  const displayGroups = useMemo(() => buildCartDisplayGroups(items), [items]);
+  const hasCartItems = allItems.length > 0;
+  const subtotal = state?.cart.totalValue || 0;
+  const discount = subtotal * 0.1;
+  const total = subtotal - discount;
 
   const handleQuantityChange = async (productId: string, quantity: number) => {
     try {
@@ -187,53 +252,190 @@ export default function CartScreen() {
     );
   }
 
-  const allItems = state?.cart.items || [];
-  const cartSearch = cartSearchQuery.trim().toLowerCase();
-  const items = cartSearch
-    ? allItems.filter(
-      (item) =>
-        item.name.toLowerCase().includes(cartSearch) ||
-        (item.category && item.category.toLowerCase().includes(cartSearch)),
-    )
-    : allItems;
-  const hasCartItems = allItems.length > 0;
-  const subtotal = state?.cart.totalValue || 0;
-  const discount = subtotal * 0.1;
-  const total = subtotal - discount;
+  const isFolderExpanded = (categoryKey: string) => expandedFolders[categoryKey] !== false;
+
+  const toggleFolder = (categoryKey: string) => {
+    setExpandedFolders((prev) => ({
+      ...prev,
+      [categoryKey]: !((prev[categoryKey] ?? true)),
+    }));
+  };
+
+  const runCheckout = async (productIds: string[] | undefined, orderLabel: string) => {
+    setPlacingOrder(true);
+    await new Promise((resolve) => setTimeout(resolve, 1600));
+    try {
+      await checkout(productIds);
+      await fetchOrders();
+      Alert.alert(
+        'Order placed successfully!',
+        productIds?.length
+          ? `Your ${orderLabel} order was saved and payment was processed. Remaining bag items stay in your cart.`
+          : 'Your order has been saved and your payment was processed.',
+      );
+    } catch (err: any) {
+      Alert.alert('Could not process payment', err?.message || 'Please try again.');
+    } finally {
+      setPlacingOrder(false);
+    }
+  };
+
+  const confirmAndCheckout = (productIds: string[] | undefined, orderLabel: string, message: string) => {
+    Alert.alert('Place order', message, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Place order',
+        onPress: () => {
+          void runCheckout(productIds, orderLabel);
+        },
+      },
+    ]);
+  };
 
   const handleOpenPayment = () => {
     if (!hasCartItems) return;
-    setShowPaymentModal(true);
-    setPaymentStep('loading');
-    setTimeout(() => {
-      setPaymentStep('form');
-    }, 1200);
+    confirmAndCheckout(
+      undefined,
+      'full bag',
+      `Confirm order for all ${allItems.length} ${allItems.length === 1 ? 'item' : 'items'} (${money(total)} estimated total)?`,
+    );
   };
 
-  const handleProcessPayment = async () => {
-    setPaymentStep('processing');
-    setPlacingOrder(true);
+  const handleFolderPlaceOrder = (folderItems: SmartCartItem[], categoryLabel: string) => {
+    const ids = folderItems.map((line) => line.productId);
+    const folderTotal = folderSubtotal(folderItems);
+    const folderDiscount = folderTotal * 0.1;
+    const folderGrand = folderTotal - folderDiscount;
+    confirmAndCheckout(
+      ids,
+      categoryLabel,
+      `Order only your ${categoryLabel} folder (${folderItems.length} ${folderItems.length === 1 ? 'line' : 'lines'}, about ${money(folderGrand)} after the same preferred adjustment as the full bag)?`,
+    );
+  };
 
-    // Simulate network delay for payment
-    await new Promise(resolve => setTimeout(resolve, 2000));
+  const renderCartLineItem = (item: SmartCartItem, index: number, nested?: boolean) => {
+    const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
+    const slug = item.slug?.trim();
+    const canOpenProduct = Boolean(slug);
 
-    try {
-      await checkout();
-      await fetchOrders();
-      setPaymentStep('success');
-      setTimeout(() => {
-        setShowPaymentModal(false);
-        setPlacingOrder(false);
-        Alert.alert(
-          'Order placed successfully!',
-          'Your order has been saved and your payment was processed.'
-        );
-      }, 1500);
-    } catch (err: any) {
-      setPlacingOrder(false);
-      setShowPaymentModal(false);
-      Alert.alert('Could not process payment', err?.message || 'Please try again.');
-    }
+    const allProducts = [
+      ...(homeData?.bestsellers || []),
+      ...(homeData?.recommendedProducts || []),
+      ...(homeData?.collections || []),
+    ];
+    const normalizedItemId = normalizeKey(item.productId);
+    const normalizedItemSlug = normalizeKey(item.slug);
+    const normalizedItemName = normalizeKey(item.name);
+
+    const matchingProduct = allProducts.find((p) => {
+      const pAny = p as any;
+      const productId = normalizeKey(pAny.productId || pAny.id);
+      const productSlug = normalizeKey(pAny.slug);
+      const productName = normalizeKey(pAny.name || pAny.title);
+      return (
+        (normalizedItemId && productId === normalizedItemId) ||
+        (normalizedItemSlug && productSlug === normalizedItemSlug) ||
+        (normalizedItemName && productName === normalizedItemName)
+      );
+    });
+
+    const rankedMatch = (state?.ranked || []).find((p: any) => {
+      const productId = normalizeKey(p.productId || p.id);
+      const productSlug = normalizeKey(p.slug);
+      const productName = normalizeKey(p.name);
+      return (
+        (normalizedItemId && productId === normalizedItemId) ||
+        (normalizedItemSlug && productSlug === normalizedItemSlug) ||
+        (normalizedItemName && productName === normalizedItemName)
+      );
+    });
+
+    const imageUrl =
+      (item as any).image ||
+      (item as any).imageUrl ||
+      matchingProduct?.image ||
+      rankedMatch?.image;
+
+    const lineTotal = item.price * item.quantity;
+
+    return (
+      <View
+        key={`${item.productId}-${item.slug ?? 'noslug'}-${index}`}
+        style={[
+          styles.itemCard,
+          nested ? styles.itemCardNested : null,
+          { backgroundColor: card, borderColor: CART_COLORS.border },
+          nested ? null : luxuryShadow,
+        ]}>
+        <Pressable
+          disabled={!canOpenProduct}
+          onPress={() => slug && router.push(`/product/${encodeURIComponent(slug)}`)}
+          style={({ pressed }) => [
+            styles.itemPressableMain,
+            canOpenProduct && pressed ? styles.itemPressablePressed : null,
+          ]}
+          accessibilityRole={canOpenProduct ? 'button' : undefined}
+          accessibilityLabel={canOpenProduct ? `Open ${item.name}` : undefined}>
+          <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt, overflow: 'hidden' }]}>
+            {imageUrl ? (
+              <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
+            ) : (
+              <ThemedText style={[styles.itemMonogram, { color: text }]}>{initials(item.name)}</ThemedText>
+            )}
+          </View>
+
+          <View style={styles.itemBody}>
+            <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
+              {item.category}
+            </ThemedText>
+
+            <View style={styles.itemTopLine}>
+              <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
+                {item.name}
+              </ThemedText>
+              <View style={styles.itemPriceCol}>
+                <ThemedText style={[styles.itemLineTotal, { color: text }]}>{money(lineTotal)}</ThemedText>
+                {item.quantity > 1 ? (
+                  <ThemedText style={[styles.itemUnitMeta, { color: muted }]}>{money(item.price)} each</ThemedText>
+                ) : null}
+              </View>
+            </View>
+          </View>
+
+          {canOpenProduct ? <Ionicons name="chevron-forward" size={18} color={muted} /> : null}
+        </Pressable>
+
+        <View style={styles.itemBottom}>
+          <View
+            style={[styles.qtyPill, { borderColor: CART_COLORS.border, backgroundColor: softSurface }]}>
+            <Pressable
+              style={styles.qtyBtn}
+              onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
+              <Ionicons name="remove" size={14} color={text} />
+            </Pressable>
+            <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
+            <Pressable
+              style={styles.qtyBtn}
+              onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
+              <Ionicons name="add" size={14} color={text} />
+            </Pressable>
+          </View>
+
+          <View style={styles.metaWrap}>
+            <View style={styles.metaRow}>
+              <Ionicons
+                name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
+                size={isOutOfStock ? 13 : 9}
+                color={isOutOfStock ? danger : CART_COLORS.text}
+              />
+              <ThemedText style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
+                {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
+              </ThemedText>
+            </View>
+          </View>
+        </View>
+      </View>
+    );
   };
 
   return (
@@ -311,7 +513,6 @@ export default function CartScreen() {
           </View>
         ) : null}
 
-        <CartIntelligencePanel panel={state?.intelligencePanel} />
 
         {!items.length ? (
           <View style={[styles.emptyCard, { backgroundColor: card, borderColor: CART_COLORS.border }, luxuryShadow]}>
@@ -340,135 +541,116 @@ export default function CartScreen() {
           </View>
         ) : (
           <View style={styles.itemsWrap}>
-            {items.map((item, index) => {
-              const isOutOfStock = state?.inventory[item.productId] === 'OUT_OF_STOCK';
-              const slug = item.slug?.trim();
-              const canOpenProduct = Boolean(slug);
+            {displayGroups.map((group, groupIndex) => {
+              if (group.kind === 'line') {
+                return renderCartLineItem(group.item, groupIndex, false);
+              }
 
-              const allProducts = [
-                ...(homeData?.bestsellers || []),
-                ...(homeData?.recommendedProducts || []),
-                ...(homeData?.collections || []),
-              ];
-              const normalizedItemId = normalizeKey(item.productId);
-              const normalizedItemSlug = normalizeKey(item.slug);
-              const normalizedItemName = normalizeKey(item.name);
-
-              const matchingProduct = allProducts.find((p) => {
-                const pAny = p as any;
-                const productId = normalizeKey(pAny.productId || pAny.id);
-                const productSlug = normalizeKey(pAny.slug);
-                const productName = normalizeKey(pAny.name || pAny.title);
-                return (
-                  (normalizedItemId && productId === normalizedItemId) ||
-                  (normalizedItemSlug && productSlug === normalizedItemSlug) ||
-                  (normalizedItemName && productName === normalizedItemName)
-                );
-              });
-
-              const rankedMatch = (state?.ranked || []).find((p: any) => {
-                const productId = normalizeKey(p.productId || p.id);
-                const productSlug = normalizeKey(p.slug);
-                const productName = normalizeKey(p.name);
-                return (
-                  (normalizedItemId && productId === normalizedItemId) ||
-                  (normalizedItemSlug && productSlug === normalizedItemSlug) ||
-                  (normalizedItemName && productName === normalizedItemName)
-                );
-              });
-
-              const imageUrl =
-                (item as any).image ||
-                (item as any).imageUrl ||
-                matchingProduct?.image ||
-                rankedMatch?.image;
-
-              const lineTotal = item.price * item.quantity;
+              const folderTotal = folderSubtotal(group.items);
+              const folderDiscount = folderTotal * 0.1;
+              const folderGrand = folderTotal - folderDiscount;
+              const expanded = isFolderExpanded(group.categoryKey);
 
               return (
                 <View
-                  key={`${item.productId}-${item.slug ?? 'noslug'}-${index}`}
+                  key={`folder-${group.categoryKey}-${groupIndex}`}
                   style={[
-                    styles.itemCard,
+                    styles.folderCard,
                     { backgroundColor: card, borderColor: CART_COLORS.border },
                     luxuryShadow,
                   ]}>
                   <Pressable
-                    disabled={!canOpenProduct}
-                    onPress={() => slug && router.push(`/product/${encodeURIComponent(slug)}`)}
-                    style={({ pressed }) => [
-                      styles.itemPressableMain,
-                      canOpenProduct && pressed ? styles.itemPressablePressed : null,
-                    ]}
-                    accessibilityRole={canOpenProduct ? 'button' : undefined}
-                    accessibilityLabel={canOpenProduct ? `Open ${item.name}` : undefined}>
-                    <View style={[styles.itemImage, { backgroundColor: softSurfaceAlt, overflow: 'hidden' }]}>
-                      {imageUrl ? (
-                        <Image source={{ uri: imageUrl }} style={{ width: '100%', height: '100%' }} contentFit="cover" />
-                      ) : (
-                        <ThemedText style={[styles.itemMonogram, { color: text }]}>
-                          {initials(item.name)}
-                        </ThemedText>
-                      )}
-                    </View>
-
-                    <View style={styles.itemBody}>
-                      <ThemedText numberOfLines={1} style={[styles.itemCategoryMeta, { color: muted }]}>
-                        {item.category}
-                      </ThemedText>
-
-                      <View style={styles.itemTopLine}>
-                        <ThemedText numberOfLines={2} style={[styles.itemName, { color: text }]}>
-                          {item.name}
-                        </ThemedText>
-                        <View style={styles.itemPriceCol}>
-                          <ThemedText style={[styles.itemLineTotal, { color: text }]}>{money(lineTotal)}</ThemedText>
-                          {item.quantity > 1 ? (
-                            <ThemedText style={[styles.itemUnitMeta, { color: muted }]}>
-                              {money(item.price)} each
+                    onPress={() => toggleFolder(group.categoryKey)}
+                    style={[styles.folderHeader, { borderBottomColor: CART_COLORS.border, backgroundColor: softSurface }]}>
+                    <View style={styles.folderHeaderTop}>
+                      <View style={[styles.folderIconWrap, { backgroundColor: card, borderColor: CART_COLORS.border }]}>
+                        <Ionicons name="folder-open-outline" size={18} color={text} />
+                      </View>
+                      <View style={styles.folderHeaderText}>
+                        <View style={styles.folderTitleRow}>
+                          <ThemedText numberOfLines={1} style={[styles.folderTitle, { color: text }]}>
+                            {group.categoryLabel}
+                          </ThemedText>
+                          <View style={[styles.folderCountPill, { borderColor: CART_COLORS.border, backgroundColor: card }]}>
+                            <ThemedText style={[styles.folderCountText, { color: text }]}>
+                              {group.items.length} {group.items.length === 1 ? 'item' : 'items'}
                             </ThemedText>
-                          ) : null}
+                          </View>
                         </View>
+                        <ThemedText style={[styles.folderSubtitle, { color: muted }]}>
+                          Curated together for a quicker category checkout.
+                        </ThemedText>
+                      </View>
+                      <View style={[styles.folderChevronWrap, { borderColor: CART_COLORS.border, backgroundColor: card }]}>
+                        <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={18} color={muted} />
                       </View>
                     </View>
-
-                    {canOpenProduct ? (
-                      <Ionicons name="chevron-forward" size={18} color={muted} />
-                    ) : null}
+                    <View style={styles.folderMetricsRow}>
+                      <View style={styles.folderMetric}>
+                        <ThemedText style={[styles.folderMetricLabel, { color: muted }]}>Folder total</ThemedText>
+                        <ThemedText style={[styles.folderMetricValue, { color: text }]}>{money(folderGrand)}</ThemedText>
+                      </View>
+                      <View style={[styles.folderMetricDivider, { backgroundColor: CART_COLORS.border }]} />
+                      <View style={styles.folderMetric}>
+                        <ThemedText style={[styles.folderMetricLabel, { color: muted }]}>Adjustment</ThemedText>
+                        <ThemedText style={[styles.folderMetricValue, { color: text }]}>-{money(folderDiscount)}</ThemedText>
+                      </View>
+                      {!expanded ? (
+                        <>
+                          <View style={[styles.folderMetricDivider, { backgroundColor: CART_COLORS.border }]} />
+                          <View style={styles.folderMetric}>
+                            <ThemedText style={[styles.folderMetricLabel, { color: muted }]}>State</ThemedText>
+                            <ThemedText style={[styles.folderMetricValue, { color: text }]}>Collapsed</ThemedText>
+                          </View>
+                        </>
+                      ) : null}
+                    </View>
                   </Pressable>
 
-                  <View style={styles.itemBottom}>
-                    <View
-                      style={[
-                        styles.qtyPill,
-                        { borderColor: CART_COLORS.border, backgroundColor: softSurface },
-                      ]}>
-                      <Pressable
-                        style={styles.qtyBtn}
-                        onPress={() => handleQuantityChange(item.productId, item.quantity - 1)}>
-                        <Ionicons name="remove" size={14} color={text} />
-                      </Pressable>
-                      <ThemedText style={[styles.qtyText, { color: text }]}>{item.quantity}</ThemedText>
-                      <Pressable
-                        style={styles.qtyBtn}
-                        onPress={() => handleQuantityChange(item.productId, item.quantity + 1)}>
-                        <Ionicons name="add" size={14} color={text} />
-                      </Pressable>
+                  {expanded ? (
+                    <View style={styles.folderLines}>
+                      {group.items.map((line, lineIndex) => renderCartLineItem(line, lineIndex, true))}
                     </View>
+                  ) : null}
 
-                    <View style={styles.metaWrap}>
-                      <View style={styles.metaRow}>
-                        <Ionicons
-                          name={isOutOfStock ? 'alert-circle-outline' : 'ellipse'}
-                          size={isOutOfStock ? 13 : 9}
-                          color={isOutOfStock ? danger : CART_COLORS.text}
-                        />
-                        <ThemedText
-                          style={[styles.stockText, { color: isOutOfStock ? danger : muted }]}>
-                          {isOutOfStock ? 'Out of stock' : 'Ready to ship'}
+                  <View style={[styles.folderFooter, { borderTopColor: CART_COLORS.border }]}>
+                    <View style={styles.folderFooterTop}>
+                      <View style={styles.folderFooterLeft}>
+                        <ThemedText style={[styles.folderTotalCaption, { color: muted }]}>Ready for checkout</ThemedText>
+                        <ThemedText style={[styles.folderTotalValue, { color: text }]}>{money(folderGrand)}</ThemedText>
+                        <ThemedText style={[styles.folderTotalHint, { color: muted }]}>
+                          {money(folderTotal)} subtotal before preferred pricing
                         </ThemedText>
                       </View>
+                      <View style={[styles.folderMiniBadge, { borderColor: CART_COLORS.border, backgroundColor: softSurface }]}>
+                        <Ionicons name="sparkles-outline" size={13} color={text} />
+                        <ThemedText style={[styles.folderMiniBadgeText, { color: text }]}>1 tap</ThemedText>
+                      </View>
                     </View>
+                    <Pressable
+                      onPress={() => handleFolderPlaceOrder(group.items, group.categoryLabel)}
+                      disabled={placingOrder}
+                      style={[
+                        styles.folderPlaceOrderBtn,
+                        {
+                          backgroundColor: placingOrder ? CART_COLORS.checkoutBtnDisabledBg : CART_COLORS.checkoutBtnBg,
+                        },
+                      ]}>
+                      {placingOrder ? (
+                        <ActivityIndicator size="small" color={CART_COLORS.checkoutBtnDisabledText} />
+                      ) : (
+                        <Ionicons name="bag-check-outline" size={16} color={CART_COLORS.checkoutBtnText} />
+                      )}
+                      <ThemedText
+                        style={[
+                          styles.folderPlaceOrderText,
+                          {
+                            color: placingOrder ? CART_COLORS.checkoutBtnDisabledText : CART_COLORS.checkoutBtnText,
+                          },
+                        ]}>
+                        {placingOrder ? 'Placing…' : 'Place folder order'}
+                      </ThemedText>
+                    </Pressable>
                   </View>
                 </View>
               );
@@ -572,7 +754,7 @@ export default function CartScreen() {
 
           <Pressable
             onPress={handleOpenPayment}
-            disabled={placingOrder || showPaymentModal}
+            disabled={placingOrder}
             style={[
               styles.billButtonInline,
               {
@@ -799,6 +981,184 @@ const styles = StyleSheet.create({
   },
   itemsWrap: {
     gap: spacing.md,
+  },
+  folderCard: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.xl,
+    overflow: 'hidden',
+    shadowOpacity: 0.06,
+    elevation: 2,
+  },
+  folderHeader: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  folderHeaderTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  folderIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  folderHeaderText: {
+    flex: 1,
+    minWidth: 0,
+    gap: 4,
+  },
+  folderTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  folderTitle: {
+    flexShrink: 1,
+    fontFamily: Fonts.serif,
+    fontSize: 18,
+    fontWeight: '600',
+    letterSpacing: 0.2,
+  },
+  folderCountPill: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  folderCountText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  folderSubtitle: {
+    fontFamily: Fonts.sans,
+    fontSize: 12,
+    fontWeight: '500',
+    lineHeight: 18,
+  },
+  folderChevronWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  folderMetricsRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.sm,
+  },
+  folderMetric: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  folderMetricLabel: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  folderMetricValue: {
+    fontFamily: Fonts.sans,
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.15,
+  },
+  folderMetricDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+  },
+  folderLines: {
+    paddingHorizontal: spacing.sm,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.xs,
+    gap: spacing.sm,
+  },
+  folderFooter: {
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  folderFooterTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  folderFooterLeft: {
+    flex: 1,
+    minWidth: 0,
+    gap: 2,
+  },
+  folderTotalCaption: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.85,
+    fontWeight: '600',
+  },
+  folderTotalValue: {
+    fontFamily: Fonts.serif,
+    fontSize: 22,
+    fontWeight: '700',
+  },
+  folderTotalHint: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    marginTop: 2,
+  },
+  folderMiniBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.pill,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  folderMiniBadgeText: {
+    fontFamily: Fonts.sans,
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+    letterSpacing: 0.7,
+  },
+  folderPlaceOrderBtn: {
+    borderRadius: radius.pill,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    ...luxuryShadow,
+    shadowOpacity: 0.1,
+    elevation: 2,
+  },
+  folderPlaceOrderText: {
+    fontFamily: Fonts.sans,
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  itemCardNested: {
+    shadowOpacity: 0,
+    elevation: 0,
   },
   skeletonItemsWrap: {
     gap: spacing.md,

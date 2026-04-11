@@ -26,7 +26,7 @@ import {
   updateCart,
   getSmartCartState,
 } from '../controllers/cart.controller';
-import { checkout, getOrderById, getOrders, getOrderTracking } from '../controllers/order.controller';
+import { checkout, checkoutSelection, getOrderById, getOrders, getOrderTracking } from '../controllers/order.controller';
 import {
   addToWishlist,
   getWishlist,
@@ -113,6 +113,7 @@ router.get('/orders/mobile', authenticateOptional, getMobileOrders);
 router.get('/orders/:id', authenticateToken, getOrderById);
 router.get('/orders/:id/tracking', authenticateToken, getOrderTracking);
 router.post('/orders/checkout', authenticateOptional, checkout);
+router.post('/orders/checkout/selection', authenticateOptional, checkoutSelection);
 
 router.get('/wishlist', authenticateOptional, getWishlist);
 router.post('/wishlist/add', authenticateOptional, addToWishlist);

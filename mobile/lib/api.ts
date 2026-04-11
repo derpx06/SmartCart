@@ -290,7 +290,14 @@ export const api = {
       body: JSON.stringify({ productId, quantity }),
     });
   },
-  checkout() {
+  checkout(productIds?: string[]) {
+    if (productIds?.length) {
+      return request('/orders/checkout/selection', {
+        method: 'POST',
+        body: JSON.stringify({ productIds }),
+      });
+    }
+
     return request('/orders/checkout', {
       method: 'POST',
       body: JSON.stringify({}),

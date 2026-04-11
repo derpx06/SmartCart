@@ -6,20 +6,9 @@ import Order from '../models/Order';
 import Product from '../models/Product';
 import { bumpCatalogCacheVersion } from '../services/cache.service';
 
-export const getOrders = async (req: Request, res: Response): Promise<void> => {
-  try {
-    const userId = req.user?.userId ?? 'user_001';
-    const orders = await Order.find({ userId }).populate('items.productId').sort({ createdAt: -1 });
-    res.json(orders);
-  } catch {
-    res.status(500).json({ error: 'Server error' });
-  }
-};
-
-export const checkout = async (req: Request, res: Response): Promise<void> => {
+async function performCheckout(userId: string, selectedProductIds?: string[]) {
   let session: mongoose.ClientSession | null = null;
   try {
-    const userId = req.user?.userId ?? 'user_001';
     session = await mongoose.startSession();
     const txSession = session;
     let createdOrder: any = null;
@@ -30,12 +19,31 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
         throw new Error('CART_EMPTY');
       }
 
-      const productIds = cart.items.map((item: any) => item.productId);
+      const restrictIds =
+        Array.isArray(selectedProductIds) && selectedProductIds.length > 0
+          ? new Set(selectedProductIds.map((id) => String(id)))
+          : null;
+
+      let cartItemsForOrder = cart.items as any[];
+      if (restrictIds) {
+        const cartIdSet = new Set(cartItemsForOrder.map((item: any) => String(item.productId)));
+        for (const id of restrictIds) {
+          if (!cartIdSet.has(id)) {
+            throw new Error('INVALID_PRODUCT_SELECTION');
+          }
+        }
+        cartItemsForOrder = cartItemsForOrder.filter((item: any) => restrictIds.has(String(item.productId)));
+        if (cartItemsForOrder.length === 0) {
+          throw new Error('CART_EMPTY');
+        }
+      }
+
+      const productIds = cartItemsForOrder.map((item: any) => item.productId);
       const products = await Product.find({ _id: { $in: productIds } }).session(txSession).lean();
       const productById = new Map(products.map((p: any) => [String(p._id), p]));
 
       let totalAmount = 0;
-      const orderItems = cart.items.map((item: any) => {
+      const orderItems = cartItemsForOrder.map((item: any) => {
         const pid = String(item.productId);
         const product = productById.get(pid);
         if (!product) {
@@ -91,11 +99,35 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
       );
       createdOrder = order;
 
-      cart.set('items', []);
+      const orderedIdSet = new Set(orderItems.map((item) => String(item.productId)));
+      const nextCartItems = (cart.items as any[]).filter((item: any) => !orderedIdSet.has(String(item.productId)));
+      cart.set('items', nextCartItems);
       await cart.save({ session: txSession });
     });
 
     await bumpCatalogCacheVersion();
+    return createdOrder;
+  } finally {
+    if (session) {
+      await session.endSession();
+    }
+  }
+}
+
+export const getOrders = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId ?? 'user_001';
+    const orders = await Order.find({ userId }).populate('items.productId').sort({ createdAt: -1 });
+    res.json(orders);
+  } catch {
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const checkout = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId ?? 'user_001';
+    const createdOrder = await performCheckout(userId);
     res.json(createdOrder);
   } catch (error) {
     const message = error instanceof Error ? error.message : '';
@@ -111,11 +143,49 @@ export const checkout = async (req: Request, res: Response): Promise<void> => {
       res.status(404).json({ error: 'A product in cart was not found.' });
       return;
     }
-    res.status(500).json({ error: 'Server error' });
-  } finally {
-    if (session) {
-      await session.endSession();
+    if (message === 'INVALID_PRODUCT_SELECTION') {
+      res.status(400).json({ error: 'One or more selected products are not in your cart.' });
+      return;
     }
+    res.status(500).json({ error: 'Server error' });
+  }
+};
+
+export const checkoutSelection = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.user?.userId ?? 'user_001';
+    const body = req.body as { productIds?: unknown };
+    const productIds =
+      Array.isArray(body?.productIds) && body.productIds.length > 0
+        ? body.productIds.map((id) => String(id))
+        : null;
+
+    if (!productIds) {
+      res.status(400).json({ error: 'Selected checkout requires one or more product IDs.' });
+      return;
+    }
+
+    const createdOrder = await performCheckout(userId, productIds);
+    res.json(createdOrder);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message === 'CART_EMPTY') {
+      res.status(400).json({ error: 'Cart is empty' });
+      return;
+    }
+    if (message === 'INSUFFICIENT_STOCK') {
+      res.status(409).json({ error: 'One or more items are out of stock.' });
+      return;
+    }
+    if (message === 'PRODUCT_NOT_FOUND') {
+      res.status(404).json({ error: 'A product in cart was not found.' });
+      return;
+    }
+    if (message === 'INVALID_PRODUCT_SELECTION') {
+      res.status(400).json({ error: 'One or more selected products are not in your cart.' });
+      return;
+    }
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
